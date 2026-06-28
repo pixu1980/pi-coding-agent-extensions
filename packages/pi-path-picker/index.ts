@@ -163,12 +163,12 @@ function listPathItems(dirPath: string, prefix: string): Array<{ name: string; i
 function extractPathToken(textBeforeCursor: string): { path: string; startIndex: number } | null {
   // Match patterns that look like path starts — explicit only, no generic word fallback
   const patterns = [
-    // ~/... or ~ (tilde path)
-    { re: /(~(?:[^\s]*))$/, group: 1 },
-    // ./... or ../... (relative path)
-    { re: /((?:\.\.?\/[^\s]*))$/, group: 1 },
-    // /... (absolute path)
-    { re: /(\/[^\s]*)$/, group: 1 },
+    // ~/... or ~ (tilde path) — allow spaces since we're inside delimiters
+    { re: /(~[^"'`]*)$/, group: 1 },
+    // ./... or ../... (relative path) — allow spaces
+    { re: /((?:\.\.?\/)[^"'`]*)$/, group: 1 },
+    // /... (absolute path) — allow spaces
+    { re: /(\/[^"'`]*)$/, group: 1 },
   ];
 
   for (const { re, group } of patterns) {

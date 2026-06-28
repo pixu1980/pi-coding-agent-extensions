@@ -1,7 +1,7 @@
 {
   "name": "pi-coding-agent-extensions",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "description": "Monorepo for pi.dev extensions, themes, and packages",
   "license": "MIT",
   "repository": {

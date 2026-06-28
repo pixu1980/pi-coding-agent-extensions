@@ -4,7 +4,14 @@
   "private": true,
   "description": "Monorepo for pi.dev extensions, themes, and packages",
   "license": "MIT",
-
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixu1980/pi-coding-agent-extensions.git"
+  },
+  "homepage": "https://github.com/pixu1980/pi-coding-agent-extensions#readme",
+  "bugs": {
+    "url": "https://github.com/pixu1980/pi-coding-agent-extensions/issues"
+  },
   "scripts": {
     "test": "echo 'Run tests per-package: cd packages/<name> && npm test'",
     "format": "prettier --write 'packages/*/src/**/*.ts'",

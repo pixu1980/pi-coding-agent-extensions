@@ -1,0 +1,13 @@
+{
+  "name": "pi-coding-agent-extensions",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Monorepo for pi.dev extensions, themes, and packages",
+  "license": "MIT",
+
+  "scripts": {
+    "test": "echo 'Run tests per-package: cd packages/<name> && npm test'",
+    "format": "prettier --write 'packages/*/src/**/*.ts'",
+    "lint": "echo 'No linter configured yet'"
+  }
+}

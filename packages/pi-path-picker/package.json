@@ -1,0 +1,59 @@
+{
+  "name": "pi-path-picker",
+  "version": "0.1.0",
+  "description": "Interactive file path autocomplete for pi coding agent — arrow-key navigation, fuzzy matching, Tab completion, and the /pick command",
+  "type": "module",
+  "author": "Emiliano Pisu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emilianopisu/pix-ext-path-picker.git"
+  },
+  "homepage": "https://github.com/emilianopisu/pix-ext-path-picker#readme",
+  "bugs": {
+    "url": "https://github.com/emilianopisu/pix-ext-path-picker/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "path-picker",
+    "autocomplete",
+    "fuzzy",
+    "file-browser"
+  ],
+  "files": [
+    "index.ts",
+    "pick-path.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node index.test.cjs"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    },
+    "typebox": {
+      "optional": true
+    }
+  }
+}

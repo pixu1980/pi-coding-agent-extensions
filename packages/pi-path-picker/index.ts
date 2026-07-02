@@ -3,7 +3,6 @@
  *
  * Provides:
  * - `/pick` command: interactive path browser with arrow keys
- * - `path_pick` tool: programmatic path autocomplete for the LLM
  * - **Editor autocomplete**: ~/ and /-based path completion with fuzzy filtering
  *   directly in the prompt input field, solo su Tab e dentro backtick/single/double quotes
  *
@@ -18,13 +17,11 @@
  * Requires: Node.js ≥ 22 (for --experimental-strip-types)
  */
 
-import { spawnSync, execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { resolve, join, sep, basename, dirname, isAbsolute } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI, AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
-import { StringEnum } from "@earendil-works/pi-ai";
 
 const PICKER_SCRIPT = new URL("pick-path.ts", import.meta.url).pathname;
 
@@ -197,7 +194,7 @@ export default function pathPickerExtension(pi: ExtensionAPI) {
     description: "Browse and select file paths interactively (arrow keys, fuzzy filter). Usage: /pick [starting-path]",
     handler: async (args, ctx) => {
       if (ctx.mode !== "tui") {
-        ctx.ui.notify("/pick requires TUI mode. Use the path_pick tool instead.", "error");
+        ctx.ui.notify("/pick requires TUI mode.", "error");
         return;
       }
 
@@ -234,122 +231,6 @@ export default function pathPickerExtension(pi: ExtensionAPI) {
     ctx.ui.addAutocompleteProvider((current: AutocompleteProvider) => createPathAutocompleteProvider(current, ctx.cwd));
   });
 
-  // ── path_pick tool for the LLM ─────────────────────────────────
-  if (pickerPath) {
-    pi.registerTool({
-      name: "path_pick",
-      label: "Path Picker",
-      description:
-        "Autocomplete file paths in the project. Use when you need to find files by partial name, glob pattern, or browse directories. Returns matching paths.",
-      promptSnippet: "Find or autocomplete file paths",
-      promptGuidelines: [
-        "Use path_pick when the user asks you to find, open, or reference a file but the exact path is unclear.",
-        "Use path_pick to resolve glob patterns like '**/*.test.js' into concrete file paths.",
-        "Pass the query parameter with partial filename, directory, or glob pattern.",
-      ],
-      parameters: Type.Object({
-        query: Type.Optional(
-          Type.String({
-            description:
-              "Partial filename, directory path, or glob pattern (e.g. 'button', 'src/components', '**/*.test.js'). Omit to list current directory.",
-          }),
-        ),
-        root: Type.Optional(
-          Type.String({
-            description: "Root directory to search from (default: project root / current working directory).",
-          }),
-        ),
-        maxResults: Type.Optional(
-          Type.Number({
-            description: "Maximum number of results (default: 20, max: 100).",
-            defaultValue: 20,
-          }),
-        ),
-        mode: StringEnum(["fuzzy", "glob"] as const, {
-          description: "'fuzzy' matches partial names (default), 'glob' matches **/*.js patterns.",
-          defaultValue: "fuzzy",
-        }),
-      }),
-      async execute(_toolCallId, params, _signal, _onUpdate, _ctx) {
-        const query = params.query || "";
-        const root = params.root || ".";
-        const maxResults = Math.min(params.maxResults ?? 20, 100);
-        const mode = params.mode || "fuzzy";
-        const resolvedRoot = resolve(root);
-        let results: string[] = [];
-
-        if (mode === "glob" && query) {
-          const pickCmd = pickerCommand(["--quick", query]);
-          const output = execSync(`${pickCmd.command} ${pickCmd.args.map(a => `"${a}"`).join(" ")}`, {
-            cwd: resolvedRoot,
-            encoding: "utf-8",
-            maxBuffer: 1024 * 1024,
-          });
-          results = output.trim().split("\n").filter(Boolean);
-        } else {
-          const searchPattern = query ? query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : ".";
-          const cmd = query
-            ? `find "${resolvedRoot}" -maxdepth 4 -type f -iname "*${searchPattern}*" 2>/dev/null | head -${maxResults + 10}`
-            : `ls -1 "${resolvedRoot}" 2>/dev/null | head -${maxResults + 10}`;
-
-          const output = execSync(cmd, {
-            cwd: resolvedRoot,
-            encoding: "utf-8",
-            maxBuffer: 1024 * 1024,
-          });
-          results = output.trim().split("\n").filter(Boolean);
-
-          if (!query) {
-            const dirs = execSync(`ls -1d "${resolvedRoot}/"*/ 2>/dev/null || true`, {
-              cwd: resolvedRoot,
-              encoding: "utf-8",
-            });
-            const dirList = dirs.trim().split("\n").filter(Boolean).map((d: string) => d.replace(/\/$/, ""));
-            results = [...dirList, ...results];
-          }
-        }
-
-        results = [...new Set(results)].slice(0, maxResults);
-
-        if (results.length === 0) {
-          return {
-            content: [
-              {
-                type: "text",
-                text: `No files found matching "${query || "(all files)"}" in ${resolvedRoot}`,
-              },
-            ],
-            details: { total: 0, root: resolvedRoot },
-          };
-        }
-
-        const list = results.map((f, i) => `  ${i + 1}. ${f}`).join("\n");
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Found ${results.length} matching paths in ${resolvedRoot}:\n\n${list}`,
-            },
-          ],
-          details: { total: results.length, root: resolvedRoot, paths: results },
-        };
-      },
-    });
-  }
-
-  // ── Inject path_pick hint into system prompt for path questions ─
-  pi.on("before_agent_start", async (event, _ctx) => {
-    const prompt = event.prompt.toLowerCase();
-    const pathKeywords = ["find file", "where is", "locate", "path of", "what file", "autocomplete path"];
-
-    if (pathKeywords.some((kw) => prompt.includes(kw))) {
-      return {
-        systemPrompt:
-          event.systemPrompt +
-          `\n\n## Path Resolution Note\nWhen the user asks about file paths or you need to find files, use the \`path_pick\` tool to autocomplete paths. Pass partial filenames or directory names as the \`query\` parameter. This is more reliable than guessing paths.`,
-      };
-    }
-  });
 }
 
 /**

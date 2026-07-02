@@ -2,20 +2,18 @@ const assert = require("node:assert/strict");
 const { readFileSync, writeFileSync, mkdtempSync } = require("node:fs");
 const { tmpdir } = require("node:os");
 const { join } = require("node:path");
-const { createJiti } = require("/opt/homebrew/Cellar/pi-coding-agent/0.80.2/libexec/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti/lib/jiti.cjs");
+const { createJiti } = require("/opt/homebrew/Cellar/pi-coding-agent/0.80.3/libexec/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti/lib/jiti.cjs");
 
 function loadExtensionForTest() {
   const sourcePath = join(__dirname, "index.ts");
   let source = readFileSync(sourcePath, "utf8");
 
   source = source
-    .replace(/^import \{ spawnSync, execSync \} from "node:child_process";$/m, 'const { spawnSync, execSync } = require("node:child_process");')
+    .replace(/^import \{ spawnSync \} from "node:child_process";$/m, 'const { spawnSync } = require("node:child_process");')
     .replace(/^import \{ existsSync, readdirSync, statSync \} from "node:fs";$/m, 'const { existsSync, readdirSync, statSync } = require("node:fs");')
     .replace(/^import \{ resolve, join, sep, basename, dirname, isAbsolute \} from "node:path";$/m, 'const { resolve, join, sep, basename, dirname, isAbsolute } = require("node:path");')
     .replace(/^import \{ homedir \} from "node:os";$/m, 'const { homedir } = require("node:os");')
     .replace(/^import type .* from "@earendil-works\/pi-coding-agent";$/m, "")
-    .replace(/^import \{ Type \} from "typebox";$/m, "const Type = { Object: (schema) => schema, Optional: (schema) => schema, String: (schema) => schema, Number: (schema) => schema };")
-    .replace(/^import \{ StringEnum \} from "@earendil-works\/pi-ai";$/m, "const StringEnum = (values, _options) => values;")
     .replace("export default function pathPickerExtension", "function pathPickerExtension");
 
   source += "\nmodule.exports = { default: pathPickerExtension };\n";

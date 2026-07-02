@@ -5,7 +5,7 @@ Interactive file path autocomplete with arrow-key navigation and fuzzy matching.
 ## Install
 
 ```bash
-pi install npm:pi-path-picker
+pi install npm:@pixu1980/pi-path-picker
 ```
 
 ## Commands

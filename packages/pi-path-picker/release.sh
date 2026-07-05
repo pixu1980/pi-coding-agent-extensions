@@ -27,10 +27,10 @@ fi
 # Bump version, tag, update CHANGELOG
 npx standard-version --no-verify
 
-# Push tags
+# Push tags (always to main for monorepo releases)
 echo ""
 echo "=== Pushing tags ==="
-git push --follow-tags origin "$(git branch --show-current)"
+git push --follow-tags origin main
 
 # Publish to npm
 echo ""

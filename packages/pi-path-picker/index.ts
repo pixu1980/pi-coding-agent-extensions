@@ -239,6 +239,15 @@ export default function pathPickerExtension(pi: ExtensionAPI) {
  */
 function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: string): AutocompleteProvider {
   return {
+    // `/` e `~` sono trigger characters per l'autocomplete nativo di pi.
+    // Fuori dagli apici:
+    //   • `/` all'inizio della riga → comando pi.dev (/model, /caveman)
+    //   • `/` dopo spazio o testo → NON è un comando, sopprimiamo
+    //   • `~` → sopprimiamo (tilde fuori dalle stringhe è raro)
+    // Dentro gli apici:
+    //   • `~` → path autocomplete immediato
+    //   • `/` → path autocomplete immediato (absolute path)
+    //   • TAB → path autocomplete per /, ~, ./ .. /
     triggerCharacters: ["~", "/"],
 
     async getSuggestions(
@@ -250,30 +259,34 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       const currentLine = lines[cursorLine] ?? "";
       const textBeforeCursor = currentLine.slice(0, cursorCol);
 
-      // The path picker should do its work only when pi's editor requests forced
-      // completion (Tab). Natural slash-command autocomplete outside strings is
-      // delegated to pi; natural path autocomplete inside strings is suppressed.
-      if (!options.force) {
-        if (cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
+      // ── Outside delimiters ──────────────────────────────────
+      if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
+        if (!options.force) {
+          // Trigger character (~ or /) typed outside delimiters.
+          // `/` at start of line → pi.dev command, delegate to native.
+          // `/` after space/text → possible path, suppress.
+          // `~` → suppress (tilde outside quotes is rare).
+          if (textBeforeCursor.startsWith("/")) {
+            return current.getSuggestions(lines, cursorLine, cursorCol, options);
+          }
           return null;
         }
+        // TAB outside delimiters: delegate to native provider
+        // so pi.dev command completion works.
         return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
 
-      // NEVER interfere outside delimited strings (backtick, double quote, single quote).
-      // Delegate so native pi.dev slash commands and built-in completion keep working.
-      if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
-        return current.getSuggestions(lines, cursorLine, cursorCol, options);
-      }
+      // ── Inside delimiters: path autocomplete ───────────────
+      // Works on:
+      //   • `~` trigger character (immediate)
+      //   • TAB when cursor is after a path pattern (/ ~ ./ ../)
 
-      // Extract path token (only ~, /, ./ patterns inside delimiters)
       const token = extractPathToken(textBeforeCursor);
-      if (!token) {
-        return current.getSuggestions(lines, cursorLine, cursorCol, options);
+      if (!token || options.signal.aborted) {
+        return null;
       }
 
       const { path } = token;
-      if (options.signal.aborted) return null;
 
       try {
         // Determine the directory to search and the file prefix
@@ -288,14 +301,13 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
           // User typed a partial name: find the parent dir and filter
           const parentDir = dirname(path);
           filePrefix = basename(path);
-          // If parent is empty, use cwd; if ~/..., expand
           const resolvedParent = parentDir === "." ? cwd : resolvePath(parentDir, cwd);
           dirPath = resolvedParent;
         }
 
         const items = listPathItems(dirPath, filePrefix);
         if (items.length === 0 || options.signal.aborted) {
-          return current.getSuggestions(lines, cursorLine, cursorCol, options);
+          return null;
         }
 
         // Convert to autocomplete items
@@ -313,7 +325,7 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
           prefix: path,
         };
       } catch {
-        return current.getSuggestions(lines, cursorLine, cursorCol, options);
+        return null;
       }
     },
 
@@ -353,16 +365,23 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
 
     shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
       const currentLine = lines[cursorLine] ?? "";
-
       const textBeforeCursor = currentLine.slice(0, cursorCol);
 
-      // Outside delimited strings, preserve native pi.dev Tab behavior.
+      // Outside delimiters: delegate to the native provider so that
+      // pi still calls getSuggestions on TAB for command completion
+      // (/model, /caveman). If we return false, pi skips getSuggestions
+      // entirely and all TAB-based completion breaks.
       if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
         return current.shouldTriggerFileCompletion?.(lines, cursorLine, cursorCol) ?? true;
       }
 
-      // Inside delimiters, the extension triggers only for explicit path tokens.
-      return extractPathToken(textBeforeCursor) !== null;
+      // Inside delimiters: always return true so pi re-queries
+      // getSuggestions on every keystroke when the menu is open.
+      // getSuggestions returns null when there's no path token,
+      // which closes the menu. If we returned false here, pi would
+      // skip re-querying and the menu would stay open with stale data
+      // even after the user deletes the trigger character.
+      return true;
     },
   };
 }

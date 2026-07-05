@@ -1,4 +1,4 @@
-# pi-path-picker — pi.dev Extension
+# pi-path-picker — pi.dev extension
 
 Interactive file path autocomplete with arrow-key navigation and fuzzy matching. Works like ohmyzsh's tab completion but from within the agent.
 

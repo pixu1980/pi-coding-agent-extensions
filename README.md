@@ -6,8 +6,9 @@ Monorepo of extensions, themes, skills, and prompts for [pi.dev](https://pi.dev)
 
 ```
 packages/
-├── pi-path-picker/      # Interactive file path autocomplete
-├── ...                  # More packages
+├── pi-path-picker/        # Interactive file path autocomplete
+├── pi-sessions/           # Session history overlay with auto-naming
+└── ...                    # More packages
 ```
 
 ## Publishing

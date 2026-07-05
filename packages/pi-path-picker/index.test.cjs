@@ -67,38 +67,123 @@ function createProvider(cwd = "/tmp") {
 }
 
 (async () => {
+  // ── Outside delimiters: smart delegation ───────────────────
+
+  // Test 1: `/` at start of line → delegate (pi command)
   {
     const { provider, calls } = createProvider();
     const suggestions = await provider.getSuggestions(["/"], 0, 1, { signal: new AbortController().signal, force: false });
+    assert.notEqual(suggestions, null, "/ at start of line must delegate to current");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 1, "must delegate / at start of line");
+  }
+
+  // Test 2: `/` after space → suppress
+  {
+    const { provider, calls } = createProvider();
+    const suggestions = await provider.getSuggestions([" /"], 0, 2, { signal: new AbortController().signal, force: false });
+    assert.equal(suggestions, null, "/ after space must be suppressed");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "must not delegate / after space");
+  }
+
+  // Test 3: `~` trigger → suppress (tilde outside quotes is rare)
+  {
+    const { provider, calls } = createProvider();
+    const suggestions = await provider.getSuggestions(["~"], 0, 1, { signal: new AbortController().signal, force: false });
+    assert.equal(suggestions, null, "~ trigger outside delimiters must be suppressed");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "must not delegate ~");
+  }
+
+  // Test 4: TAB outside → delegate to current (commands work)
+  {
+    const { provider, calls } = createProvider();
+    const suggestions = await provider.getSuggestions(["/"], 0, 1, { signal: new AbortController().signal, force: true });
+    assert.notEqual(suggestions, null, "TAB outside delimiters must delegate");
     assert.equal(suggestions.prefix, "/");
-    const applied = provider.applyCompletion(["/"], 0, 1, suggestions.items[0], suggestions.prefix);
-    assert.deepEqual(applied, { lines: ["/model "], cursorLine: 0, cursorCol: 7 });
-    assert.equal(calls.filter(([name]) => name === "applyCompletion").length, 1, "slash command completion must delegate to native provider");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 1, "must delegate on TAB");
   }
 
+  // Test 5: shouldTriggerFileCompletion outside → delegate to current
   {
     const { provider, calls } = createProvider();
-    const suggestions = await provider.getSuggestions(['"/"'], 0, 2, { signal: new AbortController().signal, force: false });
-    assert.equal(suggestions, null, "typing / inside quotes must not trigger path picker unless Tab forced it");
-    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "natural path autocomplete inside quotes must not delegate to native file completion");
+    const result = provider.shouldTriggerFileCompletion(["plain text"], 0, 10);
+    assert.equal(result, true, "shouldTriggerFileCompletion must delegate to current");
+    assert.equal(calls.filter(([name]) => name === "shouldTriggerFileCompletion").length, 1, "must delegate shouldTriggerFileCompletion");
   }
 
+  // Test 6: applyCompletion outside → delegate to current
   {
     const { provider, calls } = createProvider();
-    assert.equal(provider.shouldTriggerFileCompletion(["plain text"], 0, 10), true);
-    assert.equal(calls.filter(([name]) => name === "shouldTriggerFileCompletion").length, 1, "outside delimiters, Tab eligibility must delegate to native provider");
+    const result = provider.applyCompletion(["/mod"], 0, 4, { value: "/model", label: "model" }, "/mod");
+    assert.deepEqual(result, { lines: ["/model "], cursorLine: 0, cursorCol: 7 });
+    assert.equal(calls.filter(([name]) => name === "applyCompletion").length, 1, "applyCompletion outside must delegate");
   }
 
+  // ── Inside delimiters: path autocomplete, no delegation ──
+
+  // Test 7: TAB inside quotes with ./ → path autocomplete
   {
     const cwd = mkdtempSync(join(tmpdir(), "path-picker-cwd-"));
     writeFileSync(join(cwd, "alpha.txt"), "");
     const { provider, calls } = createProvider(cwd);
     const suggestions = await provider.getSuggestions(['"./"'], 0, 3, { signal: new AbortController().signal, force: true });
+    assert.notEqual(suggestions, null, "TAB inside delimiters must trigger path picker");
     assert.equal(suggestions.prefix, "./");
-    assert.equal(suggestions.items.some((item) => item.value === "./alpha.txt"), true, "Tab inside delimiters should still provide path picker suggestions");
+    assert.equal(suggestions.items.some((item) => item.value === "./alpha.txt"), true, "should find alpha.txt");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "no delegation inside quotes");
+  }
+
+  // Test 8: TAB inside quotes with / → absolute path
+  {
+    const { provider, calls } = createProvider();
+    const suggestions = await provider.getSuggestions(['"/"'], 0, 2, { signal: new AbortController().signal, force: true });
+    assert.notEqual(suggestions, null, 'TAB after "/" inside quotes must trigger path picker');
+    assert.equal(suggestions.prefix, "/");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "no delegation for absolute path inside quotes");
+  }
+
+  // Test 9: `~` trigger inside quotes → immediate path autocomplete
+  {
+    const { provider, calls } = createProvider();
+    const suggestions = await provider.getSuggestions(['"~/"'], 0, 3, { signal: new AbortController().signal, force: false });
+    assert.notEqual(suggestions, null, '~ trigger inside quotes must show path picker');
+    assert.equal(suggestions.prefix, "~/");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "no delegation for ~ inside quotes");
+  }
+
+  // Test 10: `/` trigger inside quotes → immediate path autocomplete
+  {
+    const { provider, calls } = createProvider();
+    const suggestions = await provider.getSuggestions(['"/"'], 0, 2, { signal: new AbortController().signal, force: false });
+    assert.notEqual(suggestions, null, '/ trigger inside quotes must show path picker immediately');
+    assert.equal(suggestions.prefix, "/");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "no delegation for / inside quotes");
+  }
+
+  // Test 11: shouldTriggerFileCompletion inside with path → true
+  {
+    const { provider, calls } = createProvider();
+    assert.equal(provider.shouldTriggerFileCompletion(['"./s"'], 0, 4), true);
+    assert.equal(calls.filter(([name]) => name === "shouldTriggerFileCompletion").length, 0, "no delegation for path inside quotes");
+  }
+
+  // Test 12: shouldTriggerFileCompletion inside without path → still true (menu close fix)
+  {
+    const { provider, calls } = createProvider();
+    // Even without a path token, return true so pi re-queries
+    // getSuggestions, which returns null, closing the menu.
+    assert.equal(provider.shouldTriggerFileCompletion(['""'], 0, 1), true);
+    assert.equal(calls.filter(([name]) => name === "shouldTriggerFileCompletion").length, 0, "no delegation inside delimiters");
+  }
+
+  // Test 13: applyCompletion inside → path replacement works
+  {
+    const cwd = mkdtempSync(join(tmpdir(), "path-picker-cwd-"));
+    writeFileSync(join(cwd, "alpha.txt"), "");
+    const { provider, calls } = createProvider(cwd);
+    const suggestions = await provider.getSuggestions(['"./"'], 0, 3, { signal: new AbortController().signal, force: true });
     const applied = provider.applyCompletion(['"./"'], 0, 3, suggestions.items.find((item) => item.value === "./alpha.txt"), suggestions.prefix);
     assert.deepEqual(applied, { lines: ['"./alpha.txt"'], cursorLine: 0, cursorCol: 12 });
-    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "forced path completion inside delimiters should be handled by path picker");
+    assert.equal(calls.filter(([name]) => name === "applyCompletion").length, 0, "path apply must not delegate");
   }
 
   console.log("path-picker autocomplete tests passed");

@@ -7,7 +7,7 @@ Session history overlay for [pi.dev](https://pi.dev). Browse, search, and restor
 ## Features
 
 - **📋 Session browser** — Sidebar overlay (right side) shows all past sessions
-- **📁 Project overview** — `/sessions-folders` groups sessions by folder with aggregated metadata
+- **📁 Project overview** — `/projects` groups sessions by project directory with aggregated metadata
 - **🏷️ Auto-naming** — Sessions are named from the first user message content
 - **🔍 Search/filter** — Type to filter by name, model, or project path
 - **↕️ Keyboard navigation** — ↑↓ arrows, Home/End, PageUp/PageDown
@@ -35,25 +35,25 @@ Shows all sessions in a flat list with folder, last message, and metadata.
 ### Project overview (drill-down)
 
 ```
-/sessions-folders
+/projects
 ```
 
-Shows sessions grouped by project folder with aggregated info:
-- Folder path, latest message, session count, total messages, model used
-- Select a folder → drill-down to individual sessions
-- Esc in drill-down returns to folder list
+Shows sessions grouped by project directory with aggregated info:
+- Project path, latest message, session count, total messages, model used
+- Select a project → drill-down to individual sessions
+- Esc in drill-down returns to project list
 
 ### Navigation
 
 | Key | Action |
 |-----|--------|
 | ↑ / ↓ | Navigate |
-| Enter | Select session (flat) / Drill down (folders) |
-| Type text | Filter by folder, message, model |
+| Enter | Select session (flat) / Drill down (projects) |
+| Type text | Filter by project, message, model |
 | Backspace | Clear filter |
 | Home / End | Jump to first/last |
 | PageUp / PageDown | Scroll page |
-| Esc | Close overlay / Go back (folders drill-down) |
+| Esc | Close overlay / Go back (projects drill-down) |
 
 ### Auto-naming
 
@@ -65,15 +65,15 @@ Each session entry shows:
 - **💬 Last message** — Last user message content (truncated)
 - **📊 Metadata** — Relative date, message count, model, provider
 
-### Folder overview (`/sessions-folders`)
+### Project overview (`/projects`)
 
-Groups sessions by project folder. Each folder shows:
+Groups sessions by project directory. Each project shows:
 
-- **📁 Folder path** — Project directory
+- **📁 Project path** — Project directory
 - **💬 Latest message** — Last user message from the most recent session
 - **📊 Aggregated metadata** — Session count, total messages, latest model
 
-Select a folder to drill down into its individual sessions.
+Select a project to drill down into its individual sessions.
 
 ## How it works
 

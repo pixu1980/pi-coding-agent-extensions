@@ -842,9 +842,9 @@ export default function (pi: ExtensionAPI): void {
     },
   });
 
-  // ── Register /sessions-folders (project overview with drill-down) ──
-  pi.registerCommand("sessions-folders", {
-    description: "Browse sessions by project folder. Shows aggregated info per folder with drill-down to individual sessions.",
+  // ── Register /projects (project overview with drill-down) ──
+  pi.registerCommand("projects", {
+    description: "Browse sessions by project directory. Shows aggregated info per project with drill-down to individual sessions.",
     handler: async (_args: string, ctx: ExtensionCommandContext) => {
       await showFolderSidebar(ctx);
     },

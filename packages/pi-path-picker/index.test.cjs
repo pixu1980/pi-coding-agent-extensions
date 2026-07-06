@@ -2,7 +2,15 @@ const assert = require("node:assert/strict");
 const { readFileSync, writeFileSync, mkdtempSync } = require("node:fs");
 const { tmpdir } = require("node:os");
 const { join } = require("node:path");
-const { createJiti } = require("/opt/homebrew/Cellar/pi-coding-agent/0.80.3/libexec/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/jiti/lib/jiti.cjs");
+// Load jiti from pi's bundled location. Uses createRequire to resolve
+// jiti regardless of pi's installed version.
+const { createRequire } = require("module");
+const piRequire = createRequire(
+  "/opt/homebrew/Cellar/pi-coding-agent/" +
+  require("fs").readdirSync("/opt/homebrew/Cellar/pi-coding-agent/").filter(f => f.match(/^\d+\.\d+\.\d+$/)).sort().at(-1) +
+  "/libexec/lib/node_modules/@earendil-works/pi-coding-agent/package.json"
+);
+const { createJiti } = piRequire("jiti");
 
 function loadExtensionForTest() {
   const sourcePath = join(__dirname, "index.ts");

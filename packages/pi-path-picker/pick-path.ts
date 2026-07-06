@@ -17,7 +17,7 @@
  *   echo "src" | node --experimental-strip-types pick-path.ts  # Pipe a starting path
  */
 
-import { readdirSync, statSync } from "node:fs";
+import { readdirSync, statSync, realpathSync } from "node:fs";
 import { resolve, relative, sep, basename, dirname, join } from "node:path";
 import { homedir } from "node:os";
 
@@ -41,24 +41,71 @@ interface ScoredItem {
   score: number;
 }
 
-// ── Glob matching (simple implementation) ──────────────────────────
+// ── Glob matching ────────────────────────────────────────────────
 
+/**
+ * Convert a glob pattern to a RegExp.
+ *
+ * Rules:
+ *   - double-star-slash matches zero or more directory levels
+ *     (must be at start or after a slash)
+ *   - single-star matches any characters except slash
+ *   - question-mark matches any single character except slash
+ *   - All other special regex characters are escaped
+ */
 function globToRegex(pattern: string): RegExp {
-  const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*")
-    .replace(/\?/g, ".");
-  return new RegExp(`^${escaped}$`);
+  let regexStr = "";
+  let i = 0;
+  while (i < pattern.length) {
+    const ch = pattern[i];
+    // **/ pattern (globstar) matches zero or more directory levels
+    if (ch === "*" && i + 2 < pattern.length && pattern[i + 1] === "*" && pattern[i + 2] === "/") {
+      regexStr += "(.+/)?";
+      i += 3;
+      continue;
+    }
+    // * matches any characters except slash
+    if (ch === "*") {
+      regexStr += "[^/]*";
+      i++;
+      continue;
+    }
+    // ? matches any single character except slash
+    if (ch === "?") {
+      regexStr += "[^/]";
+      i++;
+      continue;
+    }
+    // Escape special regex characters
+    if (ch === "." || ch === "+" || ch === "^" || ch === "$" ||
+        ch === "{" || ch === "}" || ch === "(" || ch === ")" ||
+        ch === "|" || ch === "[" || ch === "]" || ch === "\\") {
+      regexStr += "\\" + ch;
+    } else {
+      regexStr += ch;
+    }
+    i++;
+  }
+  return new RegExp("^" + regexStr + "$");
 }
 
 /**
  * Find files matching a glob pattern using recursive directory traversal.
+ * Tracks resolved paths to detect and break symlink cycles.
  */
 function globFiles(rootDir: string, pattern: string): string[] {
   const regex = globToRegex(pattern);
   const results: string[] = [];
+  const visited = new Set<string>();
 
   const walk = (dir: string): void => {
+    // Use realpathSync to follow symlinks — resolve() only normalises
+    // paths and cannot detect symbolic link cycles.
+    let dirResolved: string;
+    try { dirResolved = realpathSync(dir); } catch { return; }
+    if (visited.has(dirResolved)) return;
+    visited.add(dirResolved);
+
     let entries: string[];
     try { entries = readdirSync(dir); } catch { return; }
     for (const entry of entries) {
@@ -189,8 +236,9 @@ async function interactivePick(startDir: string): Promise<string | null> {
 
       // Title bar
       const dir = currentDir.replace(homedir(), "~");
-      lines.push(`\x1b[36m📁 ${dir}\x1b[0m`);
-      lines.push(`\x1b[90m${query ? `🔍 ${query}` : "Type to filter  ↑↓ navigate  ↵ select  ⭾ browse  ⎋ cancel"}\x1b[0m`);
+      lines.push("\x1b[36m📁 " + dir + "\x1b[0m");
+      const hint = query ? "🔍 " + query : "Type to filter  ↑↓ navigate  ↵ select  ⭾ browse  ⎋ cancel";
+      lines.push("\x1b[90m" + hint + "\x1b[0m");
       lines.push("");
 
       // Items
@@ -203,14 +251,14 @@ async function interactivePick(startDir: string): Promise<string | null> {
           const prefix = idx === selectedIndex ? "\x1b[7m" : " ";
           const suffix = idx === selectedIndex ? "\x1b[0m" : " ";
           const icon = item.isDir ? "📁" : (item.name.match(/\.(js|ts|jsx|tsx|json|md|css|html)$/i) ? "📄" : "📎");
-          lines.push(`${prefix} ${icon} ${item.name}${suffix}`);
+          lines.push(prefix + " " + icon + " " + item.name + suffix);
         }
       }
 
       // Footer with count
       if (total > 0) {
         lines.push("");
-        lines.push(`\x1b[90m${selectedIndex + 1}/${total} items\x1b[0m`);
+        lines.push("\x1b[90m" + (selectedIndex + 1) + "/" + total + " items\x1b[0m");
       }
 
       // Clear and render

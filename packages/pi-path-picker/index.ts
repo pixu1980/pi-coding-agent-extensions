@@ -2,47 +2,48 @@
  * Path Picker Extension — Interactive file path autocomplete
  *
  * Provides:
- * - `/pick` command: interactive path browser with arrow keys
  * - **Editor autocomplete**: ~/ and /-based path completion with fuzzy filtering
  *   directly in the prompt input field, solo su Tab e dentro backtick/single/double quotes
  *
  * Features:
- * - Arrow key navigation (↑ ↓) in `/pick`
  * - Fuzzy text filter as you type
  * - Tab to enter directories, Enter to select
- * - Glob pattern matching (tool mode)
  * - Inline `~` expansion and path autocomplete in the input field
  *
  * Install: pi install npm:pi-path-picker
  * Requires: Node.js ≥ 22 (for --experimental-strip-types)
  */
 
-import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import { resolve, join, sep, basename, dirname, isAbsolute } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionAPI, AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-coding-agent";
 
-const PICKER_SCRIPT = new URL("pick-path.ts", import.meta.url).pathname;
-
 /**
- * Ensure the picker script exists.
+ * Directories whose contents should NOT be shown in path autocomplete
+ * to prevent accidental exposure of sensitive files.
+ * Users can still navigate into them manually via other means.
  */
-function ensurePickerScript(): string {
-  if (existsSync(PICKER_SCRIPT)) return PICKER_SCRIPT;
-  return "";
+const SENSITIVE_DIRECTORIES = new Set([
+  join(homedir(), ".ssh"),
+  join(homedir(), ".aws"),
+  join(homedir(), ".config", "gh"),
+  join(homedir(), ".gnupg"),
+  join(homedir(), ".password-store"),
+  join(homedir(), ".kube"),
+  "/etc/ssh",
+]);
+
+function isSensitiveDir(dirPath: string): boolean {
+  const normalised = resolve(dirPath);
+  for (const sensitive of SENSITIVE_DIRECTORIES) {
+    if (normalised === sensitive || normalised.startsWith(sensitive + sep)) {
+      return true;
+    }
+  }
+  return false;
 }
 
-/**
- * Build the node command to run the picker script.
- * Uses --experimental-strip-types for native TS execution (Node ≥ 22).
- */
-function pickerCommand(args: string[]): { command: string; args: string[] } {
-  return {
-    command: "node",
-    args: ["--experimental-strip-types", PICKER_SCRIPT, ...args],
-  };
-}
 
 /**
  * Expand `~` at the start of a path to the home directory.
@@ -122,6 +123,9 @@ function cursorInsideAllowedDelimiters(line: string, col: number): boolean {
  * Returns items sorted: directories first, then alphabetically.
  */
 function listPathItems(dirPath: string, prefix: string): Array<{ name: string; isDir: boolean; fullPath: string }> {
+  // Refuse to list contents of sensitive directories
+  if (isSensitiveDir(dirPath)) return [];
+
   let entries: string[];
   try {
     entries = readdirSync(dirPath);
@@ -187,44 +191,6 @@ function extractPathToken(textBeforeCursor: string): { path: string; startIndex:
 }
 
 export default function pathPickerExtension(pi: ExtensionAPI) {
-  const pickerPath = ensurePickerScript();
-
-  // ── Interactive /pick command ──────────────────────────────────
-  pi.registerCommand("pick", {
-    description: "Browse and select file paths interactively (arrow keys, fuzzy filter). Usage: /pick [starting-path]",
-    handler: async (args, ctx) => {
-      if (ctx.mode !== "tui") {
-        ctx.ui.notify("/pick requires TUI mode.", "error");
-        return;
-      }
-
-      if (!pickerPath) {
-        ctx.ui.notify("path-picker script not found. Reinstall the extension.", "error");
-        return;
-      }
-
-      const startPath = args.trim() || ".";
-      const exitCode = await ctx.ui.custom<number | null>((tui, _theme, _kb, done) => {
-        tui.stop();
-        process.stdout.write("\x1b[2J\x1b[H");
-        const shell = process.env.SHELL || "/bin/sh";
-        const pickCmd = pickerCommand([startPath]);
-        spawnSync(pickCmd.command, [...pickCmd.args], {
-          stdio: "inherit",
-          env: process.env,
-        });
-        tui.start();
-        tui.requestRender(true);
-        done(0);
-        return { render: () => [], invalidate: () => {} };
-      });
-
-      if (exitCode === 0) {
-        ctx.ui.notify("Path selected (see output above)", "info");
-      }
-    },
-  });
-
   // ── Inline path autocomplete in the TUI input field ────────────
   // Provides shell-like Tab completion for ~, /, and relative paths
   pi.on("session_start", async (_event, ctx) => {
@@ -248,7 +214,7 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
     //   • `~` → path autocomplete immediato
     //   • `/` → path autocomplete immediato (absolute path)
     //   • TAB → path autocomplete per /, ~, ./ .. /
-    triggerCharacters: ["~", "/"],
+    triggerCharacters: ["~", "/", "\"", "'", "`"],
 
     async getSuggestions(
       lines: string[],
@@ -260,20 +226,27 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       const textBeforeCursor = currentLine.slice(0, cursorCol);
 
       // ── Outside delimiters ──────────────────────────────────
+      // When the cursor is outside quotes, we should NEVER show path
+      // autocomplete — the path picker only activates inside quotes.
+      //
+      // The only exception: pi.dev commands starting with `/` at the
+      // start of the line (e.g., /model, /caveman) are delegated to
+      // the native provider for its built-in command completion.
+      //
+      // Everything else (TAB, Backspace, typed chars) returns null,
+      // which closes any stale path-picker menu. This ensures that
+      // deleting a quote character (or moving the cursor outside)
+      // immediately dismisses the autocomplete list.
+      //
+      // Note: we intentionally IGNORE options.force here — the old
+      // code delegated to native when force=true, but that meant pi
+      // would ALWAYS delegate on re-query (pi may set force=true for
+      // all active-menu queries), keeping stale suggestions visible.
       if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
-        if (!options.force) {
-          // Trigger character (~ or /) typed outside delimiters.
-          // `/` at start of line → pi.dev command, delegate to native.
-          // `/` after space/text → possible path, suppress.
-          // `~` → suppress (tilde outside quotes is rare).
-          if (textBeforeCursor.startsWith("/")) {
-            return current.getSuggestions(lines, cursorLine, cursorCol, options);
-          }
-          return null;
+        if (textBeforeCursor.startsWith("/")) {
+          return current.getSuggestions(lines, cursorLine, cursorCol, options);
         }
-        // TAB outside delimiters: delegate to native provider
-        // so pi.dev command completion works.
-        return current.getSuggestions(lines, cursorLine, cursorCol, options);
+        return null;
       }
 
       // ── Inside delimiters: path autocomplete ───────────────
@@ -363,24 +336,11 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       };
     },
 
-    shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
-      const currentLine = lines[cursorLine] ?? "";
-      const textBeforeCursor = currentLine.slice(0, cursorCol);
-
-      // Outside delimiters: delegate to the native provider so that
-      // pi still calls getSuggestions on TAB for command completion
-      // (/model, /caveman). If we return false, pi skips getSuggestions
-      // entirely and all TAB-based completion breaks.
-      if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
-        return current.shouldTriggerFileCompletion?.(lines, cursorLine, cursorCol) ?? true;
-      }
-
-      // Inside delimiters: always return true so pi re-queries
-      // getSuggestions on every keystroke when the menu is open.
-      // getSuggestions returns null when there's no path token,
-      // which closes the menu. If we returned false here, pi would
-      // skip re-querying and the menu would stay open with stale data
-      // even after the user deletes the trigger character.
+    shouldTriggerFileCompletion(_lines, _cursorLine, _cursorCol) {
+      // Always return true so pi re-queries getSuggestions on every
+      // keystroke. Returning false would make pi skip getSuggestions,
+      // leaving the menu open with stale data — the root cause of the
+      // bug where deleting a quote character does NOT close the list.
       return true;
     },
   };

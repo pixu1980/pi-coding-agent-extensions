@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.5...@pixu1980/pi-path-picker@0.1.6) (2026-07-07)
+
+
+### Bug Fixes
+
+* **npmrc:** fix npmrc config file ([42ce0f9](https://github.com/pixu1980/pi-coding-agent-extensions/commit/42ce0f9d46e54ca819837ab6196ae9f8fd926b15))
+
 ### 0.1.5 (2026-07-07)
 
 

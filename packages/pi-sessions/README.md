@@ -6,15 +6,15 @@ Session history overlay for [pi.dev](https://pi.dev). Browse, search, and restor
 
 ## Features
 
-- **📋 Session browser** — Sidebar overlay (right side) shows all past sessions
-- **📁 Project overview** — `/projects` groups sessions by project directory with aggregated metadata
-- **🏷️ Auto-naming** — Sessions are named from the first user message content
-- **🔍 Search/filter** — Type to filter by name, model, or project path
-- **↕️ Keyboard navigation** — ↑↓ arrows, Home/End, PageUp/PageDown
-- **⏪ One-click restore** — Select a session to load it with full context
-- **📊 Session details** — Date, message count, model used, provider
-- **📁 Folder first** — Each session shows the project directory prominently
-- **💬 Last message** — Shows the last user message instead of just the first one
+- **📋 Session browser** - Sidebar overlay (right side) shows all past sessions
+- **📁 Project overview** - `/projects` groups sessions by project directory with aggregated metadata
+- **🏷️ Auto-naming** - Sessions are named from the first user message content
+- **🔍 Search/filter** - Type to filter by name, model, or project path
+- **↕️ Keyboard navigation** - ↑↓ arrows, Home/End, PageUp/PageDown
+- **⏪ One-click restore** - Select a session to load it with full context
+- **📊 Session details** - Date, message count, model used, provider
+- **📁 Folder first** - Each session shows the project directory prominently
+- **💬 Last message** - Shows the last user message instead of just the first one
 
 ## Install
 
@@ -61,17 +61,17 @@ The extension automatically names each session from the first user message, trun
 
 Each session entry shows:
 
-- **📁 Folder** — Project directory path
-- **💬 Last message** — Last user message content (truncated)
-- **📊 Metadata** — Relative date, message count, model, provider
+- **📁 Folder** - Project directory path
+- **💬 Last message** - Last user message content (truncated)
+- **📊 Metadata** - Relative date, message count, model, provider
 
 ### Project overview (`/projects`)
 
 Groups sessions by project directory. Each project shows:
 
-- **📁 Project path** — Project directory
-- **💬 Latest message** — Last user message from the most recent session
-- **📊 Aggregated metadata** — Session count, total messages, latest model
+- **📁 Project path** - Project directory
+- **💬 Latest message** - Last user message from the most recent session
+- **📊 Aggregated metadata** - Session count, total messages, latest model
 
 Select a project to drill down into its individual sessions.
 

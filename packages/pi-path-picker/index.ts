@@ -1,5 +1,5 @@
 /**
- * Path Picker Extension — Interactive file path autocomplete
+ * Path Picker Extension - Interactive file path autocomplete
  *
  * Provides:
  * - **Editor autocomplete**: ~/ and /-based path completion with fuzzy filtering
@@ -162,13 +162,13 @@ function listPathItems(dirPath: string, prefix: string): Array<{ name: string; i
  * Does NOT match random words to avoid interfering with native autocomplete.
  */
 function extractPathToken(textBeforeCursor: string): { path: string; startIndex: number } | null {
-  // Match patterns that look like path starts — explicit only, no generic word fallback
+  // Match patterns that look like path starts - explicit only, no generic word fallback
   const patterns = [
-    // ~/... or ~ (tilde path) — allow spaces since we're inside delimiters
+    // ~/... or ~ (tilde path) - allow spaces since we're inside delimiters
     { re: /(~[^"'`]*)$/, group: 1 },
-    // ./... or ../... (relative path) — allow spaces
+    // ./... or ../... (relative path) - allow spaces
     { re: /((?:\.\.?\/)[^"'`]*)$/, group: 1 },
-    // /... (absolute path) — allow spaces
+    // /... (absolute path) - allow spaces
     { re: /(\/[^"'`]*)$/, group: 1 },
   ];
 
@@ -178,7 +178,7 @@ function extractPathToken(textBeforeCursor: string): { path: string; startIndex:
       const path = match[group];
       if (path) {
         // `/` at the START of the line is a pi.dev command (e.g. /model, /caveman),
-        // NOT a file path. Skip it — absolute paths always have something before them.
+        // NOT a file path. Skip it - absolute paths always have something before them.
         if (match.index === 0 && path.startsWith("/")) {
           return null;
         }
@@ -227,7 +227,7 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
 
       // ── Outside delimiters ──────────────────────────────────
       // When the cursor is outside quotes, we should NEVER show path
-      // autocomplete — the path picker only activates inside quotes.
+      // autocomplete - the path picker only activates inside quotes.
       //
       // The only exception: pi.dev commands starting with `/` at the
       // start of the line (e.g., /model, /caveman) are delegated to
@@ -238,7 +238,7 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       // deleting a quote character (or moving the cursor outside)
       // immediately dismisses the autocomplete list.
       //
-      // Note: we intentionally IGNORE options.force here — the old
+      // Note: we intentionally IGNORE options.force here - the old
       // code delegated to native when force=true, but that meant pi
       // would ALWAYS delegate on re-query (pi may set force=true for
       // all active-menu queries), keeping stale suggestions visible.
@@ -339,7 +339,7 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
     shouldTriggerFileCompletion(_lines, _cursorLine, _cursorCol) {
       // Always return true so pi re-queries getSuggestions on every
       // keystroke. Returning false would make pi skip getSuggestions,
-      // leaving the menu open with stale data — the root cause of the
+      // leaving the menu open with stale data - the root cause of the
       // bug where deleting a quote character does NOT close the list.
       return true;
     },

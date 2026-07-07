@@ -11,7 +11,7 @@ echo "=== Release: @pixu1980/pi-path-picker ==="
 
 # Dry-run mode?
 if [ "${1:-}" = "--dry-run" ] || [ "${1:-}" = "-n" ]; then
-  echo "[dry-run] mode — no changes will be made"
+  echo "[dry-run] mode - no changes will be made"
   npx standard-version --dry-run
   echo ""
   echo "[dry-run] would run: npm publish"

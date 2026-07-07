@@ -1,5 +1,5 @@
 /**
- * Tests for pick-path.ts — interactive path browser
+ * Tests for pick-path.ts - interactive path browser
  *
  * Tests the non-interactive parts via --quick mode (glob pattern matching)
  * and by loading the module via the same jiti setup as index.test.cjs.
@@ -48,7 +48,7 @@ function createTempFs(structure) {
 // ── Tests ──────────────────────────────────────────────────────────
 
 (async () => {
-  // Test 1: Basic glob matching — find *.txt files
+  // Test 1: Basic glob matching - find *.txt files
   {
     const dir = createTempFs([
       "a.txt",

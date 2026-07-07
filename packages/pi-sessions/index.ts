@@ -1,5 +1,5 @@
 /**
- * Sessions Extension — Browse, search, and restore past sessions
+ * Sessions Extension - Browse, search, and restore past sessions
  *
  * Features:
  * - `/sessions` command to toggle session history overlay
@@ -481,7 +481,7 @@ class SessionSidebarComponent implements Focusable {
         this.scrollOffset = 0;
       }
     } else if (data.length === 1 && data.charCodeAt(0) >= 32) {
-      // Printable character — filter
+      // Printable character - filter
       this.query += data;
       this.applyFilter();
       this.selectedIndex = 0;
@@ -911,7 +911,7 @@ async function showSessionSidebar(ctx: ExtensionCommandContext): Promise<void> {
     );
 
     if (result) {
-      // User selected a session — restore it
+      // User selected a session - restore it
       ctx.ui.notify(`Loading session: ${result.name}`, "info");
       await loadSession(ctx, result.file);
     }

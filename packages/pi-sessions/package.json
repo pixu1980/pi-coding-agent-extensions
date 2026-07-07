@@ -2,7 +2,7 @@
   "name": "@pixu1980/pi-sessions",
   "version": "0.1.0",
   "private": false,
-  "description": "Session history overlay for pi.dev — browse, search, and restore past sessions with auto-naming based on chat content",
+  "description": "Session history overlay for pi.dev - browse, search, and restore past sessions with auto-naming based on chat content",
   "type": "module",
   "author": "Emiliano 'pixu1980' Pisu",
   "license": "MIT",

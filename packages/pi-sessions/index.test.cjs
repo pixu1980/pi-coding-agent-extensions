@@ -1,5 +1,5 @@
 /**
- * Tests for pi-sessions/index.ts — session history overlay
+ * Tests for pi-sessions/index.ts - session history overlay
  *
  * Tests the pure functions: autoNameSession, formatDate, parseSessionFile,
  * groupSessionsByFolder, and the session cache.

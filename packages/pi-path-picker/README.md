@@ -1,4 +1,4 @@
-# pi-path-picker — pi.dev extension
+# pi-path-picker - pi.dev extension
 
 Interactive file path autocomplete with arrow-key navigation and fuzzy matching. Works like ohmyzsh's tab completion but from within the agent.
 
@@ -26,5 +26,5 @@ pi install npm:@pixu1980/pi-path-picker
 
 ## Files
 
-- `index.ts` — Extension entry point (auto-discovered by pi)
-- `pick-path.ts` — Helper script for file listing and glob resolution (TypeScript)
+- `index.ts` - Extension entry point (auto-discovered by pi)
+- `pick-path.ts` - Helper script for file listing and glob resolution (TypeScript)

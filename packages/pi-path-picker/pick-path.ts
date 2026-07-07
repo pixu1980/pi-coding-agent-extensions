@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * pick-path.ts — Interactive file path autocomplete
+ * pick-path.ts - Interactive file path autocomplete
  *
  * Features:
  * - Arrow key navigation (↑ ↓)
@@ -99,7 +99,7 @@ function globFiles(rootDir: string, pattern: string): string[] {
   const visited = new Set<string>();
 
   const walk = (dir: string): void => {
-    // Use realpathSync to follow symlinks — resolve() only normalises
+    // Use realpathSync to follow symlinks - resolve() only normalises
     // paths and cannot detect symbolic link cycles.
     let dirResolved: string;
     try { dirResolved = realpathSync(dir); } catch { return; }

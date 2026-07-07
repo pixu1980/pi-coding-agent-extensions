@@ -16,7 +16,7 @@
     "test": "echo 'Run tests per-package: cd packages/<name> && npm test'",
     "format": "prettier --write 'packages/*/src/**/*.ts'",
     "lint": "echo 'No linter configured yet'",
-    "release": "cd packages/pi-path-picker && npm run release",
-    "release:dry": "cd packages/pi-path-picker && npm run release:dry"
+    "release": "node scripts/release.mjs",
+    "release:dry": "node scripts/release.mjs --dry-run"
   }
 }

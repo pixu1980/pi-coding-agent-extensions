@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.2](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.1...@pixu1980/pi-sessions@0.1.2) (2026-07-07)
+
+
+### Bug Fixes
+
+* **npmrc:** fix npmrc config file ([42ce0f9](https://github.com/pixu1980/pi-coding-agent-extensions/commit/42ce0f9d46e54ca819837ab6196ae9f8fd926b15))
+
 ### 0.1.1 (2026-07-07)
 
 

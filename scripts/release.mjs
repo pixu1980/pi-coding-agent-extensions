@@ -14,7 +14,8 @@
  *
  * Uso:
  *   node scripts/release.mjs
- *   node scripts/release.mjs --dry-run   (solo simulazione)
+ *   node scripts/release.mjs --dry-run            (solo simulazione)
+ *   node scripts/release.mjs --force / -f         (forza release anche senza modifiche)
  */
 
 import { readdirSync, readFileSync } from 'node:fs';
@@ -27,6 +28,7 @@ const ROOT = join(__dirname, '..');
 const PACKAGES_DIR = join(ROOT, 'packages');
 
 const isDryRun = process.argv.includes('--dry-run') || process.argv.includes('-n');
+const isForced = process.argv.includes('--force') || process.argv.includes('-f');
 
 // ── Helper: esegue comando e ritorna stdout, oppure lancia errore ──────
 function exec(cmd, opts = {}) {
@@ -71,6 +73,7 @@ function isWorkingTreeClean() {
 console.log('═══════════════════════════════════════════');
 console.log('  release — rilascio estensioni');
 console.log(`  dry-run: ${isDryRun ? '✓' : '✗'}`);
+console.log(`  force:   ${isForced ? '✓' : '✗'}`);
 console.log('═══════════════════════════════════════════\n');
 
 if (!isWorkingTreeClean()) {
@@ -119,9 +122,13 @@ for (const pkg of packages) {
     console.log(`   tag trovato: ${tag}`);
 
     if (!packageHasChangesSinceTag(tag, `packages/${pkg}`)) {
-      console.log(`   ✓ nessuna modifica, saltato`);
-      skipped++;
-      continue;
+      if (isForced) {
+        console.log(`   ⚑ nessuna modifica ma --force presente, procedo comunque`);
+      } else {
+        console.log(`   ✓ nessuna modifica, saltato`);
+        skipped++;
+        continue;
+      }
     }
     console.log(`   ↻ modifiche rilevate, procedo con rilascio`);
   } else {

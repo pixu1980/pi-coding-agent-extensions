@@ -2,15 +2,6 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [0.1.8](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.7...@pixu1980/pi-path-picker@0.1.8) (2026-07-07)
-
-### [0.1.7](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.6...@pixu1980/pi-path-picker@0.1.7) (2026-07-07)
-
-
-### Bug Fixes
-
-* **path-picker:** update README.md ([0184aba](https://github.com/pixu1980/pi-coding-agent-extensions/commit/0184aba8f1d1ba7441a1fd12cf5aa832f215ea92))
-
 ### [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.5...@pixu1980/pi-path-picker@0.1.6) (2026-07-07)
 
 

@@ -139,7 +139,7 @@ for (const pkg of packages) {
   if (isDryRun) {
     console.log(`   [dry-run] standard-version --tag-prefix "${name}@"`);
     execIn(pkgPath, `npx standard-version --dry-run --tag-prefix "${name}@"`, { stdio: 'inherit' });
-    console.log(`   [dry-run] npm publish (saltato)`);
+    console.log(`   [dry-run] pnpm publish (saltato)`);
   } else {
     try {
       // Bump + tag
@@ -150,8 +150,8 @@ for (const pkg of packages) {
       execIn(pkgPath, `git push --follow-tags origin main`, { stdio: 'inherit' });
 
       // Pubblica
-      console.log(`   → npm publish...`);
-      execIn(pkgPath, `npm publish`, { stdio: 'inherit' });
+      console.log(`   → pnpm publish...`);
+      execIn(pkgPath, `pnpm publish`, { stdio: 'inherit' });
 
       released++;
       console.log(`   ✅ ${name} pubblicato!`);

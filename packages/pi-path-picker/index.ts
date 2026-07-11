@@ -205,16 +205,18 @@ export default function pathPickerExtension(pi: ExtensionAPI) {
  */
 function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: string): AutocompleteProvider {
   return {
-    // `/` e `~` sono trigger characters per l'autocomplete nativo di pi.
-    // Fuori dagli apici:
-    //   • `/` all'inizio della riga → comando pi.dev (/model, /caveman)
-    //   • `/` dopo spazio o testo → NON è un comando, sopprimiamo
-    //   • `~` → sopprimiamo (tilde fuori dalle stringhe è raro)
-    // Dentro gli apici:
-    //   • `~` → path autocomplete immediato
-    //   • `/` → path autocomplete immediato (absolute path)
-    //   • TAB → path autocomplete per /, ~, ./ .. /
-    triggerCharacters: ["~", "/", "\"", "'", "`"],
+    // Trigger characters per l'autocomplete. Attivano getSuggestions immediatamente.
+    //
+    //   `~`   → dentro gli apici: path autocomplete immediato (home directory)
+    //   `"` `'` `` ` `` → dentro gli apici: path autocomplete immediato
+    //
+    // IMPORTANTE: `/` NON è un trigger character perché interferisce con i comandi
+    // pi.dev come /model, /caveman. Dentro gli apici, il path autocomplete si attiva
+    // comunque via shouldTriggerFileCompletion (TAB) o dopo altri trigger.
+    //
+    // Fuori dagli apici il provider torna sempre null, delegando a pi.dev ogni
+    // completamento nativo (comandi slash, @file, ecc.).
+    triggerCharacters: ["~", "\"", "'", "`"],
 
     async getSuggestions(
       lines: string[],
@@ -226,26 +228,22 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       const textBeforeCursor = currentLine.slice(0, cursorCol);
 
       // ── Outside delimiters ──────────────────────────────────
-      // When the cursor is outside quotes, we should NEVER show path
-      // autocomplete - the path picker only activates inside quotes.
+      // When the cursor is outside quotes, we NEVER show path
+      // autocomplete — il path picker agisce solo dentro apici.
       //
-      // The only exception: pi.dev commands starting with `/` at the
-      // start of the line (e.g., /model, /caveman) are delegated to
-      // the native provider for its built-in command completion.
+      // Ritorniamo sempre null per NON interferire con i comandi
+      // nativi di pi.dev (/model, /caveman) e con l'autocomplete
+      // nativo (@file, argomenti comandi, ecc.).
       //
-      // Everything else (TAB, Backspace, typed chars) returns null,
-      // which closes any stale path-picker menu. This ensures that
-      // deleting a quote character (or moving the cursor outside)
-      // immediately dismisses the autocomplete list.
+      // Returning null fa sì che pi chiami direttamente il provider
+      // nativo saltando il wrapper. Questo elimina ogni rischio di
+      // routing errato di applyCompletion attraverso il path picker.
       //
-      // Note: we intentionally IGNORE options.force here - the old
-      // code delegated to native when force=true, but that meant pi
-      // would ALWAYS delegate on re-query (pi may set force=true for
-      // all active-menu queries), keeping stale suggestions visible.
+      // Per la chiusura del menu quando si cancella un apice:
+      // shouldTriggerFileCompletion=true forza re-query su ogni
+      // tasto → getSuggestions vede fuori apici → return null →
+      // pi chiude il menu.
       if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
-        if (textBeforeCursor.startsWith("/")) {
-          return current.getSuggestions(lines, cursorLine, cursorCol, options);
-        }
         return null;
       }
 

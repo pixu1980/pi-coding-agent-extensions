@@ -190,24 +190,30 @@ export default function (pi: ExtensionAPI): void {
   ];
 
   /**
-   * Get the subset of thinking levels available for a given model.
+   * Get the subset of thinking levels actually available for a given model,
+   * respecting pi.dev native `thinkingLevelMap`.
    *
-   * Se il modello ha `thinkingLevelMap`:
-   *   - null  → livello NON disponibile
-   *   - omitted (undefined) → livelli standard (off..high) disponibili, xhigh/max NO
-   *   - string → livello disponibile con quel valore
+   * Regole (da documentazione pi.dev models.md):
    *
-   * Se il modello NON ha `thinkingLevelMap`:
-   *   - reasoning: true  → tutti i livelli (xhigh/max potrebbero non funzionare)
+   * thinkingLevelMap presente:
+   *   - null  → livello NON disponibile (nascosto/saltato/clampato)
+   *   - omitted (undefined) → livelli standard (off..high) disponibili di default,
+   *                            xhigh e max NON disponibili
+   *   - string → livello disponibile con quel valore provider-specifico
+   *
+   * thinkingLevelMap assente (undefined):
+   *   - reasoning: true  → off..high disponibili, xhigh/max NO (sono opt-in)
    *   - reasoning: false → solo "off"
    */
   function getAvailableLevels(model?: { reasoning?: boolean; thinkingLevelMap?: Record<string, string | null | undefined> }): ThinkingLevel[] {
     if (!model || !model.reasoning) return ["off"];
 
     const map = model.thinkingLevelMap;
+    const highIdx = ALL_THINKING_LEVELS.indexOf("high");
+
     if (!map) {
-      // No thinkingLevelMap: tutti i livelli sono potenzialmente disponibili
-      return [...ALL_THINKING_LEVELS];
+      // No thinkingLevelMap: soli livelli standard (off..high), xhigh/max non supportati
+      return ALL_THINKING_LEVELS.filter((_level, idx) => idx <= highIdx);
     }
 
     return ALL_THINKING_LEVELS.filter((level) => {
@@ -216,7 +222,6 @@ export default function (pi: ExtensionAPI): void {
       if (mapped === undefined) {
         // Non presente nella mappa: off..high supportati di default, xhigh/max no
         const idx = ALL_THINKING_LEVELS.indexOf(level);
-        const highIdx = ALL_THINKING_LEVELS.indexOf("high");
         return idx <= highIdx;
       }
       return true; // string = supportato
@@ -269,8 +274,15 @@ export default function (pi: ExtensionAPI): void {
     const mapped = findLevelForModel(model.provider, model.id);
     const level = mapped ?? guessLevel(model.id);
 
-    pi.setThinkingLevel(level);
-    const emoji = levelEmoji[level] ?? "🧠";
+    // Check that the chosen level is actually available for this model
+    // (rispetta il thinkingLevelMap nativo di pi.dev)
+    const available = getAvailableLevels(model);
+    const safeLevel = (available as readonly string[]).includes(level)
+      ? level
+      : available[available.length - 1]; // fallback al livello più alto disponibile
+
+    pi.setThinkingLevel(safeLevel);
+    const emoji = levelEmoji[safeLevel] ?? "🧠";
     ctx.ui.setStatus(STATUS_KEY, `${emoji} ${modelLabel}`);
   });
 
@@ -363,10 +375,18 @@ export default function (pi: ExtensionAPI): void {
 
         const mapped = findLevelForModel(model.provider, model.id);
         const level = mapped ?? guessLevel(model.id);
-        pi.setThinkingLevel(level);
-        const emoji = levelEmoji[level] ?? "🧠";
+
+        // Check that the chosen level is actually available for this model
+        const available = getAvailableLevels(model);
+        const safeLevel = (available as readonly string[]).includes(level)
+          ? level
+          : available[available.length - 1];
+
+        pi.setThinkingLevel(safeLevel);
+        const emoji = levelEmoji[safeLevel] ?? "🧠";
+        const note = safeLevel !== level ? ` (clamped from ${level} — non supportato dal modello)` : "";
         ctx.ui.notify(
-          `Auto-reasoning → ${emoji} ${level} (${model.provider}/${model.id})`,
+          `Auto-reasoning → ${emoji} ${safeLevel} (${model.provider}/${model.id})${note}`,
           "info",
         );
         return;

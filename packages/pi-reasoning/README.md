@@ -49,6 +49,22 @@ Non-reasoning models are handled by pi's built-in clamping (always `off`).
 Models not in the map get a heuristic guess based on their name
 (`nano` → off, `mini`/`flash` → low, `large`/`pro` → high, else medium).
 
+### Native pi.dev `thinkingLevelMap` support
+
+The extension fully respects each model's native `thinkingLevelMap` as defined
+by pi.dev. This means:
+
+- **Available levels** are determined by the model's actual capabilities, not
+  by the extension's mapping table.
+- **`xhigh` and `max`** are opt-in levels: they only appear in the menu for
+  models that explicitly declare them in their `thinkingLevelMap` (e.g.
+  `claude-opus-4-7`, `claude-fable-5`).
+- **Missing `thinkingLevelMap`**: when a model doesn't declare one, only
+  standard levels through `high` are offered — `xhigh`/`max` are hidden.
+- **Auto-apply clamping**: if the extension's recommended level isn't
+  supported by the model, it automatically falls back to the highest
+  available level.
+
 ## Usage
 
 ### `/reasoning` — Show or set reasoning level

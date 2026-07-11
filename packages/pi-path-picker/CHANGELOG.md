@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.8](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.7...@pixu1980/pi-path-picker@0.1.8) (2026-07-11)
+
+
+### Features
+
+* **pi-reasoning:** add extension for automatic reasoning level management ([7fad40e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/7fad40eae4927702b1907c4fb2e22c3c0abbfe38))
+
+
+### Bug Fixes
+
+* **pi-path-picker:** prevent autocomplete interference with pi.dev commands ([9013840](https://github.com/pixu1980/pi-coding-agent-extensions/commit/9013840dc157e11309fab97437c380759a09118a))
+
 ### [0.1.7](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.6...@pixu1980/pi-path-picker@0.1.7) (2026-07-07)
 
 

@@ -75,39 +75,42 @@ function createProvider(cwd = "/tmp") {
 }
 
 (async () => {
-  // ── Outside delimiters: smart delegation ───────────────────
+  // ── Outside delimiters: always return null ───────────────────
+  //
+  // Il path picker NON deve mai interferire fuori dagli apici.
+  // Ritorna sempre null per lasciare che pi chiami direttamente il
+  // provider nativo (comandi /model, @file, argomenti, ecc.).
 
-  // Test 1: `/` at start of line → delegate (pi command)
+  // Test 1: `/` at start of line → null (non interferisce con comandi pi.dev)
   {
     const { provider, calls } = createProvider();
     const suggestions = await provider.getSuggestions(["/"], 0, 1, { signal: new AbortController().signal, force: false });
-    assert.notEqual(suggestions, null, "/ at start of line must delegate to current");
-    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 1, "must delegate / at start of line");
+    assert.equal(suggestions, null, "/ at start of line must return null");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "must not delegate / at start of line");
   }
 
-  // Test 2: `/` after space → suppress
+  // Test 2: `/` after space → null
   {
     const { provider, calls } = createProvider();
     const suggestions = await provider.getSuggestions([" /"], 0, 2, { signal: new AbortController().signal, force: false });
-    assert.equal(suggestions, null, "/ after space must be suppressed");
+    assert.equal(suggestions, null, "/ after space must return null");
     assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "must not delegate / after space");
   }
 
-  // Test 3: `~` trigger → suppress (tilde outside quotes is rare)
+  // Test 3: `~` trigger → null (tilde fuori apici è raro, non interferiamo)
   {
     const { provider, calls } = createProvider();
     const suggestions = await provider.getSuggestions(["~"], 0, 1, { signal: new AbortController().signal, force: false });
-    assert.equal(suggestions, null, "~ trigger outside delimiters must be suppressed");
+    assert.equal(suggestions, null, "~ trigger outside delimiters must return null");
     assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "must not delegate ~");
   }
 
-  // Test 4: TAB outside → delegate to current (commands work)
+  // Test 4: force=true outside → null (stessa policy, nessuna eccezione)
   {
     const { provider, calls } = createProvider();
     const suggestions = await provider.getSuggestions(["/"], 0, 1, { signal: new AbortController().signal, force: true });
-    assert.notEqual(suggestions, null, "TAB outside delimiters must delegate");
-    assert.equal(suggestions.prefix, "/");
-    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 1, "must delegate on TAB");
+    assert.equal(suggestions, null, "force=true outside delimiters must also return null");
+    assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 0, "must not delegate on TAB");
   }
 
   // Test 5: shouldTriggerFileCompletion → always returns true (menu close fix)

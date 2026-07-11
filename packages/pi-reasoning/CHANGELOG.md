@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.1](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.1.1...@pixu1980/pi-reasoning@0.2.1) (2026-07-11)
+
+
+### Features
+
+* **pi-reasoning:** add model-aware argument autocomplete to /reasoning command ([50faea8](https://github.com/pixu1980/pi-coding-agent-extensions/commit/50faea8184a689f5742d868d67746be0e1da52a1))
+* **pi-reasoning:** update reasoning menu based on real available reasoning levels per model ([29beea7](https://github.com/pixu1980/pi-coding-agent-extensions/commit/29beea7b3a71c8efddbd9b305e3107df6f899a21))
+* remove pi-sessions package ([98def63](https://github.com/pixu1980/pi-coding-agent-extensions/commit/98def63a513f89220a1fc29c0083efa9e79d9126))
+
+
+### Bug Fixes
+
+* **pi-path-picker:** delega al provider nativo fuori apici + /reasoning autocomplete ([4dc418f](https://github.com/pixu1980/pi-coding-agent-extensions/commit/4dc418f6d7d937b6770bea40bb5288898b2647db))
+
 ### 0.2.0 (2026-07-11)
 
 

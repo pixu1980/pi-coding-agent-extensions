@@ -1,0 +1,56 @@
+{
+  "name": "@pixu1980/pi-reasoning",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Automatic reasoning level management for pi.dev - sets the thinking level based on the selected model with sensible defaults and full customization",
+  "type": "module",
+  "author": "Emiliano 'pixu1980' Pisu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixu1980/pi-coding-agent-extensions.git",
+    "directory": "packages/pi-reasoning"
+  },
+  "homepage": "https://github.com/pixu1980/pi-coding-agent-extensions/tree/main/packages/pi-reasoning#readme",
+  "bugs": {
+    "url": "https://github.com/pixu1980/pi-coding-agent-extensions/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "reasoning",
+    "thinking",
+    "model",
+    "ai"
+  ],
+  "files": [
+    "index.ts",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node index.test.cjs",
+    "release": "standard-version --no-verify && pnpm publish",
+    "release:dry": "standard-version --dry-run"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "standard-version": "^9.5.0"
+  }
+}

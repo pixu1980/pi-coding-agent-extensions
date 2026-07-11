@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 0.2.0 (2026-07-11)
+
+
+### Bug Fixes
+
+* **pi-reasoning:** fix `xhigh` appearing for models that don't support it ([#1](https://github.com/pixu1980/pi-coding-agent-extensions/issues/1))
+- `getAvailableLevels()` ora rispetta il native `thinkingLevelMap` di pi.dev
+- Quando `thinkingLevelMap` è assente, non offre più `xhigh`/`max` di default
+- Auto-apply verifica il livello contro le capacità reali del modello
+
+
 ### 0.1.1 (2026-07-11)
 
 

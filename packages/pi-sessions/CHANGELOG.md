@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.3](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.2...@pixu1980/pi-sessions@0.1.3) (2026-07-11)
+
+
+### Features
+
+* **pi-reasoning:** add extension for automatic reasoning level management ([7fad40e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/7fad40eae4927702b1907c4fb2e22c3c0abbfe38))
+
+
+### Bug Fixes
+
+* **path-picker:** update README.md ([0184aba](https://github.com/pixu1980/pi-coding-agent-extensions/commit/0184aba8f1d1ba7441a1fd12cf5aa832f215ea92))
+* **pi-path-picker:** prevent autocomplete interference with pi.dev commands ([9013840](https://github.com/pixu1980/pi-coding-agent-extensions/commit/9013840dc157e11309fab97437c380759a09118a))
+
 ### [0.1.2](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.1...@pixu1980/pi-sessions@0.1.2) (2026-07-07)
 
 

@@ -4,11 +4,14 @@
  * Provides:
  * - **Editor autocomplete**: ~/ and /-based path completion with fuzzy filtering
  *   directly in the prompt input field, solo su Tab e dentro backtick/single/double quotes
+ * - `/reasoning` command autocomplete: mostra i livelli di thinking disponibili
+ *   per il modello corrente dopo `/reasoning ` + SPACE
  *
  * Features:
  * - Fuzzy text filter as you type
  * - Tab to enter directories, Enter to select
  * - Inline `~` expansion and path autocomplete in the input field
+ * - Comandi slash nativi (/model, /caveman, ecc.) non vengono intercettati
  *
  * Install: pi install npm:pi-path-picker
  * Requires: Node.js ≥ 22 (for --experimental-strip-types)
@@ -43,7 +46,6 @@ function isSensitiveDir(dirPath: string): boolean {
   }
   return false;
 }
-
 
 /**
  * Expand `~` at the start of a path to the home directory.
@@ -190,20 +192,107 @@ function extractPathToken(textBeforeCursor: string): { path: string; startIndex:
   return null;
 }
 
-export default function pathPickerExtension(pi: ExtensionAPI) {
-  // ── Inline path autocomplete in the TUI input field ────────────
-  // Provides shell-like Tab completion for ~, /, and relative paths
-  pi.on("session_start", async (_event, ctx) => {
-    ctx.ui.addAutocompleteProvider((current: AutocompleteProvider) => createPathAutocompleteProvider(current, ctx.cwd));
-  });
+// ── Thinking levels /reasoning support ────────────────────────────
 
+/**
+ * Pi thinking levels in canonical order.
+ */
+const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+
+/**
+ * Human-readable labels for each thinking level.
+ */
+const THINKING_LABELS: Record<string, string> = {
+  off: "🧠 off",
+  minimal: "🧠 minimal",
+  low: "🧠 low",
+  medium: "🧠 medium",
+  high: "🧠 high",
+  xhigh: "🧠 xhigh",
+  max: "🧠 max",
+};
+
+/**
+ * Restituisce i suggerimenti per il comando /reasoning.
+ * Filtra i livelli in base alle capacità del modello corrente.
+ */
+function getThinkingLevelSuggestions(
+  model: Record<string, unknown> | undefined,
+  userPrefix: string,
+): AutocompleteSuggestions | null {
+  // Determine which levels the model supports
+  const supportedLevels = new Set<string>();
+  const thinkingLevelMap = model?.thinkingLevelMap as Record<string, unknown> | undefined;
+
+  if (thinkingLevelMap) {
+    for (const level of THINKING_LEVELS) {
+      if (thinkingLevelMap[level] !== null) {
+        supportedLevels.add(level);
+      }
+    }
+  } else {
+    // No thinkingLevelMap: assume all levels available
+    for (const level of THINKING_LEVELS) {
+      supportedLevels.add(level);
+    }
+  }
+
+  const lowerPrefix = userPrefix.toLowerCase();
+  const items: AutocompleteItem[] = [];
+
+  for (const level of THINKING_LEVELS) {
+    if (!supportedLevels.has(level)) continue;
+    if (lowerPrefix && !level.startsWith(lowerPrefix) && !level.includes(lowerPrefix)) continue;
+
+    const modelLabel = model ? `${model.provider as string}/${model.id as string}` : "current model";
+    items.push({
+      value: level,
+      label: THINKING_LABELS[level] ?? level,
+      description: modelLabel,
+    });
+  }
+
+  if (items.length === 0) return null;
+
+  return {
+    prefix: userPrefix,
+    items,
+  };
+}
+
+// ── Extension entry point ─────────────────────────────────────────
+
+export default function pathPickerExtension(pi: ExtensionAPI) {
+  // ── Inline path autocomplete nel campo di input TUI ───────
+  // Fornisce Tab completion per percorsi ~, / e relativi (./, ../)
+  // SOLO dentro apici (", ', `).
+  //
+  // Aggiunge anche autocomplete per /reasoning + SPACE con i livelli
+  // di thinking supportati dal modello corrente.
+  pi.on("session_start", async (_event, ctx) => {
+    // Riferimento al modello corrente, si aggiorna quando l'utente
+    // cambia modello via /model o Ctrl+P
+    let currentModel = ctx.model as Record<string, unknown> | undefined;
+
+    pi.on("model_select", async (event) => {
+      currentModel = event.model as Record<string, unknown>;
+    });
+
+    ctx.ui.addAutocompleteProvider(
+      (current: AutocompleteProvider) => createPathAutocompleteProvider(current, ctx.cwd, () => currentModel),
+    );
+  });
 }
 
 /**
  * Create an autocomplete provider for file paths.
  * Wraps the built-in provider and adds ~ expansion and path-aware completion.
  */
-function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: string): AutocompleteProvider {
+function createPathAutocompleteProvider(
+  current: AutocompleteProvider,
+  cwd: string,
+  getModel: () => Record<string, unknown> | undefined,
+): AutocompleteProvider {
   return {
     // Trigger characters per l'autocomplete. Attivano getSuggestions immediatamente.
     //
@@ -214,8 +303,9 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
     // pi.dev come /model, /caveman. Dentro gli apici, il path autocomplete si attiva
     // comunque via shouldTriggerFileCompletion (TAB) o dopo altri trigger.
     //
-    // Fuori dagli apici il provider torna sempre null, delegando a pi.dev ogni
-    // completamento nativo (comandi slash, @file, ecc.).
+    // Fuori dagli apici il provider delega al provider nativo per i comandi slash
+    // (/model, /caveman, ecc.) e per @file. L'unica eccezione è /reasoning che
+    // viene intercettato per mostrare i livelli di thinking disponibili.
     triggerCharacters: ["~", "\"", "'", "`"],
 
     async getSuggestions(
@@ -228,23 +318,30 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       const textBeforeCursor = currentLine.slice(0, cursorCol);
 
       // ── Outside delimiters ──────────────────────────────────
-      // When the cursor is outside quotes, we NEVER show path
-      // autocomplete — il path picker agisce solo dentro apici.
+      // Quando il cursore è fuori dagli apici, il path picker NON
+      // deve mostrare i propri suggerimenti. Tuttavia:
       //
-      // Ritorniamo sempre null per NON interferire con i comandi
-      // nativi di pi.dev (/model, /caveman) e con l'autocomplete
-      // nativo (@file, argomenti comandi, ecc.).
-      //
-      // Returning null fa sì che pi chiami direttamente il provider
-      // nativo saltando il wrapper. Questo elimina ogni rischio di
-      // routing errato di applyCompletion attraverso il path picker.
-      //
-      // Per la chiusura del menu quando si cancella un apice:
-      // shouldTriggerFileCompletion=true forza re-query su ogni
-      // tasto → getSuggestions vede fuori apici → return null →
-      // pi chiude il menu.
+      //   1. /reasoning + SPACE → mostra i livelli di thinking
+      //   2. Tutto il resto → delega al provider nativo così che
+      //      i comandi slash (/model, /caveman, /reload, ecc.) e
+      //      l'autocomplete @file funzionino regolarmente.
       if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
-        return null;
+        // ── /reasoning command autocomplete ─────────────────
+        // Quando l'utente digita /reasoning + SPACE, mostriamo
+        // i livelli di thinking supportati dal modello corrente.
+        const reasoningMatch = textBeforeCursor.match(/^\/reasoning\s+(.*)$/);
+        if (reasoningMatch) {
+          const userInput = reasoningMatch[1] ?? "";
+          return getThinkingLevelSuggestions(getModel(), userInput);
+        }
+
+        // Delegate to the native provider (slash commands, @file, etc.)
+        // IMPORTANTE: non ritornare null in questo caso — null dice a pi
+        // "nessun suggerimento", il che blocca il provider nativo.
+        // Invece, chiamiamo current.getSuggestions() per lasciare che sia
+        // il provider sottostante (quello nativo di pi.dev) a gestire il
+        // completamento dei comandi slash, @file, argomenti, ecc.
+        return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
 
       // ── Inside delimiters: path autocomplete ───────────────
@@ -312,8 +409,9 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       const textAfterCursor = currentLine.slice(cursorCol);
       const token = cursorInsideAllowedDelimiters(currentLine, cursorCol) ? extractPathToken(textBeforeCursor) : null;
 
-      // If the suggestions came from the wrapped/native provider (slash commands,
-      // @ files, command arguments, etc.), delegate completion back to it.
+      // Se i suggerimenti provengono da un provider che non è il path picker
+      // (comandi slash nativi, /reasoning, @file, argomenti comandi, ecc.),
+      // deleghiamo al provider sottostante.
       if (!token || token.path !== prefix) {
         return current.applyCompletion(lines, cursorLine, cursorCol, item, prefix);
       }
@@ -334,11 +432,30 @@ function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: stri
       };
     },
 
-    shouldTriggerFileCompletion(_lines, _cursorLine, _cursorCol) {
-      // Always return true so pi re-queries getSuggestions on every
-      // keystroke. Returning false would make pi skip getSuggestions,
-      // leaving the menu open with stale data - the root cause of the
-      // bug where deleting a quote character does NOT close the list.
+    shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
+      const currentLine = lines[cursorLine] ?? "";
+
+      // ── Outside delimiters ────────────────────────────────
+      // Se il cursore è fuori dagli apici, il path picker non deve attivarsi.
+      // Tuttavia, dobbiamo forzare re-query quando l'utente digita
+      // /reasoning + SPACE, così getSuggestions intercetta e mostra i livelli.
+      //
+      // Per tutto il resto (comandi slash nativi, @file, argomenti), delegamo
+      // al provider sottostante tramite current.shouldTriggerFileCompletion.
+      if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
+        // Force re-query per /reasoning command
+        if (currentLine.slice(0, cursorCol).match(/^\/reasoning\s/)) {
+          return true;
+        }
+        // Per tutti gli altri casi fuori apici, delegare al provider nativo
+        return current.shouldTriggerFileCompletion?.(lines, cursorLine, cursorCol) ?? true;
+      }
+
+      // ── Inside delimiters ─────────────────────────────────
+      // Sempre true: forza pi a richiamare getSuggestions a ogni tasto.
+      // Returning false farebbe saltare getSuggestions a pi, lasciando il
+      // menu aperto con dati stale — la root cause del bug per cui cancellare
+      // un carattere di quote NON chiude la lista.
       return true;
     },
   };

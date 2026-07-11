@@ -110,12 +110,15 @@ function createProvider(cwd = "/tmp") {
     assert.equal(calls.filter(([name]) => name === "getSuggestions").length, 1, "must delegate on TAB");
   }
 
-  // Test 5: shouldTriggerFileCompletion outside → delegate to current
+  // Test 5: shouldTriggerFileCompletion → always returns true (menu close fix)
   {
     const { provider, calls } = createProvider();
     const result = provider.shouldTriggerFileCompletion(["plain text"], 0, 10);
-    assert.equal(result, true, "shouldTriggerFileCompletion must delegate to current");
-    assert.equal(calls.filter(([name]) => name === "shouldTriggerFileCompletion").length, 1, "must delegate shouldTriggerFileCompletion");
+    assert.equal(result, true, "shouldTriggerFileCompletion must return true");
+    // Implementation always returns true directly (no delegation) to ensure
+    // pi re-queries getSuggestions on every keystroke, fixing the bug where
+    // deleting a quote character does NOT close the menu.
+    assert.equal(calls.filter(([name]) => name === "shouldTriggerFileCompletion").length, 0, "shouldTriggerFileCompletion must NOT delegate");
   }
 
   // Test 6: applyCompletion outside → delegate to current

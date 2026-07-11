@@ -120,11 +120,24 @@ const DEFAULT_MODEL_MAP: ModelMapEntry[] = [
 export default function (pi: ExtensionAPI): void {
   let modelMap: ModelMapEntry[] = [...DEFAULT_MODEL_MAP];
 
+  /**
+   * Tiene traccia del modello corrente per poter filtrare i suggerimenti
+   * dell'autocomplete di /reasoning in base ai livelli effettivamente
+   * disponibili (rispetta thinkingLevelMap nativo di pi.dev).
+   */
+  let currentModel: {
+    provider: string;
+    id: string;
+    reasoning?: boolean;
+    thinkingLevelMap?: Record<string, string | null | undefined>;
+  } | undefined;
+
   // ── Notify on load ────────────────────────────────────────
   pi.on("session_start", async (_event, ctx) => {
     const currentLevel = pi.getThinkingLevel();
     const emoji = levelEmoji[currentLevel] ?? "🧠";
     const model = ctx.model;
+    currentModel = model;
     const modelLabel = model ? `${model.provider}/${model.id}` : "no model";
     ctx.ui.setStatus(STATUS_KEY, `${emoji} ${currentLevel}`);
     ctx.ui.notify(`🧠 pi-reasoning loaded — ${emoji} ${currentLevel} (${modelLabel})`, "info");
@@ -256,6 +269,9 @@ export default function (pi: ExtensionAPI): void {
   pi.on("model_select", async (event, ctx) => {
     const { model, source } = event;
 
+    // Aggiorna sempre il modello corrente (serve per autocomplete)
+    currentModel = model;
+
     // Skip on session restore — preserve the level the user had
     if (source === "restore") return;
 
@@ -327,6 +343,34 @@ export default function (pi: ExtensionAPI): void {
     description:
       "Show or set the reasoning level. " +
       "Usage: /reasoning [off|minimal|low|medium|high|xhigh|max|auto|reset|map]",
+    getArgumentCompletions: (prefix: string) => {
+      // Determina i livelli effettivamente disponibili per il modello corrente
+      const available = getAvailableLevels(currentModel);
+      const availableSet = new Set(available);
+
+      // Comandi speciali sempre disponibili
+      const specialCommands = [
+        { value: "auto", label: "auto  — Re-apply auto-reasoning for current model" },
+        { value: "reset", label: "reset  — Restore default model mappings" },
+        { value: "map", label: "map  — Show active model→level mappings" },
+      ];
+
+      // Solo i livelli di thinking supportati dal modello corrente
+      const LEVEL_EMOJI_MAP: Record<string, string> = {
+        off: "⚪", minimal: "🔵", low: "🟢", medium: "🟡",
+        high: "🟠", xhigh: "🔴", max: "💜",
+      };
+      const levelOptions = available.map((level) => ({
+        value: level,
+        label: `${LEVEL_EMOJI_MAP[level] ?? "❓"}  ${level}`,
+      }));
+
+      const allOptions = [...levelOptions, ...specialCommands];
+
+      const p = prefix.toLowerCase();
+      const filtered = allOptions.filter((i) => i.value.startsWith(p));
+      return filtered.length > 0 ? filtered : null;
+    },
     handler: async (args, ctx) => {
       const trimmed = args.trim().toLowerCase();
 

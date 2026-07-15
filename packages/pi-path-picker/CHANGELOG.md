@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.11](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.10...@pixu1980/pi-path-picker@0.1.11) (2026-07-15)
+
+
+### Features
+
+* **pi-reasoning:** add model-aware argument autocomplete to /reasoning command ([50faea8](https://github.com/pixu1980/pi-coding-agent-extensions/commit/50faea8184a689f5742d868d67746be0e1da52a1))
+* **pi-reasoning:** update reasoning menu based on real available reasoning levels per model ([29beea7](https://github.com/pixu1980/pi-coding-agent-extensions/commit/29beea7b3a71c8efddbd9b305e3107df6f899a21))
+
+
+### Bug Fixes
+
+* **pi-path-picker:** isolate tab completion ([2412c56](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2412c5693aa200547856df8f7ca1c2533a98062b))
+* **pi-reasoning:** unify model-aware menus ([ed5fa62](https://github.com/pixu1980/pi-coding-agent-extensions/commit/ed5fa62972a2f1390787d5387c42f30912ccd8b2))
+
 ### [0.1.10](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.9...@pixu1980/pi-path-picker@0.1.10) (2026-07-11)
 
 

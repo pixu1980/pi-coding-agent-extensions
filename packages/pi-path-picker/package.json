@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-path-picker",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": false,
   "description": "Interactive file path autocomplete for pi coding agent - arrow-key navigation, fuzzy matching, Tab completion, and the /pick command",
   "type": "module",

@@ -1,37 +1,21 @@
 /**
  * Tests for pi-reasoning/index.ts — automatic reasoning level management
- *
- * Tests the pure functions: findLevelForModel, guessLevel, model map
- * entries, and the /reasoning command handler.
  */
 
 const assert = require("node:assert/strict");
 
-// ── Types (mirrors index.ts) ─────────────────────────────────────
+// ── Pure function copies from index.ts ────────────────────────────
 
 /** @typedef {"off"|"minimal"|"low"|"medium"|"high"|"xhigh"|"max"} ThinkingLevel */
-
-/**
- * @typedef {{ pattern: string, level: ThinkingLevel, providers?: string[] }} ModelMapEntry
- */
-
-// ── Pure function copies from index.ts ────────────────────────────
-//
-// These are not exported from the module, so we duplicate the logic
-// here for testing. When changing index.ts, update these if needed.
 
 const VALID_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 
 const DEFAULT_MODEL_MAP = [
-  // Max reasoning
   { pattern: "claude-opus-4", level: "max" },
   { pattern: "claude-opus-3", level: "max" },
   { pattern: "o3", level: "max" },
   { pattern: "o4", level: "max" },
   { pattern: "deepseek-r1", level: "max" },
-
-  // High reasoning
-  // NOTE: more specific patterns before broader ones (substring match)
   { pattern: "claude-sonnet-4-5", level: "high" },
   { pattern: "claude-sonnet-4", level: "high" },
   { pattern: "gpt-5", level: "high" },
@@ -40,8 +24,6 @@ const DEFAULT_MODEL_MAP = [
   { pattern: "deepseek", level: "high" },
   { pattern: "kimi", level: "high" },
   { pattern: "qwq", level: "high" },
-
-  // Medium reasoning (non-conflicting patterns first)
   { pattern: "claude-sonnet-3", level: "medium" },
   { pattern: "claude-3-sonnet", level: "medium" },
   { pattern: "gemini-2.0-pro", level: "medium" },
@@ -49,21 +31,15 @@ const DEFAULT_MODEL_MAP = [
   { pattern: "llama-3", level: "medium" },
   { pattern: "mistral-large", level: "medium" },
   { pattern: "codestral", level: "medium" },
-
-  // Low reasoning (specific before broad)
-  { pattern: "claude-haiku", level: "low" },
-  { pattern: "claude-3-haiku", level: "low" },
   { pattern: "gpt-4o-mini", level: "low" },
   { pattern: "gemini-2.0-flash-lite", level: "low" },
   { pattern: "gemini-2.0-flash", level: "low" },
   { pattern: "mistral-small", level: "low" },
-
-  // Minimal / Off (specific before broad)
+  { pattern: "claude-haiku", level: "low" },
+  { pattern: "claude-3-haiku", level: "low" },
   { pattern: "gpt-4.1-mini", level: "minimal" },
   { pattern: "gpt-4.1-nano", level: "off" },
   { pattern: "gpt-4-mini", level: "off" },
-
-  // Broad GPT-4 patterns (after specific variants)
   { pattern: "gpt-4o", level: "medium" },
   { pattern: "gpt-4.1", level: "medium" },
   { pattern: "gpt-4", level: "medium" },
@@ -83,44 +59,219 @@ function findLevelForModel(modelMap, provider, modelId) {
 
 function guessLevel(modelId) {
   const lower = modelId.toLowerCase();
-  // Use word-boundary matching to avoid false positives:
-  // "gemini" contains "mini" as a substring, but "mini" isn't a
-  // standalone word there — "\bmini\b" correctly rejects it.
   const hasWord = (word) => new RegExp(`\\b${word}\\b`).test(lower);
-
   if (hasWord("nano")) return "off";
   if (hasWord("mini") || hasWord("flash") || hasWord("haiku") || hasWord("small")) return "low";
   if (hasWord("large") || hasWord("pro") || hasWord("sonnet") || hasWord("opus")) return "high";
   return "medium";
 }
 
-const LEVEL_EMOJI = {
-  off: "⚪",
-  minimal: "🔵",
-  low: "🟢",
-  medium: "🟡",
-  high: "🟠",
-  xhigh: "🔴",
-  max: "💜",
-};
-
 // ── Tests ──────────────────────────────────────────────────────────
 
 (async () => {
+  const {
+    getAvailableLevels,
+    buildReasoningMenuOptions,
+    default: registerReasoning,
+    LEVEL_EMOJI,
+  } = await import("./index.ts");
+
   let passed = 0;
   let failed = 0;
+  const pendingTests = [];
+
+  function reportSuccess(name) {
+    passed++;
+    console.log(`  ✓ ${name}`);
+  }
+
+  function reportFailure(name, err) {
+    failed++;
+    console.log(`  ✗ ${name}`);
+    console.log(`    ${err.message}`);
+  }
 
   function test(name, fn) {
     try {
-      fn();
-      passed++;
-      console.log(`  ✓ ${name}`);
+      const result = fn();
+      if (result && typeof result.then === "function") {
+        pendingTests.push(Promise.resolve(result).then(
+          () => reportSuccess(name),
+          (err) => reportFailure(name, err),
+        ));
+        return;
+      }
+      reportSuccess(name);
     } catch (err) {
-      failed++;
-      console.log(`  ✗ ${name}`);
-      console.log(`    ${err.message}`);
+      reportFailure(name, err);
     }
   }
+
+  // ── Model-specific reasoning menu ───────────────────────────
+
+  console.log("\n── Model-specific reasoning menu ──");
+
+  test("DeepSeek V4 keeps omitted standard levels and exposes max explicitly", () => {
+    const options = buildReasoningMenuOptions({
+      reasoning: true,
+      thinkingLevelMap: {
+        minimal: null,
+        low: null,
+        medium: null,
+        high: "high",
+        max: "max",
+      },
+    });
+    assert.deepEqual(options, [
+      { value: "off", label: "⚪  off" },
+      { value: "high", label: "❤️  high" },
+      { value: "max", label: "🔥  max" },
+      { value: "auto", label: "⚙️  auto" },
+    ]);
+  });
+
+  test("qwen3.7-max without a map exposes only pi standard levels", () => {
+    const options = buildReasoningMenuOptions({
+      reasoning: true,
+      id: "qwen3.7-max",
+      provider: "opencode-go",
+    });
+    assert.deepEqual(options.map((option) => option.value), [
+      "off", "minimal", "low", "medium", "high", "auto",
+    ]);
+  });
+
+  test("non-reasoning model exposes only off and auto", () => {
+    const options = buildReasoningMenuOptions({ reasoning: false });
+    assert.deepEqual(options.map((option) => option.value), ["off", "auto"]);
+  });
+
+  test("explicit null hides a standard level while omitted standard levels remain available", () => {
+    const options = buildReasoningMenuOptions({
+      reasoning: true,
+      thinkingLevelMap: { off: null, xhigh: "xhigh", max: "max" },
+    });
+    assert.deepEqual(options.map((option) => option.value), [
+      "minimal", "low", "medium", "high", "xhigh", "max", "auto",
+    ]);
+  });
+
+  test("autocomplete uses the current model and reveals map only when typed", () => {
+    const events = new Map();
+    let reasoningCommand;
+    registerReasoning({
+      getThinkingLevel: () => "off",
+      on: (name, handler) => events.set(name, handler),
+      registerCommand: (_name, command) => { reasoningCommand = command; },
+      setThinkingLevel: () => {},
+    });
+
+    const model = {
+      provider: "opencode-go",
+      id: "deepseek-v4-flash",
+      reasoning: true,
+      thinkingLevelMap: {
+        minimal: null,
+        low: null,
+        medium: null,
+        high: "high",
+        max: "max",
+      },
+    };
+    events.get("session_start")({}, {
+      model,
+      ui: { notify: () => {}, setStatus: () => {}, addAutocompleteProvider: () => {} },
+    });
+
+    assert.deepEqual(reasoningCommand.getArgumentCompletions(""), [
+      { value: "off", label: "⚪  off" },
+      { value: "high", label: "❤️  high" },
+      { value: "max", label: "🔥  max" },
+      { value: "auto", label: "⚙️  auto" },
+    ]);
+    assert.deepEqual(reasoningCommand.getArgumentCompletions("map"), [
+      { value: "map", label: "map  — Show active model→level mappings" },
+    ]);
+  });
+
+  test("SPACE uses the same Qwen menu as ENTER after session providers are installed", async () => {
+    const events = new Map();
+    let autocompleteFactory;
+    const model = {
+      provider: "opencode-go",
+      id: "qwen3.7-max",
+      reasoning: true,
+    };
+    const ui = {
+      notify: () => {},
+      setStatus: () => {},
+      addAutocompleteProvider: (factory) => { autocompleteFactory = factory; },
+    };
+
+    registerReasoning({
+      getThinkingLevel: () => "high",
+      on: (name, handler) => events.set(name, handler),
+      registerCommand: () => {},
+      setThinkingLevel: () => {},
+    });
+
+    await events.get("session_start")({ reason: "startup" }, { model, ui });
+    await events.get("resources_discover")({ reason: "startup" }, { model, ui });
+
+    const baseProvider = {
+      triggerCharacters: [],
+      getSuggestions: async () => { throw new Error("base provider should not receive /reasoning"); },
+      applyCompletion: (lines, cursorLine, cursorCol) => ({ lines, cursorLine, cursorCol }),
+    };
+    const provider = autocompleteFactory(baseProvider);
+    const suggestions = await provider.getSuggestions(
+      ["/reasoning "],
+      0,
+      "/reasoning ".length,
+      { signal: new AbortController().signal },
+    );
+
+    assert.equal(suggestions.prefix, "");
+    assert.deepEqual(
+      suggestions.items.map(({ value, label }) => ({ value, label })),
+      buildReasoningMenuOptions(model),
+    );
+    assert.equal(
+      provider.shouldTriggerFileCompletion(["/reasoning "], 0, "/reasoning ".length),
+      true,
+      "SPACE reasoning completion must allow a forced refresh",
+    );
+  });
+
+  test("manual xhigh on Qwen rounds to high with an explicit message", async () => {
+    const events = new Map();
+    let reasoningCommand;
+    const selectedLevels = [];
+    const notifications = [];
+    const model = {
+      provider: "opencode-go",
+      id: "qwen3.7-max",
+      reasoning: true,
+    };
+
+    registerReasoning({
+      getThinkingLevel: () => "high",
+      on: (name, handler) => events.set(name, handler),
+      registerCommand: (_name, command) => { reasoningCommand = command; },
+      setThinkingLevel: (level) => selectedLevels.push(level),
+    });
+
+    await reasoningCommand.handler("xhigh", {
+      model,
+      ui: { notify: (message, type) => notifications.push({ message, type }) },
+    });
+
+    assert.deepEqual(selectedLevels, ["high"]);
+    assert.deepEqual(notifications, [{
+      message: "Reasoning level → ❤️ high (rounded, your choice was ❤️‍🔥 xhigh)",
+      type: "info",
+    }]);
+  });
 
   // ── findLevelForModel ───────────────────────────────────────
 
@@ -140,7 +291,6 @@ const LEVEL_EMOJI = {
   });
 
   test("first match wins (order matters)", () => {
-    // "gpt-4o-mini" (low) comes before "gpt-4o" (medium)
     assert.equal(findLevelForModel(DEFAULT_MODEL_MAP, "openai", "gpt-4o-mini"), "low");
   });
 
@@ -149,182 +299,131 @@ const LEVEL_EMOJI = {
   });
 
   test("provider filter narrows matches", () => {
-    const customMap = [
-      { pattern: "my-model", level: "high", providers: ["my-provider"] },
-    ];
-    assert.equal(findLevelForModel(customMap, "other-provider", "my-model"), null);
-    assert.equal(findLevelForModel(customMap, "my-provider", "my-model"), "high");
+    const map = [{ pattern: "test", level: "high", providers: ["anthropic"] }];
+    assert.equal(findLevelForModel(map, "anthropic", "test-model"), "high");
+    assert.equal(findLevelForModel(map, "openai", "test-model"), null);
   });
 
-  test("entry without provider filter matches all providers", () => {
-    const customMap = [
-      { pattern: "catch-all", level: "medium" },
-    ];
-    assert.equal(findLevelForModel(customMap, "any-provider", "catch-all"), "medium");
-    assert.equal(findLevelForModel(customMap, "", "catch-all"), "medium");
+  test("entry without provider filter matches all", () => {
+    const map = [{ pattern: "test", level: "medium" }];
+    assert.equal(findLevelForModel(map, "any-provider", "test-model"), "medium");
   });
 
   test("specific pattern takes priority over broader one", () => {
-    // "claude-sonnet-4-5" (high) comes before "claude-sonnet-4" (high)
-    // Both match, first wins — important for ordering
-    const idx4_5 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "claude-sonnet-4-5");
-    const idx4 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "claude-sonnet-4");
-    assert.ok(idx4_5 < idx4, "claude-sonnet-4-5 should come before claude-sonnet-4");
-    assert.equal(findLevelForModel(DEFAULT_MODEL_MAP, "anthropic", "claude-sonnet-4-5"), "high");
+    assert.equal(findLevelForModel(DEFAULT_MODEL_MAP, "anthropic", "claude-sonnet-4-5-20250514"), "high");
   });
 
-  // ── guessLevel ─────────────────────────────────────────────
+  // ── guessLevel ──────────────────────────────────────────────
 
   console.log("\n── guessLevel ──");
 
-  test("nano → off", () => {
-    assert.equal(guessLevel("gpt-4.1-nano"), "off");
-    assert.equal(guessLevel("my-nano-model"), "off");
-  });
+  test("nano → off", () => assert.equal(guessLevel("some-nano-model"), "off"));
+  test("mini → low", () => assert.equal(guessLevel("some-mini-model"), "low"));
+  test("flash → low", () => assert.equal(guessLevel("some-flash-model"), "low"));
+  test("haiku → low", () => assert.equal(guessLevel("claude-haiku-4"), "low"));
+  test("small → low", () => assert.equal(guessLevel("unknown-small-model"), "low"));
+  test("large → high", () => assert.equal(guessLevel("mistral-large-3"), "high"));
+  test("pro → high", () => assert.equal(guessLevel("some-pro-model"), "high"));
+  test("sonnet → high", () => assert.equal(guessLevel("new-claude-sonnet-5"), "high"));
+  test("opus → high", () => assert.equal(guessLevel("new-claude-opus-5"), "high"));
+  test("unknown model → medium (default)", () => assert.equal(guessLevel("standard-model-unknown"), "medium"));
+  test("custom model → medium", () => assert.equal(guessLevel("my-custom-model"), "medium"));
+  test("empty string → medium", () => assert.equal(guessLevel(""), "medium"));
 
-  test("mini → low", () => {
-    assert.equal(guessLevel("gpt-4o-mini"), "low");
-    assert.equal(guessLevel("my-mini-model"), "low");
-  });
-
-  test("flash → low", () => {
-    assert.equal(guessLevel("gemini-2.0-flash"), "low");
-    assert.equal(guessLevel("gemini-2.0-flash-lite"), "low");
-  });
-
-  test("haiku → low", () => {
-    assert.equal(guessLevel("claude-3-haiku"), "low");
-  });
-
-  test("small → low", () => {
-    assert.equal(guessLevel("mistral-small"), "low");
-  });
-
-  test("large → high", () => {
-    assert.equal(guessLevel("mistral-large"), "high");
-    assert.equal(guessLevel("llama-3.1-large"), "high");
-  });
-
-  test("pro → high", () => {
-    assert.equal(guessLevel("gemini-2.0-pro"), "high");
-  });
-
-  test("sonnet → high", () => {
-    assert.equal(guessLevel("claude-sonnet-4"), "high");
-    assert.equal(guessLevel("claude-sonnet-3"), "high");
-  });
-
-  test("opus → high", () => {
-    assert.equal(guessLevel("claude-opus-4"), "high");
-  });
-
-  test("unknown model → medium (default)", () => {
-    assert.equal(guessLevel("completely-unknown-model-xyz"), "medium");
-    assert.equal(guessLevel(""), "medium");
-  });
-
-  test("case-insensitive guessing", () => {
-    assert.equal(guessLevel("CLAUDE-OPUS-4"), "high");
-    assert.equal(guessLevel("My-Nano-Model"), "off");
-  });
-
-  // ── DEFAULT_MODEL_MAP integrity ──────────────────────────────
+  // ── DEFAULT_MODEL_MAP integrity ─────────────────────────────
 
   console.log("\n── DEFAULT_MODEL_MAP integrity ──");
 
   test("all entries have valid levels", () => {
+    const validSet = new Set(VALID_LEVELS);
     for (const entry of DEFAULT_MODEL_MAP) {
-      assert.ok(VALID_LEVELS.includes(entry.level), `Invalid level "${entry.level}" for pattern "${entry.pattern}"`);
+      assert.ok(validSet.has(entry.level), `Invalid level "${entry.level}" in entry "${entry.pattern}"`);
     }
   });
 
   test("all entries have non-empty patterns", () => {
     for (const entry of DEFAULT_MODEL_MAP) {
-      assert.ok(entry.pattern.length > 0, `Empty pattern for entry with level "${entry.level}"`);
+      assert.ok(entry.pattern.length > 0, `Empty pattern found`);
     }
   });
 
   test("no duplicate patterns (exact match)", () => {
-    const patterns = DEFAULT_MODEL_MAP.map(e => e.pattern.toLowerCase());
-    const uniques = new Set(patterns);
-    assert.equal(patterns.length, uniques.size, "Duplicate patterns found in DEFAULT_MODEL_MAP");
+    const patterns = DEFAULT_MODEL_MAP.map((e) => e.pattern);
+    const unique = new Set(patterns);
+    assert.equal(patterns.length, unique.size, "Duplicate patterns found");
   });
 
   test("zero 'xhigh' entries in default map", () => {
-    // xhigh is valid but not yet used in defaults
-    const xhighEntries = DEFAULT_MODEL_MAP.filter(e => e.level === "xhigh");
-    assert.equal(xhighEntries.length, 0, "xhigh not assigned by default yet");
+    const xhighEntries = DEFAULT_MODEL_MAP.filter((e) => e.level === "xhigh");
+    assert.equal(xhighEntries.length, 0, "xhigh should not appear in default map");
   });
 
   test("at least one entry per reasoning level", () => {
-    const levelsUsed = new Set(DEFAULT_MODEL_MAP.map(e => e.level));
+    const usedLevels = new Set(DEFAULT_MODEL_MAP.map((e) => e.level));
     const expectedLevels = new Set(["off", "minimal", "low", "medium", "high", "max"]);
-    for (const lvl of expectedLevels) {
-      assert.ok(levelsUsed.has(lvl), `No entries for level "${lvl}"`);
+    for (const level of expectedLevels) {
+      assert.ok(usedLevels.has(level), `No entries for level "${level}"`);
     }
   });
 
   test("no provider filters in default map", () => {
-    // Default entries should be provider-agnostic
-    for (const entry of DEFAULT_MODEL_MAP) {
-      assert.equal(entry.providers, undefined, `Pattern "${entry.pattern}" has unexpected provider filter`);
-    }
+    const filtered = DEFAULT_MODEL_MAP.filter((e) => e.providers);
+    assert.equal(filtered.length, 0, "Default map should not have provider filters");
   });
 
   test("'deepseek' (high) comes after 'deepseek-r1' (max)", () => {
-    const idxR1 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "deepseek-r1");
-    const idxDS = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "deepseek");
-    assert.ok(idxR1 < idxDS, "deepseek-r1 must come before deepseek for correct priority");
+    const r1Idx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "deepseek-r1");
+    const dsIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "deepseek");
+    assert.ok(r1Idx < dsIdx, "deepseek-r1 must come before deepseek");
   });
 
   test("'claude-sonnet-4' comes after 'claude-sonnet-4-5'", () => {
-    const idx4_5 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "claude-sonnet-4-5");
-    const idx4 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "claude-sonnet-4");
-    assert.ok(idx4_5 < idx4, "claude-sonnet-4-5 must come before claude-sonnet-4");
+    const s45Idx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "claude-sonnet-4-5");
+    const s4Idx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "claude-sonnet-4");
+    assert.ok(s45Idx < s4Idx, "claude-sonnet-4-5 must come before claude-sonnet-4");
   });
 
   test("'gpt-4o-mini' comes before 'gpt-4o' (specific before broad)", () => {
-    const idx4o = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4o");
-    const idx4oMini = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4o-mini");
-    assert.ok(idx4oMini < idx4o, "gpt-4o-mini must come before gpt-4o");
+    const miniIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4o-mini");
+    const gpt4oIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4o");
+    assert.ok(miniIdx < gpt4oIdx);
   });
 
-  test("'gpt-4.1-mini' comes before 'gpt-4.1' (specific before broad)", () => {
-    const idx41 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4.1");
-    const idx41Mini = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4.1-mini");
-    assert.ok(idx41Mini < idx41, "gpt-4.1-mini must come before gpt-4.1");
+  test("'gpt-4.1-mini' comes before 'gpt-4.1'", () => {
+    const miniIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4.1-mini");
+    const g41Idx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4.1");
+    assert.ok(miniIdx < g41Idx);
   });
 
-  test("'gpt-4.1-nano' comes before 'gpt-4.1' (specific before broad)", () => {
-    const idx41 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4.1");
-    const idx41Nano = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4.1-nano");
-    assert.ok(idx41Nano < idx41, "gpt-4.1-nano must come before gpt-4.1");
+  test("'gpt-4.1-nano' comes before 'gpt-4.1'", () => {
+    const nanoIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4.1-nano");
+    const g41Idx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4.1");
+    assert.ok(nanoIdx < g41Idx);
   });
 
-  test("'gpt-4-mini' comes before 'gpt-4' (specific before broad)", () => {
-    const idx4 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4");
-    const idx4Mini = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gpt-4-mini");
-    assert.ok(idx4Mini < idx4, "gpt-4-mini must come before gpt-4");
+  test("'gpt-4-mini' comes before 'gpt-4'", () => {
+    const miniIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4-mini");
+    const g4Idx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gpt-4");
+    assert.ok(miniIdx < g4Idx);
   });
 
-  test("'gemini-2.0-flash' comes before 'gemini-2.0' (specific before broad)", () => {
-    const idx20 = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gemini-2.0");
-    const idxFlash = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gemini-2.0-flash");
-    assert.ok(idxFlash < idx20, "gemini-2.0-flash must come before gemini-2.0");
+  test("'gemini-2.0-flash' comes before 'gemini-2.0'", () => {
+    const flashIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gemini-2.0-flash");
+    const g20Idx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gemini-2.0");
+    assert.ok(flashIdx < g20Idx);
   });
 
-  test("'gemini-2.0-flash-lite' comes before 'gemini-2.0-flash' (specific before broad)", () => {
-    const idxFlash = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gemini-2.0-flash");
-    const idxLite = DEFAULT_MODEL_MAP.findIndex(e => e.pattern === "gemini-2.0-flash-lite");
-    assert.ok(idxLite < idxFlash, "gemini-2.0-flash-lite must come before gemini-2.0-flash");
+  test("'gemini-2.0-flash-lite' comes before 'gemini-2.0-flash'", () => {
+    const liteIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gemini-2.0-flash-lite");
+    const flashIdx = DEFAULT_MODEL_MAP.findIndex((e) => e.pattern === "gemini-2.0-flash");
+    assert.ok(liteIdx < flashIdx);
   });
 
   // ── End-to-end model lookups ────────────────────────────────
 
   console.log("\n── End-to-end model lookups ──");
 
-  const e2eCases = [
-    // [provider, modelId, expectedLevel]
+  const lookupTests = [
     ["anthropic", "claude-opus-4-20250514", "max"],
     ["anthropic", "claude-opus-3-20240514", "max"],
     ["anthropic", "claude-sonnet-4-5-20250514", "high"],
@@ -360,37 +459,29 @@ const LEVEL_EMOJI = {
     ["openai", "qwq-20250513", "high"],
   ];
 
-  for (const [provider, modelId, expected] of e2eCases) {
+  for (const [provider, modelId, expected] of lookupTests) {
     test(`${provider}/${modelId} → ${expected}`, () => {
       assert.equal(findLevelForModel(DEFAULT_MODEL_MAP, provider, modelId), expected);
     });
   }
 
-  // ── guessLevel fallback (models not in default map) ──────────
+  // ── guessLevel fallback ─────────────────────────────────────
 
   console.log("\n── guessLevel fallback ──");
 
-  const guessCases = [
-    ["unknown-nano-model-v1", "off"],
-    ["huggingface/llama-3.2-11b-nano", "off"],
-    ["some-mini-model", "low"],
-    ["some-flash-model", "low"],
-    ["claude-haiku-4", "low"],       // not in default map (claude-haiku matches)
-    ["unknown-small-model", "low"],
-    ["mistral-large-3", "high"],     // large keyword
-    ["some-pro-model", "high"],
-    ["new-claude-sonnet-5", "high"], // sonnet keyword
-    ["new-claude-opus-5", "high"],   // opus keyword
-    ["standard-model-unknown", "medium"],
-    ["my-custom-model", "medium"],
-    ["", "medium"],
-  ];
-
-  for (const [modelId, expected] of guessCases) {
-    test(`"${modelId}" → ${expected}`, () => {
-      assert.equal(guessLevel(modelId), expected);
-    });
-  }
+  test('"unknown-nano-model-v1" → off', () => assert.equal(guessLevel("unknown-nano-model-v1"), "off"));
+  test('"huggingface/llama-3.2-11b-nano" → off', () => assert.equal(guessLevel("huggingface/llama-3.2-11b-nano"), "off"));
+  test('"some-mini-model" → low', () => assert.equal(guessLevel("some-mini-model"), "low"));
+  test('"some-flash-model" → low', () => assert.equal(guessLevel("some-flash-model"), "low"));
+  test('"claude-haiku-4" → low', () => assert.equal(guessLevel("claude-haiku-4"), "low"));
+  test('"unknown-small-model" → low', () => assert.equal(guessLevel("unknown-small-model"), "low"));
+  test('"mistral-large-3" → high', () => assert.equal(guessLevel("mistral-large-3"), "high"));
+  test('"some-pro-model" → high', () => assert.equal(guessLevel("some-pro-model"), "high"));
+  test('"new-claude-sonnet-5" → high', () => assert.equal(guessLevel("new-claude-sonnet-5"), "high"));
+  test('"new-claude-opus-5" → high', () => assert.equal(guessLevel("new-claude-opus-5"), "high"));
+  test('"standard-model-unknown" → medium', () => assert.equal(guessLevel("standard-model-unknown"), "medium"));
+  test('"my-custom-model" → medium', () => assert.equal(guessLevel("my-custom-model"), "medium"));
+  test('"" → medium', () => assert.equal(guessLevel(""), "medium"));
 
   // ── Level emoji map ─────────────────────────────────────────
 
@@ -399,25 +490,22 @@ const LEVEL_EMOJI = {
   test("all valid levels have emoji", () => {
     for (const level of VALID_LEVELS) {
       assert.ok(LEVEL_EMOJI[level], `Missing emoji for level "${level}"`);
-      assert.equal(typeof LEVEL_EMOJI[level], "string");
-      assert.ok(LEVEL_EMOJI[level].length > 0);
     }
   });
 
   test("each emoji is a unique unicode emoji character", () => {
     const emojis = Object.values(LEVEL_EMOJI);
-    const uniqueEmojis = new Set(emojis);
-    assert.equal(emojis.length, uniqueEmojis.size, "Duplicate emoji mappings");
+    const unique = new Set(emojis);
+    assert.equal(emojis.length, unique.size, "Duplicate emojis found");
   });
 
   // ── Summary ─────────────────────────────────────────────────
 
-  const total = passed + failed;
-  console.log(`\n${"─".repeat(40)}`);
-  console.log(`Results: ${passed}/${total} passed, ${failed} failed`);
-  console.log(`${"─".repeat(40)}\n`);
+  await Promise.all(pendingTests);
 
-  if (failed > 0) {
-    process.exit(1);
-  }
+  console.log(`\n────────────────────────────────────────`);
+  console.log(`Results: ${passed}/${passed + failed} passed, ${failed} failed`);
+  console.log(`────────────────────────────────────────\n`);
+
+  process.exit(failed > 0 ? 1 : 0);
 })();

@@ -17,9 +17,15 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-tui";
 
 // ── Types ──────────────────────────────────────────────────────────
 
+/**
+ * Thinking levels as defined by pi.dev.
+ * This is the canonical order — matches what pi.dev exposes via
+ * model.thinkingLevelMap and SHIFT+TAB native autocomplete.
+ */
 type ThinkingLevel =
   | "off"
   | "minimal"
@@ -30,33 +36,21 @@ type ThinkingLevel =
   | "max";
 
 interface ModelMapEntry {
-  /**
-   * Substring to match against the model ID (e.g. "claude-sonnet-4",
-   * "deepseek"). Matching is case-insensitive.
-   */
+  /** Substring to match against the model ID. Case-insensitive. */
   pattern: string;
   /** Thinking level to apply when this pattern matches */
   level: ThinkingLevel;
-  /**
-   * Optional provider filter — only apply this entry when the model
-   * belongs to one of these providers (e.g. ["anthropic", "openai"]).
-   */
+  /** Optional provider filter */
   providers?: string[];
 }
 
 // ── Default Mappings ───────────────────────────────────────────────
 //
 // Maps model ID substrings to thinking levels. Entries are checked in
-// order; the FIRST match wins. This means more specific patterns should
-// come before broader ones.
-//
-// Naming convention:
-//   pattern uses the model ID as known to pi (e.g. "claude-sonnet-4-20250514"
-//   matches "claude-sonnet-4"). Case-insensitive substring match.
+// order; the FIRST match wins. More specific patterns first.
 
 const DEFAULT_MODEL_MAP: ModelMapEntry[] = [
   // ── Max reasoning ──────────────────────────────────────────
-  // Top-tier reasoning models where you want full depth
   { pattern: "claude-opus-4", level: "max" },
   { pattern: "claude-opus-3", level: "max" },
   { pattern: "o3", level: "max" },
@@ -64,10 +58,6 @@ const DEFAULT_MODEL_MAP: ModelMapEntry[] = [
   { pattern: "deepseek-r1", level: "max" },
 
   // ── High reasoning ─────────────────────────────────────────
-  // Strong reasoning models that benefit from deep thinking
-  // NOTE: more specific patterns (e.g. "claude-sonnet-4-5") must
-  // come before broader ones (e.g. "claude-sonnet-4") because
-  // substring matching picks the FIRST match.
   { pattern: "claude-sonnet-4-5", level: "high" },
   { pattern: "claude-sonnet-4", level: "high" },
   { pattern: "gpt-5", level: "high" },
@@ -78,10 +68,6 @@ const DEFAULT_MODEL_MAP: ModelMapEntry[] = [
   { pattern: "qwq", level: "high" },
 
   // ── Medium reasoning ───────────────────────────────────────
-  // Balanced models — good reasoning without being overkill
-  // NOTE: broader patterns like "gpt-4" go AFTER their more
-  // specific variants (gpt-4o-mini, gpt-4.1-nano, etc.) so the
-  // substring match finds the right level first.
   { pattern: "claude-sonnet-3", level: "medium" },
   { pattern: "claude-3-sonnet", level: "medium" },
   { pattern: "gemini-2.0-pro", level: "medium" },
@@ -91,40 +77,117 @@ const DEFAULT_MODEL_MAP: ModelMapEntry[] = [
   { pattern: "codestral", level: "medium" },
 
   // ── Low reasoning ──────────────────────────────────────────
-  // Fast models that can still benefit from a little thinking
-  { pattern: "claude-haiku", level: "low" },
-  { pattern: "claude-3-haiku", level: "low" },
   { pattern: "gpt-4o-mini", level: "low" },
   { pattern: "gemini-2.0-flash-lite", level: "low" },
   { pattern: "gemini-2.0-flash", level: "low" },
   { pattern: "mistral-small", level: "low" },
 
   // ── Minimal reasoning ──────────────────────────────────────
-  // Very fast / cheap models — minimal thinking
+  { pattern: "claude-haiku", level: "low" },
+  { pattern: "claude-3-haiku", level: "low" },
   { pattern: "gpt-4.1-mini", level: "minimal" },
+
+  // ── Off ────────────────────────────────────────────────────
   { pattern: "gpt-4.1-nano", level: "off" },
   { pattern: "gpt-4-mini", level: "off" },
 
-  // ── Broader GPT-4 patterns (after specific variants) ───────
-  // These use substring matching, so they'd catch "gpt-4o-mini"
-  // and "gpt-4.1-mini" before reaching here. We place them
-  // AFTER all specific entries to avoid incorrect priority.
+  // ── Broader patterns (after specific variants) ─────────────
   { pattern: "gpt-4o", level: "medium" },
   { pattern: "gpt-4.1", level: "medium" },
   { pattern: "gpt-4", level: "medium" },
   { pattern: "gemini-2.0", level: "medium" },
 ];
 
+/**
+ * All thinking levels in canonical order (matches pi.dev).
+ */
+const ALL_THINKING_LEVELS: ThinkingLevel[] = [
+  "off", "minimal", "low", "medium", "high", "xhigh", "max",
+];
+
+/** Levels enabled by pi.dev when a map key is omitted. */
+const STANDARD_THINKING_LEVELS: readonly ThinkingLevel[] = [
+  "off", "minimal", "low", "medium", "high",
+];
+
+/** Emoji mapping requested for pi-reasoning menus and status. */
+export const LEVEL_EMOJI: Record<ThinkingLevel, string> = {
+  off: "⚪",
+  minimal: "💚",
+  low: "💛",
+  medium: "🧡",
+  high: "❤️",
+  xhigh: "❤️‍🔥",
+  max: "🔥",
+};
+
+type ReasoningModelCapabilities = {
+  reasoning?: boolean;
+  thinkingLevelMap?: Record<string, string | null | undefined>;
+};
+
+/**
+ * Returns the thinking levels available for a given model.
+ * Uses pi's effective model descriptor (`thinkingLevelMap`) as the
+ * source of truth for what the selected model supports.
+ *
+ * - Omitted key → standard levels through `high` are available by default
+ * - String value → level is explicitly available
+ * - `null` value → level is unavailable
+ * - `xhigh` and `max` require an explicit string value
+ */
+export function getAvailableLevels(model?: ReasoningModelCapabilities): ThinkingLevel[] {
+  if (!model?.reasoning) return ["off"];
+
+  return ALL_THINKING_LEVELS.filter((level) => {
+    const mapped = model.thinkingLevelMap?.[level];
+    if (mapped === null) return false;
+    if (mapped !== undefined) return true;
+    return STANDARD_THINKING_LEVELS.includes(level);
+  });
+}
+
+/**
+ * Build menu options for the /reasoning command.
+ * Shows only levels the model actually supports + "auto".
+ */
+export function buildReasoningMenuOptions(
+  model?: ReasoningModelCapabilities,
+): Array<{ value: ThinkingLevel | "auto"; label: string }> {
+  return [
+    ...getAvailableLevels(model).map((level) => ({
+      value: level,
+      label: `${LEVEL_EMOJI[level]}  ${level}`,
+    })),
+    { value: "auto" as const, label: "⚙️  auto" },
+  ];
+}
+
+/** Resolve an unsupported request to a supported thinking level. */
+export function resolveThinkingLevel(
+  requested: ThinkingLevel,
+  available: readonly ThinkingLevel[],
+): ThinkingLevel | undefined {
+  if (available.length === 0) return undefined;
+  if (available.includes(requested)) return requested;
+
+  const requestedIndex = ALL_THINKING_LEVELS.indexOf(requested);
+  return available.find((level) => ALL_THINKING_LEVELS.indexOf(level) > requestedIndex)
+    ?? available[available.length - 1];
+}
+
+function formatReasoningLevelChange(requested: ThinkingLevel, applied: ThinkingLevel): string {
+  const rounded = requested === applied
+    ? ""
+    : ` (rounded, your choice was ${LEVEL_EMOJI[requested]} ${requested})`;
+  return `Reasoning level → ${LEVEL_EMOJI[applied]} ${applied}${rounded}`;
+}
+
 // ── Extension Entry ────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI): void {
   let modelMap: ModelMapEntry[] = [...DEFAULT_MODEL_MAP];
 
-  /**
-   * Tiene traccia del modello corrente per poter filtrare i suggerimenti
-   * dell'autocomplete di /reasoning in base ai livelli effettivamente
-   * disponibili (rispetta thinkingLevelMap nativo di pi.dev).
-   */
   let currentModel: {
     provider: string;
     id: string;
@@ -135,7 +198,7 @@ export default function (pi: ExtensionAPI): void {
   // ── Notify on load ────────────────────────────────────────
   pi.on("session_start", async (_event, ctx) => {
     const currentLevel = pi.getThinkingLevel();
-    const emoji = levelEmoji[currentLevel] ?? "🧠";
+    const emoji = LEVEL_EMOJI[currentLevel] ?? "🧠";
     const model = ctx.model;
     currentModel = model;
     const modelLabel = model ? `${model.provider}/${model.id}` : "no model";
@@ -143,16 +206,18 @@ export default function (pi: ExtensionAPI): void {
     ctx.ui.notify(`🧠 pi-reasoning loaded — ${emoji} ${currentLevel} (${modelLabel})`, "info");
   });
 
+  // Register after every extension has handled session_start. This keeps
+  // pi-reasoning as the outermost /reasoning autocomplete provider, so SPACE
+  // and ENTER share buildReasoningMenuOptions regardless of package order.
+  pi.on("resources_discover", (_event, ctx) => {
+    ctx.ui.addAutocompleteProvider(
+      (current: AutocompleteProvider) => createReasoningAutocompleteProvider(current),
+    );
+  });
+
   // ── Helpers ──────────────────────────────────────────────────
 
-  /**
-   * Find the first matching thinking level for a model by scanning the
-   * mapping entries in order. Returns `null` if no entry matches.
-   */
-  function findLevelForModel(
-    provider: string,
-    modelId: string,
-  ): ThinkingLevel | null {
+  function findLevelForModel(provider: string, modelId: string): ThinkingLevel | null {
     const lowerId = modelId.toLowerCase();
     for (const entry of modelMap) {
       if (entry.providers && !entry.providers.includes(provider)) continue;
@@ -163,31 +228,8 @@ export default function (pi: ExtensionAPI): void {
     return null;
   }
 
-  /**
-   * Apply the appropriate reasoning level for a given model.
-   * - Model supports reasoning: look up in map, fall back to "medium"
-   * - Model does NOT support reasoning: pi clamps to "off" automatically
-   */
-  function applyReasoningForModel(
-    provider: string,
-    modelId: string,
-  ): void {
-    if (!pi.getThinkingLevel) return; // guard: API not available
-
-    const level = findLevelForModel(provider, modelId);
-    if (level !== null) {
-      pi.setThinkingLevel(level);
-    }
-  }
-
-  /**
-   * Guess a sensible fallback level for models not in the map.
-   */
   function guessLevel(modelId: string): ThinkingLevel {
     const lower = modelId.toLowerCase();
-    // Use word-boundary matching to avoid false positives:
-    // "gemini" contains "mini" as a substring, but "mini" isn't a
-    // standalone word there — "\bmini\b" correctly rejects it.
     const hasWord = (word: string) => new RegExp(`\\b${word}\\b`).test(lower);
 
     if (hasWord("nano")) return "off";
@@ -196,280 +238,280 @@ export default function (pi: ExtensionAPI): void {
     return "medium";
   }
 
-  // ── All available levels in order ──────────────────────────
-
-  const ALL_THINKING_LEVELS: ThinkingLevel[] = [
-    "off", "minimal", "low", "medium", "high", "xhigh", "max",
-  ];
-
-  /**
-   * Get the subset of thinking levels actually available for a given model,
-   * respecting pi.dev native `thinkingLevelMap`.
-   *
-   * Regole (da documentazione pi.dev models.md):
-   *
-   * thinkingLevelMap presente:
-   *   - null  → livello NON disponibile (nascosto/saltato/clampato)
-   *   - omitted (undefined) → livelli standard (off..high) disponibili di default,
-   *                            xhigh e max NON disponibili
-   *   - string → livello disponibile con quel valore provider-specifico
-   *
-   * thinkingLevelMap assente (undefined):
-   *   - reasoning: true  → off..high disponibili, xhigh/max NO (sono opt-in)
-   *   - reasoning: false → solo "off"
-   */
-  function getAvailableLevels(model?: { reasoning?: boolean; thinkingLevelMap?: Record<string, string | null | undefined> }): ThinkingLevel[] {
-    if (!model || !model.reasoning) return ["off"];
-
-    const map = model.thinkingLevelMap;
-    const highIdx = ALL_THINKING_LEVELS.indexOf("high");
-
-    if (!map) {
-      // No thinkingLevelMap: soli livelli standard (off..high), xhigh/max non supportati
-      return ALL_THINKING_LEVELS.filter((_level, idx) => idx <= highIdx);
-    }
-
-    return ALL_THINKING_LEVELS.filter((level) => {
-      const mapped = map[level];
-      if (mapped === null) return false; // esplicitamente non supportato
-      if (mapped === undefined) {
-        // Non presente nella mappa: off..high supportati di default, xhigh/max no
-        const idx = ALL_THINKING_LEVELS.indexOf(level);
-        return idx <= highIdx;
-      }
-      return true; // string = supportato
-    });
-  }
-
-  // ── Status bar indicator label ────────────────────────────────
+  // ── Status bar ──────────────────────────────────────────────
 
   const STATUS_KEY = "reasoning";
-  const levelEmoji: Record<ThinkingLevel, string> = {
-    off: "⚪",
-    minimal: "🔵",
-    low: "🟢",
-    medium: "🟡",
-    high: "🟠",
-    xhigh: "🔴",
-    max: "💜",
-  };
 
-  function updateStatusBar(level: ThinkingLevel): void {
-    // Cannot directly modify status bar here — handled in events
-  }
-
-  // ── Model Select Event ────────────────────────────────────────
-  //
-  // Fired when the user changes model via /model, Ctrl+P cycling,
-  // or session restore. We automatically set the thinking level to a
-  // sensible default for the new model.
-  //
-  // On "restore" we skip auto-setting to preserve the user's saved level.
+  // ── Model Select Event ──────────────────────────────────────
 
   pi.on("model_select", async (event, ctx) => {
     const { model, source } = event;
-
-    // Aggiorna sempre il modello corrente (serve per autocomplete)
     currentModel = model;
 
-    // Skip on session restore — preserve the level the user had
     if (source === "restore") return;
 
-    // Status bar: show current model reasoning capability
     const modelLabel = model.id.length > 20
       ? model.id.slice(0, 17) + "..."
       : model.id;
 
     if (!model.reasoning) {
-      // Non-reasoning models: pi already clamps to "off"
       ctx.ui.setStatus(STATUS_KEY, `⚪ ${modelLabel}`);
       return;
     }
 
-    // Look up in map, then fall back to heuristic
     const mapped = findLevelForModel(model.provider, model.id);
     const level = mapped ?? guessLevel(model.id);
 
-    // Check that the chosen level is actually available for this model
-    // (rispetta il thinkingLevelMap nativo di pi.dev)
-    const available = getAvailableLevels(model);
-    const safeLevel = (available as readonly string[]).includes(level)
-      ? level
-      : available[available.length - 1]; // fallback al livello più alto disponibile
+    const safeLevel = resolveThinkingLevel(level, getAvailableLevels(model));
+    if (!safeLevel) {
+      ctx.ui.setStatus(STATUS_KEY, `🧠 ${modelLabel}`);
+      return;
+    }
 
     pi.setThinkingLevel(safeLevel);
-    const emoji = levelEmoji[safeLevel] ?? "🧠";
+    const emoji = LEVEL_EMOJI[safeLevel] ?? "🧠";
     ctx.ui.setStatus(STATUS_KEY, `${emoji} ${modelLabel}`);
   });
 
-  // ── Thinking Level Select Event ───────────────────────────────
-  //
-  // Fired whenever the thinking level changes (via our auto-set,
-  // manual /reasoning, keybinding, or pi clamping).
-  // We keep the status bar in sync.
+  // ── Thinking Level Select Event ─────────────────────────────
 
   pi.on("thinking_level_select", async (event, ctx) => {
-    const emoji = levelEmoji[event.level] ?? "🧠";
+    const emoji = LEVEL_EMOJI[event.level] ?? "🧠";
     ctx.ui.setStatus(STATUS_KEY, `${emoji} ${event.level}`);
   });
 
-  // ── /reasoning Command ────────────────────────────────────────
+  // ── Autocomplete Provider for /reasoning + SPACE ────────────
+  //
+  // Wraps the existing provider and intercepts ONLY when the user
+  // types "/reasoning " (with trailing space). For everything else,
+  // delegates to the wrapped provider unchanged.
+  //
+  // This guarantees /reasoning+SPACE shows the EXACT same options
+  // as /reasoning+ENTER (both use buildReasoningMenuOptions).
+
+  function createReasoningAutocompleteProvider(
+    current: AutocompleteProvider,
+  ): AutocompleteProvider {
+    return {
+      triggerCharacters: current.triggerCharacters,
+
+      async getSuggestions(
+        lines: string[],
+        cursorLine: number,
+        cursorCol: number,
+        options: { signal: AbortSignal; force?: boolean },
+      ): Promise<AutocompleteSuggestions | null> {
+        const currentLine = lines[cursorLine] ?? "";
+        const textBeforeCursor = currentLine.slice(0, cursorCol);
+
+        // Intercept ONLY "/reasoning " followed by optional prefix
+        const match = textBeforeCursor.match(/^\/reasoning\s+(.*)$/);
+        if (match) {
+          const userPrefix = match[1] ?? "";
+          const menuOptions = buildReasoningMenuOptions(currentModel);
+          const typedOnlyCommands = [
+            { value: "map", label: "map  — Show active model→level mappings" },
+            { value: "reset", label: "reset  — Restore default model mappings" },
+          ];
+          const allOptions = [...menuOptions, ...typedOnlyCommands];
+
+          const lowerPrefix = userPrefix.trim().toLowerCase();
+          const filtered = lowerPrefix
+            ? allOptions.filter((opt) => opt.value.startsWith(lowerPrefix))
+            : menuOptions;
+
+          if (filtered.length === 0) return null;
+
+          return {
+            prefix: userPrefix,
+            items: filtered.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+              description: currentModel
+                ? `${currentModel.provider}/${currentModel.id}`
+                : "current model",
+            })),
+          };
+        }
+
+        // Everything else → delegate to wrapped provider
+        return current.getSuggestions(lines, cursorLine, cursorCol, options);
+      },
+
+      applyCompletion(
+        lines: string[],
+        cursorLine: number,
+        cursorCol: number,
+        item: AutocompleteItem,
+        prefix: string,
+      ) {
+        // Delegate applyCompletion to the wrapped provider
+        if (current.applyCompletion) {
+          return current.applyCompletion(lines, cursorLine, cursorCol, item, prefix);
+        }
+        // Fallback: simple replacement
+        const currentLine = lines[cursorLine] ?? "";
+        const before = currentLine.slice(0, cursorCol - prefix.length);
+        const after = currentLine.slice(cursorCol);
+        const newLines = [...lines];
+        newLines[cursorLine] = before + item.value + " " + after;
+        return {
+          lines: newLines,
+          cursorLine,
+          cursorCol: before.length + item.value.length + 1,
+        };
+      },
+
+      shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
+        const currentLine = lines[cursorLine] ?? "";
+        // Allow forced refreshes (for example Tab) for /reasoning too.
+        if (currentLine.match(/^\/reasoning\s/)) {
+          return true;
+        }
+        // Delegate to wrapped provider for everything else
+        if (current.shouldTriggerFileCompletion) {
+          return current.shouldTriggerFileCompletion(lines, cursorLine, cursorCol);
+        }
+        return true;
+      },
+    };
+  }
+
+  // ── /reasoning Command ──────────────────────────────────────
   //
   // Usage:
-  //   /reasoning            — interactive menu to pick level
-  //   /reasoning off|minimal|low|medium|high|xhigh|max  — set manually
-  //   /reasoning auto       — re-apply auto-reasoning for current model
-  //   /reasoning reset      — restore default model map
-  //   /reasoning map        — show active model→level mappings
-
-  const LEVEL_EMOJI: Record<ThinkingLevel, string> = {
-    off: "⚪",
-    minimal: "🔵",
-    low: "🟢",
-    medium: "🟡",
-    high: "🟠",
-    xhigh: "🔴",
-    max: "💜",
-  };
-
-  function buildLevelOptions(available: ThinkingLevel[]): Array<{ label: string; value: ThinkingLevel }> {
-    return available.map((level) => ({
-      label: `${LEVEL_EMOJI[level]}  ${level}`,
-      value: level,
-    }));
-  }
+  //   /reasoning                              — interactive menu
+  //   /reasoning off|minimal|low|medium|high|xhigh|max — set manually
+  //   /reasoning auto                         — re-apply auto-reasoning
+  //   /reasoning reset                        — restore default map
+  //   /reasoning map                          — show active mappings
 
   pi.registerCommand("reasoning", {
     description:
-      "Show or set the reasoning level. " +
-      "Usage: /reasoning [off|minimal|low|medium|high|xhigh|max|auto|reset|map]",
+      "Show or set the thinking/reasoning level for the current model. " +
+      "Use a level name as argument, or press ENTER for an interactive menu.",
     getArgumentCompletions: (prefix: string) => {
-      // Determina i livelli effettivamente disponibili per il modello corrente
-      const available = getAvailableLevels(currentModel);
-      const availableSet = new Set(available);
-
-      // Comandi speciali sempre disponibili
-      const specialCommands = [
-        { value: "auto", label: "auto  — Re-apply auto-reasoning for current model" },
-        { value: "reset", label: "reset  — Restore default model mappings" },
+      const normalizedPrefix = prefix.trim().toLowerCase();
+      const menuOptions = buildReasoningMenuOptions(currentModel);
+      const typedOnlyCommands = [
         { value: "map", label: "map  — Show active model→level mappings" },
+        { value: "reset", label: "reset  — Restore default model mappings" },
       ];
+      const options = normalizedPrefix
+        ? [...menuOptions, ...typedOnlyCommands].filter((option) =>
+            option.value.startsWith(normalizedPrefix))
+        : menuOptions;
 
-      // Solo i livelli di thinking supportati dal modello corrente
-      const LEVEL_EMOJI_MAP: Record<string, string> = {
-        off: "⚪", minimal: "🔵", low: "🟢", medium: "🟡",
-        high: "🟠", xhigh: "🔴", max: "💜",
-      };
-      const levelOptions = available.map((level) => ({
-        value: level,
-        label: `${LEVEL_EMOJI_MAP[level] ?? "❓"}  ${level}`,
-      }));
-
-      const allOptions = [...levelOptions, ...specialCommands];
-
-      const p = prefix.toLowerCase();
-      const filtered = allOptions.filter((i) => i.value.startsWith(p));
-      return filtered.length > 0 ? filtered : null;
+      return options.length > 0 ? options : null;
     },
     handler: async (args, ctx) => {
       const trimmed = args.trim().toLowerCase();
 
-      // ── No args: show interactive menu, filtrato per modello ──
+      // ── No args: interactive menu ──
       if (!trimmed) {
-        const model = ctx.model;
-        const available = getAvailableLevels(model);
-        const options = buildLevelOptions(available);
+        const options = buildReasoningMenuOptions(ctx.model);
+        const modelLabel = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "no model";
 
-        // Titolo del menu con info sul modello
-        const modelLabel = model ? `${model.provider}/${model.id}` : "nessun modello";
-        const menuTitle = available.length < ALL_THINKING_LEVELS.length
-          ? `🧠  ${modelLabel} — ${available.length}/${ALL_THINKING_LEVELS.length} livelli disponibili`
-          : `🧠  Select reasoning level (${modelLabel})`;
-
-        const choices = options.map((o) => o.label);
-        const choice = await ctx.ui.select(menuTitle, choices);
-        if (!choice) return; // user cancelled (Esc)
-
-        const selected = options.find((o) => o.label === choice);
-        if (selected) {
-          pi.setThinkingLevel(selected.value);
-          ctx.ui.notify(
-            `Reasoning level → ${selected.label}`,
-            "info",
-          );
-        }
-        return;
-      }
-
-      // ── Auto: re-apply based on current model ────────────────
-      if (trimmed === "auto" || trimmed === "automatic") {
-        const model = ctx.model;
-        if (!model) {
-          ctx.ui.notify("No model currently selected", "warning");
-          return;
-        }
-
-        if (!model?.reasoning) {
-          ctx.ui.notify(
-            `Model ${model.id} does not support reasoning`,
-            "info",
-          );
-          return;
-        }
-
-        const mapped = findLevelForModel(model.provider, model.id);
-        const level = mapped ?? guessLevel(model.id);
-
-        // Check that the chosen level is actually available for this model
-        const available = getAvailableLevels(model);
-        const safeLevel = (available as readonly string[]).includes(level)
-          ? level
-          : available[available.length - 1];
-
-        pi.setThinkingLevel(safeLevel);
-        const emoji = levelEmoji[safeLevel] ?? "🧠";
-        const note = safeLevel !== level ? ` (clamped from ${level} — non supportato dal modello)` : "";
-        ctx.ui.notify(
-          `Auto-reasoning → ${emoji} ${safeLevel} (${model.provider}/${model.id})${note}`,
-          "info",
+        const choice = await ctx.ui.select(
+          `🧠  Reasoning level — ${modelLabel}`,
+          options.map((option) => option.label),
         );
+        if (!choice) return;
+
+        const selected = options.find((option) => option.label === choice)!;
+
+        if (selected.value === "auto") {
+          handleAuto(ctx);
+        } else {
+          const chosen = selected.value as ThinkingLevel;
+          const applied = resolveThinkingLevel(chosen, getAvailableLevels(ctx.model));
+          if (!applied) {
+            ctx.ui.notify("No reasoning level is available for this model", "warning");
+            return;
+          }
+          pi.setThinkingLevel(applied);
+          ctx.ui.notify(formatReasoningLevelChange(chosen, applied), "info");
+        }
         return;
       }
 
-      // ── Reset: restore default model map ─────────────────────
+      // ── Auto ──
+      if (trimmed === "auto" || trimmed === "automatic") {
+        handleAuto(ctx);
+        return;
+      }
+
+      // ── Reset ──
       if (trimmed === "reset") {
         modelMap = [...DEFAULT_MODEL_MAP];
         ctx.ui.notify("Model map reset to defaults", "info");
         return;
       }
 
-      // ── Map: show current mappings ──────────────────────────
+      // ── Map ──
       if (trimmed === "map" || trimmed === "list") {
         const lines = modelMap.map(
           (e) =>
             `  ${e.pattern.padEnd(24)} → ${e.level.padEnd(8)}${e.providers ? ` [${e.providers.join(", ")}]` : ""}`,
         );
         ctx.ui.notify(
-          `Active mappings (${modelMap.length}):\n${lines.join("\n")}`,
+          `🗺️  Active mappings (${modelMap.length}):\n${lines.join("\n")}`,
           "info",
         );
         return;
       }
 
-      // ── Set specific level ───────────────────────────────────
+      // ── Set specific level ──
       const available = getAvailableLevels(ctx.model);
-      if ((available as readonly string[]).includes(trimmed)) {
-        pi.setThinkingLevel(trimmed as ThinkingLevel);
-        const emoji = levelEmoji[trimmed as ThinkingLevel] ?? "🧠";
-        ctx.ui.notify(`Reasoning level → ${emoji} ${trimmed}`, "info");
+      if ((ALL_THINKING_LEVELS as readonly string[]).includes(trimmed)) {
+        const requested = trimmed as ThinkingLevel;
+        const applied = resolveThinkingLevel(requested, available);
+        if (!applied) {
+          ctx.ui.notify("No reasoning level is available for this model", "warning");
+          return;
+        }
+        pi.setThinkingLevel(applied);
+        ctx.ui.notify(formatReasoningLevelChange(requested, applied), "info");
         return;
       }
 
       ctx.ui.notify(
-        `Invalid level: "${trimmed}". ` +
-          `Available: ${available.join(", ")}, auto, reset, map`,
+        `Invalid level: "${trimmed}". Available: ${available.join(", ")}, auto, reset, map`,
         "warning",
       );
     },
   });
+
+  // ── Shared auto handler ─────────────────────────────────────
+
+  function handleAuto(ctx: { model?: typeof currentModel; ui: { notify: (msg: string, type: string) => void } }): void {
+    const model = ctx.model;
+    if (!model) {
+      ctx.ui.notify("No model currently selected", "warning");
+      return;
+    }
+    if (!model?.reasoning) {
+      ctx.ui.notify(`Model ${model.id} does not support reasoning`, "info");
+      return;
+    }
+
+    const mapped = findLevelForModel(model.provider, model.id);
+    const level = mapped ?? guessLevel(model.id);
+    const safeLevel = resolveThinkingLevel(level, getAvailableLevels(model));
+    if (!safeLevel) {
+      ctx.ui.notify("No reasoning level is available for this model", "warning");
+      return;
+    }
+
+    const emoji = LEVEL_EMOJI[safeLevel] ?? "🧠";
+    const originEmoji = LEVEL_EMOJI[level] ?? "";
+    const note = safeLevel !== level
+      ? ` (rounded, your choice was ${originEmoji} ${level})`
+      : "";
+    pi.setThinkingLevel(safeLevel);
+    ctx.ui.notify(
+      `Auto-reasoning → ${emoji} ${safeLevel}${note} (${model.provider}/${model.id})`,
+      "info",
+    );
+  }
 }

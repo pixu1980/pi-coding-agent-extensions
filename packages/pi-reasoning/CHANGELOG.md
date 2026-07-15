@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.2](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.2.1...@pixu1980/pi-reasoning@0.2.2) (2026-07-15)
+
+
+### Bug Fixes
+
+* **pi-path-picker:** isolate tab completion ([2412c56](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2412c5693aa200547856df8f7ca1c2533a98062b))
+* **pi-reasoning:** unify model-aware menus ([ed5fa62](https://github.com/pixu1980/pi-coding-agent-extensions/commit/ed5fa62972a2f1390787d5387c42f30912ccd8b2))
+
 ### [0.2.1](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.1.1...@pixu1980/pi-reasoning@0.2.1) (2026-07-11)
 
 

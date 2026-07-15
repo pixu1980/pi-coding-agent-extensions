@@ -4,9 +4,6 @@
  * Provides:
  * - **Editor autocomplete**: ~/ and /-based path completion with fuzzy filtering
  *   directly in the prompt input field, solo su Tab e dentro backtick/single/double quotes
- * - `/reasoning` command autocomplete: mostra i livelli di thinking disponibili
- *   per il modello corrente dopo `/reasoning ` + SPACE
- *
  * Features:
  * - Fuzzy text filter as you type
  * - Tab to enter directories, Enter to select
@@ -67,57 +64,55 @@ function resolvePath(path: string, cwd: string): string {
 }
 
 /**
- * Check if the cursor position is inside a pair of double quotes ("), backticks (`), or single quotes (').
- * The autocomplete should ONLY fire when the user is typing inside these delimiters.
- * Accounts for escaped delimiters (\", \`, \').
- *
- * Examples where this returns true:
- *   "src/components/|"          cursor at |
- *   `src/components/|`          cursor at |
- *   'src/components/|'          cursor at |
- *
- * Examples where this returns false:
- *   const x = src/compo|nents   cursor at |
- *   cd src/|                    cursor at |
- *   /model                      cursor at |  (pi.dev command)
+ * Delimitatori supportati dal path autocomplete.
  */
-function cursorInsideAllowedDelimiters(line: string, col: number): boolean {
+const STRING_DELIMITERS = ['"', "'", "`"] as const;
+type DelimiterContext = "inside" | "broken" | "outside";
+
+/**
+ * Un carattere è escaped solo con un numero dispari di backslash consecutivi.
+ */
+function isEscapedAt(text: string, index: number): boolean {
+  let backslashes = 0;
+  for (let i = index - 1; i >= 0 && text[i] === "\\"; i--) {
+    backslashes++;
+  }
+  return backslashes % 2 === 1;
+}
+
+function countUnescaped(text: string, delimiter: string): number {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === delimiter && !isEscapedAt(text, i)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
+ * Classifica il contesto relativo al cursore:
+ * - inside: fra due delimitatori uguali non escaped;
+ * - broken: apertura o chiusura mancante;
+ * - outside: nessun contesto quotato relativo al cursore.
+ */
+function getDelimiterContext(line: string, col: number): DelimiterContext {
   const beforeCursor = line.slice(0, col);
   const afterCursor = line.slice(col);
+  const counts = STRING_DELIMITERS.map((delimiter) => ({
+    before: countUnescaped(beforeCursor, delimiter),
+    after: countUnescaped(afterCursor, delimiter),
+  }));
 
-  // Count unescaped delimiters (not preceded by backslash)
-  function countUnescaped(str: string, char: string): number {
-    let count = 0;
-    for (let i = 0; i < str.length; i++) {
-      if (str[i] === char && (i === 0 || str[i - 1] !== "\\")) {
-        count++;
-      }
-    }
-    return count;
+  if (counts.some(({ before, after }) => before % 2 === 1 && after > 0)) {
+    return "inside";
   }
 
-  // Inside double quotes: odd number of unescaped " before cursor, at least one unescaped " after
-  const doubleQuoteCountBefore = countUnescaped(beforeCursor, '"');
-  const doubleQuoteCountAfter = countUnescaped(afterCursor, '"');
-  if (doubleQuoteCountBefore % 2 === 1 && doubleQuoteCountAfter >= 1) {
-    return true;
+  if (counts.some(({ before, after }) => before % 2 === 1 || after % 2 === 1)) {
+    return "broken";
   }
 
-  // Inside backticks: odd number of unescaped ` before cursor, at least one unescaped ` after
-  const backtickCountBefore = countUnescaped(beforeCursor, '`');
-  const backtickCountAfter = countUnescaped(afterCursor, '`');
-  if (backtickCountBefore % 2 === 1 && backtickCountAfter >= 1) {
-    return true;
-  }
-
-  // Inside single quotes: odd number of unescaped ' before cursor, at least one unescaped ' after
-  const singleQuoteCountBefore = countUnescaped(beforeCursor, "'");
-  const singleQuoteCountAfter = countUnescaped(afterCursor, "'");
-  if (singleQuoteCountBefore % 2 === 1 && singleQuoteCountAfter >= 1) {
-    return true;
-  }
-
-  return false;
+  return "outside";
 }
 
 /**
@@ -192,94 +187,12 @@ function extractPathToken(textBeforeCursor: string): { path: string; startIndex:
   return null;
 }
 
-// ── Thinking levels /reasoning support ────────────────────────────
-
-/**
- * Pi thinking levels in canonical order.
- */
-const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
-
-/**
- * Human-readable labels for each thinking level.
- */
-const THINKING_LABELS: Record<string, string> = {
-  off: "🧠 off",
-  minimal: "🧠 minimal",
-  low: "🧠 low",
-  medium: "🧠 medium",
-  high: "🧠 high",
-  xhigh: "🧠 xhigh",
-  max: "🧠 max",
-};
-
-/**
- * Restituisce i suggerimenti per il comando /reasoning.
- * Filtra i livelli in base alle capacità del modello corrente.
- */
-function getThinkingLevelSuggestions(
-  model: Record<string, unknown> | undefined,
-  userPrefix: string,
-): AutocompleteSuggestions | null {
-  // Determine which levels the model supports
-  const supportedLevels = new Set<string>();
-  const thinkingLevelMap = model?.thinkingLevelMap as Record<string, unknown> | undefined;
-
-  if (thinkingLevelMap) {
-    for (const level of THINKING_LEVELS) {
-      if (thinkingLevelMap[level] !== null) {
-        supportedLevels.add(level);
-      }
-    }
-  } else {
-    // No thinkingLevelMap: assume all levels available
-    for (const level of THINKING_LEVELS) {
-      supportedLevels.add(level);
-    }
-  }
-
-  const lowerPrefix = userPrefix.toLowerCase();
-  const items: AutocompleteItem[] = [];
-
-  for (const level of THINKING_LEVELS) {
-    if (!supportedLevels.has(level)) continue;
-    if (lowerPrefix && !level.startsWith(lowerPrefix) && !level.includes(lowerPrefix)) continue;
-
-    const modelLabel = model ? `${model.provider as string}/${model.id as string}` : "current model";
-    items.push({
-      value: level,
-      label: THINKING_LABELS[level] ?? level,
-      description: modelLabel,
-    });
-  }
-
-  if (items.length === 0) return null;
-
-  return {
-    prefix: userPrefix,
-    items,
-  };
-}
-
 // ── Extension entry point ─────────────────────────────────────────
 
 export default function pathPickerExtension(pi: ExtensionAPI) {
-  // ── Inline path autocomplete nel campo di input TUI ───────
-  // Fornisce Tab completion per percorsi ~, / e relativi (./, ../)
-  // SOLO dentro apici (", ', `).
-  //
-  // Aggiunge anche autocomplete per /reasoning + SPACE con i livelli
-  // di thinking supportati dal modello corrente.
   pi.on("session_start", async (_event, ctx) => {
-    // Riferimento al modello corrente, si aggiorna quando l'utente
-    // cambia modello via /model o Ctrl+P
-    let currentModel = ctx.model as Record<string, unknown> | undefined;
-
-    pi.on("model_select", async (event) => {
-      currentModel = event.model as Record<string, unknown>;
-    });
-
     ctx.ui.addAutocompleteProvider(
-      (current: AutocompleteProvider) => createPathAutocompleteProvider(current, ctx.cwd, () => currentModel),
+      (current: AutocompleteProvider) => createPathAutocompleteProvider(current, ctx.cwd),
     );
   });
 }
@@ -291,22 +204,12 @@ export default function pathPickerExtension(pi: ExtensionAPI) {
 function createPathAutocompleteProvider(
   current: AutocompleteProvider,
   cwd: string,
-  getModel: () => Record<string, unknown> | undefined,
 ): AutocompleteProvider {
   return {
-    // Trigger characters per l'autocomplete. Attivano getSuggestions immediatamente.
-    //
-    //   `~`   → dentro gli apici: path autocomplete immediato (home directory)
-    //   `"` `'` `` ` `` → dentro gli apici: path autocomplete immediato
-    //
-    // IMPORTANTE: `/` NON è un trigger character perché interferisce con i comandi
-    // pi.dev come /model, /caveman. Dentro gli apici, il path autocomplete si attiva
-    // comunque via shouldTriggerFileCompletion (TAB) o dopo altri trigger.
-    //
-    // Fuori dagli apici il provider delega al provider nativo per i comandi slash
-    // (/model, /caveman, ecc.) e per @file. L'unica eccezione è /reasoning che
-    // viene intercettato per mostrare i livelli di thinking disponibili.
-    triggerCharacters: ["~", "\"", "'", "`"],
+    // Non aggiunge trigger characters: preserva esclusivamente quelli nativi.
+    // Il path picker viene attivato solo da Tab, dentro una coppia valida,
+    // quando il token contiene almeno uno slash.
+    triggerCharacters: current.triggerCharacters,
 
     async getSuggestions(
       lines: string[],
@@ -316,41 +219,25 @@ function createPathAutocompleteProvider(
     ): Promise<AutocompleteSuggestions | null> {
       const currentLine = lines[cursorLine] ?? "";
       const textBeforeCursor = currentLine.slice(0, cursorCol);
+      const delimiterContext = getDelimiterContext(currentLine, cursorCol);
 
-      // ── Outside delimiters ──────────────────────────────────
-      // Quando il cursore è fuori dagli apici, il path picker NON
-      // deve mostrare i propri suggerimenti. Tuttavia:
-      //
-      //   1. /reasoning + SPACE → mostra i livelli di thinking
-      //   2. Tutto il resto → delega al provider nativo così che
-      //      i comandi slash (/model, /caveman, /reload, ecc.) e
-      //      l'autocomplete @file funzionino regolarmente.
-      if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
-        // ── /reasoning command autocomplete ─────────────────
-        // Quando l'utente digita /reasoning + SPACE, mostriamo
-        // i livelli di thinking supportati dal modello corrente.
-        const reasoningMatch = textBeforeCursor.match(/^\/reasoning\s+(.*)$/);
-        if (reasoningMatch) {
-          const userInput = reasoningMatch[1] ?? "";
-          return getThinkingLevelSuggestions(getModel(), userInput);
-        }
-
-        // Delegate to the native provider (slash commands, @file, etc.)
-        // IMPORTANTE: non ritornare null in questo caso — null dice a pi
-        // "nessun suggerimento", il che blocca il provider nativo.
-        // Invece, chiamiamo current.getSuggestions() per lasciare che sia
-        // il provider sottostante (quello nativo di pi.dev) a gestire il
-        // completamento dei comandi slash, @file, argomenti, ecc.
+      // Senza quote relative al cursore il wrapper è trasparente.
+      if (delimiterContext === "outside") {
         return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
 
-      // ── Inside delimiters: path autocomplete ───────────────
-      // Works on:
-      //   • `~` trigger character (immediate)
-      //   • TAB when cursor is after a path pattern (/ ~ ./ ../)
+      // Una coppia rotta deve chiudere qualsiasi menu senza delegare al nativo.
+      if (delimiterContext === "broken") {
+        return null;
+      }
+
+      // Dentro la coppia, solo Tab (`force`) può attivare il path picker.
+      if (!options.force || options.signal.aborted) {
+        return null;
+      }
 
       const token = extractPathToken(textBeforeCursor);
-      if (!token || options.signal.aborted) {
+      if (!token || !token.path.includes("/")) {
         return null;
       }
 
@@ -407,10 +294,10 @@ function createPathAutocompleteProvider(
       const currentLine = lines[cursorLine] ?? "";
       const textBeforeCursor = currentLine.slice(0, cursorCol);
       const textAfterCursor = currentLine.slice(cursorCol);
-      const token = cursorInsideAllowedDelimiters(currentLine, cursorCol) ? extractPathToken(textBeforeCursor) : null;
+      const token = getDelimiterContext(currentLine, cursorCol) === "inside" ? extractPathToken(textBeforeCursor) : null;
 
       // Se i suggerimenti provengono da un provider che non è il path picker
-      // (comandi slash nativi, /reasoning, @file, argomenti comandi, ecc.),
+      // (comandi slash nativi, @file, argomenti comandi, ecc.),
       // deleghiamo al provider sottostante.
       if (!token || token.path !== prefix) {
         return current.applyCompletion(lines, cursorLine, cursorCol, item, prefix);
@@ -434,28 +321,15 @@ function createPathAutocompleteProvider(
 
     shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
       const currentLine = lines[cursorLine] ?? "";
+      const delimiterContext = getDelimiterContext(currentLine, cursorCol);
 
-      // ── Outside delimiters ────────────────────────────────
-      // Se il cursore è fuori dagli apici, il path picker non deve attivarsi.
-      // Tuttavia, dobbiamo forzare re-query quando l'utente digita
-      // /reasoning + SPACE, così getSuggestions intercetta e mostra i livelli.
-      //
-      // Per tutto il resto (comandi slash nativi, @file, argomenti), delegamo
-      // al provider sottostante tramite current.shouldTriggerFileCompletion.
-      if (!cursorInsideAllowedDelimiters(currentLine, cursorCol)) {
-        // Force re-query per /reasoning command
-        if (currentLine.slice(0, cursorCol).match(/^\/reasoning\s/)) {
-          return true;
-        }
-        // Per tutti gli altri casi fuori apici, delegare al provider nativo
+      // Fuori dalla coppia preserva esattamente il comportamento nativo.
+      if (delimiterContext === "outside") {
         return current.shouldTriggerFileCompletion?.(lines, cursorLine, cursorCol) ?? true;
       }
 
-      // ── Inside delimiters ─────────────────────────────────
-      // Sempre true: forza pi a richiamare getSuggestions a ogni tasto.
-      // Returning false farebbe saltare getSuggestions a pi, lasciando il
-      // menu aperto con dati stale — la root cause del bug per cui cancellare
-      // un carattere di quote NON chiude la lista.
+      // Dentro una coppia valida o rotta richiama getSuggestions:
+      // solo un risultato null può chiudere immediatamente un menu stale.
       return true;
     },
   };

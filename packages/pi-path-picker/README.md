@@ -15,40 +15,47 @@ Requires **Node.js ≥ 22** (uses `--experimental-strip-types`).
 
 ## Interaction modes
 
-All autocomplete triggers fire **only inside double quotes, single quotes, or backticks**.
-Outside quotes the extension stays silent so it never interferes with native command completion or pi.dev commands (`/model`, `/caveman`, etc.).
+Path autocomplete fires **only on Tab**, inside a closed pair of double quotes, single quotes, or backticks, and only when the quoted path token contains `/`.
+
+The extension adds no trigger characters of its own. When no quoted context is present it delegates transparently to pi's native provider, so built-in commands (`/model`, `/settings`, `/caveman`, etc.), `@file`, command arguments, and native Tab completion behave exactly as if `pi-path-picker` were not installed.
+
+An incomplete quote context (opening or closing delimiter missing) is intentionally not delegated: it returns no suggestions so any open path menu closes immediately.
 
 ### 1. `~` / `~/` — Home directory expansion
 
-Type `~` or `~/` inside quotes → immediate file list from `$HOME`.
+Type `~/` inside quotes and press Tab → file list from `$HOME`.
 
 ```
-"~/Desk|"          →  shows Desktop/, Documents/, ...
-"~/.ssh|"          →  suppressed (sensitive directory guard)
+"~/|" + Tab        →  shows home-directory contents
+"~/.ssh/|" + Tab   →  suppressed (sensitive directory guard)
 ```
 
 ### 2. `/` — Absolute path browsing
 
-Type `/` inside quotes → list filesystem root contents. Continue typing to drill down.
+Type `/` inside quotes and press Tab → list filesystem root contents.
 
 ```
-"/u|"              →  /usr/, /Users/
-"/etc/ssh|"        →  suppressed (sensitive directory guard)
+"/|" + Tab         →  root contents
+"/etc/ssh/|" + Tab →  suppressed (sensitive directory guard)
 ```
 
 ### 3. `./` and `../` — Relative path browsing
 
-Type `./` or `../` inside quotes → navigate from project root / parent dirs.
+Type `./` or `../` inside quotes and press Tab → navigate from project root or parent directories.
 
 ```
-"./src/comp|"      →  ./src/components/, ./src/composables/
-"../../oth|"       →  ../../other-stuff/
+"./src/|" + Tab    →  contents of ./src/
+"../../|" + Tab    →  contents two levels above
 ```
 
 ### 4. Tab key — Force trigger
 
-Pressing Tab inside quotes with any path prefix (`~/`, `/`, `./`, `../`) opens the
-autocomplete list.
+Tab is the **only** path-picker trigger. It opens the menu only when:
+
+1. the cursor is inside a closed pair of `"`, `'`, or `` ` ``;
+2. the extracted path token contains `/` (`~/`, `/`, `./`, `../`, or a descendant path).
+
+Typing `~`, `/`, a quote, or a backtick never opens the path menu by itself.
 
 ### 5. Fuzzy filter
 
@@ -81,13 +88,19 @@ Users can still navigate into them via other means — only the autocomplete lis
 The extension registers an **autocomplete provider** via pi's `session_start` hook.
 It wraps pi's native provider and adds path-aware completion.
 
-**Outside quotes** — delegates to native provider for `/`-prefixed commands
-(`/model`, `/caveman`), returns `null` for everything else (closes stale menus when
-cursor leaves a quoted region).
+### Autocomplete isolation contract
 
-**Inside quotes** — extracts the path token before the cursor (`~...`, `/...`, `./...`,
-`../...`), resolves it against `cwd` or `$HOME`, lists matching files/dirs, and returns
-autocomplete items with `📁` / `📄` labels.
+The provider follows one ownership rule:
+
+1. **No custom trigger characters** — the wrapper passes through the native provider's trigger list unchanged.
+2. **Inside a closed quote pair + Tab + token containing `/`** — `pi-path-picker` owns suggestions and completion.
+3. **Inside a closed quote pair without Tab or without `/`** — returns no path suggestions, closing any stale menu.
+4. **Broken quote pair** — returns no suggestions and forces a refresh, so deleting either delimiter closes the menu like Escape.
+5. **No quoted context** — delegates `getSuggestions`, `shouldTriggerFileCompletion`, and `applyCompletion` to the wrapped native provider without altering arguments or results.
+
+This delegation is required because `addAutocompleteProvider()` creates a wrapper chain: returning `null` outside the owned context would stop native slash-command completion.
+
+Inside quote pairs, the extension resolves paths against `cwd` or `$HOME`, lists matching files/directories, and returns autocomplete items with `📁` / `📄` labels.
 
 ## Development
 

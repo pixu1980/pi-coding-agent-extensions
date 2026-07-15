@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.3](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.2.2...@pixu1980/pi-reasoning@0.2.3) (2026-07-15)
+
 ### [0.2.2](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.2.1...@pixu1980/pi-reasoning@0.2.2) (2026-07-15)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-reasoning",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": false,
   "description": "Automatic reasoning level management for pi.dev - sets the thinking level based on the selected model with sensible defaults and full customization",
   "type": "module",

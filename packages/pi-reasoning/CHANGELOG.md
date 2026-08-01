@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.7](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.2.6...@pixu1980/pi-reasoning@0.2.7) (2026-08-01)
+
+### Features
+
+* **pi-ask:** add interactive ask and questionnaire tools ([8988b1e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/8988b1e4ff2de0bb313165049f50f730873df02d))
+* **pi-mcp:** bare dash-separated slash commands with toolPrefix none ([3b3eb57](https://github.com/pixu1980/pi-coding-agent-extensions/commit/3b3eb57d3abb1a50b20749a99e8e23c0b9523533))
+* **pi-statusline:** add full-label responsive level for wide terminals ([dda2fdb](https://github.com/pixu1980/pi-coding-agent-extensions/commit/dda2fdb0ce57974bb42f1dd560cc7df6c59b15e6))
+* **pi-statusline:** add responsive auto format ([714350f](https://github.com/pixu1980/pi-coding-agent-extensions/commit/714350fbc3f855752ab6ea6aed64530de3c19bbe))
+
+### Bug Fixes
+
+* **pi-mcp:** skip load-time init when extension runtime is not bound ([e0d6137](https://github.com/pixu1980/pi-coding-agent-extensions/commit/e0d61378b68b35476b50aa26c51f180063d49c55))
+* **pi-statusline:** truncate widget and footer lines to terminal width ([2bf4424](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2bf4424d9600eed7eec56ace0e6ddecb3c6c54e0))
 ## [0.2.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.2.5...@pixu1980/pi-reasoning@0.2.6) (2026-08-01)
 
 ### Features

@@ -1,14 +1,69 @@
 {
   "name": "@pixu1980/pi-statusline",
   "version": "0.1.1",
+  "private": false,
   "description": "Statusline extension for pi-coding-agent — replicates /statusline from Claude Code with customizable templates, git status, model info, and context usage with gradient colors.",
+  "type": "module",
+  "author": "Emiliano 'pixu1980' Pisu",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixu1980/pi-coding-agent-extensions.git",
+    "directory": "packages/pi-statusline"
+  },
+  "homepage": "https://github.com/pixu1980/pi-coding-agent-extensions/tree/main/packages/pi-statusline#readme",
+  "bugs": {
+    "url": "https://github.com/pixu1980/pi-coding-agent-extensions/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "statusline",
+    "status-bar",
+    "git"
+  ],
+  "files": [
+    "index.ts",
+    "colors.ts",
+    "git.ts",
+    "settings-ui.ts",
+    "template.ts",
+    "types.ts",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "release": "standard-version --no-verify && pnpm publish",
+    "release:dry": "standard-version --dry-run",
+    "test": "node --import tsx --test index.test.mjs",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage index.test.mjs"
   },
   "pi": {
     "extensions": [
       "./index.ts"
     ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.83.0",
+    "@earendil-works/pi-tui": ">=0.83.0"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "standard-version": "9.5.0",
+    "@earendil-works/pi-coding-agent": "^0.83.0",
+    "@earendil-works/pi-tui": "^0.83.0",
+    "tsx": "^4.23.1"
   }
 }

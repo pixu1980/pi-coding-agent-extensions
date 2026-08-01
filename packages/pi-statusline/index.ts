@@ -14,10 +14,7 @@
  *   /statusline reload    – Reload settings from disk
  */
 
-import type {
-  ExtensionAPI,
-  ExtensionCommandContext,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -161,7 +158,7 @@ function getEffortLabel(level: string): string {
   }
 }
 
-function computeContextUsage(ctx: ExtensionCommandContext): { used: number; total: number; pct: number } {
+function computeContextUsage(ctx: ExtensionContext): { used: number; total: number; pct: number } {
   const total = ctx.model?.contextWindow ?? 200_000;
   let used = 0;
   try {
@@ -172,7 +169,7 @@ function computeContextUsage(ctx: ExtensionCommandContext): { used: number; tota
   return { used, total, pct };
 }
 
-function buildData(ctx: ExtensionCommandContext): StatusLineData {
+function buildData(ctx: ExtensionContext): StatusLineData {
   const { status: git, hasGit } = getGitStatus(ctx.cwd);
   const usage = computeContextUsage(ctx);
 
@@ -198,7 +195,7 @@ function buildData(ctx: ExtensionCommandContext): StatusLineData {
     hasGit,
     model: ctx.model?.name ?? (ctx.model as any)?.id ?? "?",
     modelContext: ctx.model?.contextWindow ?? 0,
-    effort: getEffortLabel(ctx.thinkingLevel),
+    effort: getEffortLabel(ctx.thinkingLevel || "high"),
     contextUsed: usage.used,
     contextTotal: usage.total,
     contextPct: usage.pct,
@@ -206,7 +203,7 @@ function buildData(ctx: ExtensionCommandContext): StatusLineData {
   };
 }
 
-function formatLine(ctx: ExtensionCommandContext, overrideTmpl?: string): string {
+function formatLine(ctx: ExtensionContext, overrideTmpl?: string): string {
   const data = buildData(ctx);
   const tmpl = overrideTmpl ?? resolveTemplate(settings);
 

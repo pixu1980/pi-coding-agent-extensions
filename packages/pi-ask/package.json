@@ -1,0 +1,73 @@
+{
+  "name": "@pixu1980/pi-ask",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Interactive Q&A for pi coding agent - multiple choice and single answer questions with notes and custom answers, Claude Code style",
+  "type": "module",
+  "author": "Emiliano 'pixu1980' Pisu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixu1980/pi-coding-agent-extensions.git",
+    "directory": "packages/pi-ask"
+  },
+  "homepage": "https://github.com/pixu1980/pi-coding-agent-extensions/tree/main/packages/pi-ask#readme",
+  "bugs": {
+    "url": "https://github.com/pixu1980/pi-coding-agent-extensions/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "ask",
+    "questionnaire",
+    "interview",
+    "question",
+    "quiz",
+    "interactive"
+  ],
+  "files": [
+    "index.ts",
+    "lib/**",
+    "skills/**",
+    "assets/**",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node --import tsx --test __tests__/index.test.mjs",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs",
+    "release": "commit-and-tag-version --no-verify && pnpm publish",
+    "release:dry": "commit-and-tag-version --dry-run"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.83.0",
+    "@earendil-works/pi-tui": ">=0.83.0",
+    "typebox": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "commit-and-tag-version": "13.1.2",
+    "tsx": "4.23.1",
+    "typescript": "^7.0.2"
+  }
+}

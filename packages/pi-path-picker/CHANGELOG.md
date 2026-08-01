@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.13](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.12...@pixu1980/pi-path-picker@0.1.13) (2026-08-01)
+
+
+### Features
+
+* **pi-mcp:** add MCP adapter extension ([eb1e2ed](https://github.com/pixu1980/pi-coding-agent-extensions/commit/eb1e2ed5dc7cdc3326816115402f33acf578474b))
+* **pi-statusline:** add statusline extension ([ab895ec](https://github.com/pixu1980/pi-coding-agent-extensions/commit/ab895ec95df9554b916352e1e9c75bd0736a5460))
+
+
+### Bug Fixes
+
+* **release:** preserve first package version ([d3b6c81](https://github.com/pixu1980/pi-coding-agent-extensions/commit/d3b6c81661867e1d9ada1272a30644f9a814f005))
+* **release:** use local standard-version ([1934fff](https://github.com/pixu1980/pi-coding-agent-extensions/commit/1934fff0a2973c4f441304be4d28f9f633d64db5))
+
 ### [0.1.12](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.11...@pixu1980/pi-path-picker@0.1.12) (2026-07-15)
 
 ### [0.1.11](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.10...@pixu1980/pi-path-picker@0.1.11) (2026-07-15)

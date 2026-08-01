@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.5...@pixu1980/pi-mcp@0.1.6) (2026-08-01)
+
+### Features
+
+* **pi-mcp:** bare dash-separated slash commands with toolPrefix none ([3b3eb57](https://github.com/pixu1980/pi-coding-agent-extensions/commit/3b3eb57d3abb1a50b20749a99e8e23c0b9523533))
+* **pi-statusline:** add full-label responsive level for wide terminals ([dda2fdb](https://github.com/pixu1980/pi-coding-agent-extensions/commit/dda2fdb0ce57974bb42f1dd560cc7df6c59b15e6))
+* **pi-statusline:** add responsive auto format ([714350f](https://github.com/pixu1980/pi-coding-agent-extensions/commit/714350fbc3f855752ab6ea6aed64530de3c19bbe))
 ## [0.1.5](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.4...@pixu1980/pi-mcp@0.1.5) (2026-08-01)
 
 ### Bug Fixes

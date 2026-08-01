@@ -1,7 +1,25 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.2](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.1...@pixu1980/pi-statusline@0.1.2) (2026-08-01)
+
+### Features
+
+* **pi-sessions:** move session browser into a centered modal ([07cd24b](https://github.com/pixu1980/pi-coding-agent-extensions/commit/07cd24b08e6861e499494bf2617995aec96ea5ce))
+* **pi-web:** add URL-to-Markdown scraper extension ([6018991](https://github.com/pixu1980/pi-coding-agent-extensions/commit/6018991702d8492d3adb62a76b7d68c1f9e57776))
+
+### Bug Fixes
+
+* **deps:** drop deprecated standard-version and patch vulnerable transitive deps ([eb29054](https://github.com/pixu1980/pi-coding-agent-extensions/commit/eb290548ede0f710fcfb7908569734162772500a))
+* **pi-mcp:** export default extension factory from entry points ([91ee444](https://github.com/pixu1980/pi-coding-agent-extensions/commit/91ee44427d78bf92eafe590f13aaa9ef03da4b48))
+* **pi-mcp:** restore pi 0.83 peer deps, fix type regressions and add tests ([4f26256](https://github.com/pixu1980/pi-coding-agent-extensions/commit/4f2625610ca0c18b00b39a9b0ebf1f6db7ef8b77))
+* **pi-mcp:** surface skipped invalid host configs in discovery ([9ced5d8](https://github.com/pixu1980/pi-coding-agent-extensions/commit/9ced5d8e04a64ebad99aa38f6968491c7e414e87))
+* **pi-path-picker:** import autocomplete types from pi-tui and port tests to tsx ([1429eac](https://github.com/pixu1980/pi-coding-agent-extensions/commit/1429eac2a71701da634a72b2d5064a77d8e86126))
+* **pi-reasoning:** align notify typing, export internals and add test suite ([4da7523](https://github.com/pixu1980/pi-coding-agent-extensions/commit/4da75234562cf12bddf7c99a8c1c3288718c9e0e))
+* **pi-sessions:** export internals for testing and add unit/e2e test suite ([c20f2d1](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c20f2d128e07ac4a4f602b67328ba186e3e72d92))
+* **pi-statusline:** restore gallery metadata, fix typing and add test suite ([21c6044](https://github.com/pixu1980/pi-coding-agent-extensions/commit/21c60444b56205211dee56d74029cad3947b3596))
+* **pi-web:** repair session cache restore and add extension e2e tests ([657f82c](https://github.com/pixu1980/pi-coding-agent-extensions/commit/657f82c89606e92964d81493df01f419598731e4))
 ### [0.1.1](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.0...@pixu1980/pi-statusline@0.1.1) (2026-08-01)
 
 ## 0.1.0 (2026-08-01)

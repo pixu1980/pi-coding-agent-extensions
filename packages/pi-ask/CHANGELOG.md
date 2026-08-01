@@ -2,6 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.4](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-ask@0.1.3...@pixu1980/pi-ask@0.1.4) (2026-08-01)
 ## [0.1.3](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-ask@0.1.2...@pixu1980/pi-ask@0.1.3) (2026-08-01)
 
 ### Features

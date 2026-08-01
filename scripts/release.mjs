@@ -8,7 +8,7 @@
  * <package-name>@<current-version>).
  *
  * Per ogni package modificato:
- *   1. standard-version --no-verify --tag-prefix "<name>@"
+ *   1. standard-version locale --no-verify --tag-prefix "<name>@"
  *      → bump semver, CHANGELOG, commit + tag
  *   2. npm publish
  *
@@ -22,6 +22,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { standardVersionCommand } from './release-helpers.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -138,12 +139,12 @@ for (const pkg of packages) {
   // ── Rilascio ──
   if (isDryRun) {
     console.log(`   [dry-run] standard-version --tag-prefix "${name}@"`);
-    execIn(pkgPath, `npx standard-version --dry-run --tag-prefix "${name}@"`, { stdio: 'inherit' });
+    execIn(pkgPath, standardVersionCommand(ROOT, name, true), { stdio: 'inherit' });
     console.log(`   [dry-run] pnpm publish (saltato)`);
   } else {
     try {
       // Bump + tag
-      execIn(pkgPath, `npx standard-version --no-verify --tag-prefix "${name}@"`, { stdio: 'inherit' });
+      execIn(pkgPath, standardVersionCommand(ROOT, name, false), { stdio: 'inherit' });
 
       // Push tag
       console.log(`   → push tag...`);

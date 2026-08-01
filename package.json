@@ -13,10 +13,13 @@
     "url": "https://github.com/pixu1980/pi-coding-agent-extensions/issues"
   },
   "scripts": {
-    "test": "echo 'Run tests per-package: cd packages/<name> && npm test'",
+    "test": "node --test test/*.test.mjs",
     "format": "prettier --write 'packages/*/src/**/*.ts'",
     "lint": "echo 'No linter configured yet'",
     "release": "node scripts/release.mjs",
     "release:dry": "node scripts/release.mjs --dry-run"
+  },
+  "devDependencies": {
+    "standard-version": "9.5.0"
   }
 }

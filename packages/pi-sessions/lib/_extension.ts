@@ -10,15 +10,15 @@ import { autoNameSession } from "./_sessions.ts";
 import { showSessionSidebar, showFolderSidebar } from "./_overlays.ts";
 
 export default function (pi: ExtensionAPI): void {
-  // ── Register /sessions (overlay popup) ──
+  // ── Register /sessions (centered modal) ──
   pi.registerCommand("sessions", {
-    description: "Open session history overlay. Navigate ↑↓, type to filter, Enter to restore.",
+    description: "Open session history modal. Navigate ↑↓, type to filter, Enter to restore.",
     handler: async (_args: string, ctx) => {
       await showSessionSidebar(ctx);
     },
   });
 
-  // ── Register /projects (project overview with drill-down) ──
+  // ── Register /projects (centered project modal with drill-down) ──
   pi.registerCommand("projects", {
     description: "Browse sessions by project directory. Shows aggregated info per project with drill-down to individual sessions.",
     handler: async (_args: string, ctx) => {

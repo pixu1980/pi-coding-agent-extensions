@@ -1,10 +1,50 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { join } from "node:path";
 import sessionsExtension from "../index.ts";
-import { createMockPi, createMockCtx, makeModel, makeTheme } from "../../../test/harness.mjs";
-import { getSessionsDir, clearSessionsCache } from "../lib/_sessions.ts";
-import { writeSession, sampleSession, KEY, freshAgentDir } from "./_fixtures.mjs";
+import { createMockPi, createMockCtx, makeTheme } from "../../../test/harness.mjs";
+import { clearSessionsCache } from "../lib/_sessions.ts";
+import { writeSession, KEY, freshAgentDir } from "./_fixtures.mjs";
+
+const MCP_STYLE_MODAL_OPTIONS = {
+  overlay: true,
+  overlayOptions: { anchor: "center", width: 82 },
+};
+
+function installModalDriver(ctx) {
+  const modals = [];
+
+  ctx.ui.custom = (factory, options) =>
+    new Promise((resolve) => {
+      let component;
+      let interactionQueued = false;
+      const renders = [];
+      const interactWhenReady = () => {
+        if (!component || interactionQueued) return;
+        const text = component.render(82).join("\n");
+        renders.push(text);
+        if (/Loading (sessions|projects)/i.test(text)) return;
+
+        interactionQueued = true;
+        queueMicrotask(() => {
+          if (/No sessions found|Error loading/i.test(text)) {
+            component.handleInput(KEY.escape);
+          } else {
+            component.handleInput(KEY.enter);
+          }
+        });
+      };
+      const tui = {
+        terminal: { rows: 30 },
+        requestRender: interactWhenReady,
+      };
+
+      component = factory(tui, makeTheme(), {}, resolve);
+      modals.push({ component, options, renders, initialText: component.render(82).join("\n") });
+      interactWhenReady();
+    });
+
+  return modals;
+}
 
 // ── E2E: extension registration ───────────────────────────────────
 
@@ -55,32 +95,38 @@ test("/sessions: non-tui mode notifies error", async () => {
   assert.ok(ctx.ui._uiCalls.some(([c, , t]) => c === "notify" && t === "error"));
 });
 
-test("/sessions: no sessions notifies info", async () => {
-  freshAgentDir(); // empty sessions dir for this test
+test("/sessions: empty history is shown inside a centered modal", async () => {
+  freshAgentDir();
   const { pi, runCommand } = createMockPi();
   sessionsExtension(pi);
   const ctx = createMockCtx();
+  const modals = installModalDriver(ctx);
+
   await runCommand("sessions", "", ctx);
-  assert.ok(ctx.ui._uiCalls.some(([c, m]) => c === "notify" && /No sessions found/i.test(m)));
+
+  assert.equal(modals.length, 1);
+  assert.deepEqual(modals[0].options, MCP_STYLE_MODAL_OPTIONS);
+  assert.match(modals[0].initialText, /Loading sessions/i);
+  assert.ok(modals[0].renders.some((text) => /No sessions found/i.test(text)));
+  assert.ok(
+    !ctx.ui._uiCalls.some(([call, message]) => call === "notify" && /Loading sessions/i.test(message)),
+    "loading state must not leak into the transcript",
+  );
 });
 
-test("/sessions: opens the sidebar overlay and restores a selected session", async () => {
+test("/sessions: loads and restores from one MCP-style centered modal", async () => {
+  freshAgentDir();
   const { pi, runCommand } = createMockPi();
   sessionsExtension(pi);
   writeSession("projA", "s1.jsonl", [
-    { type: "session", cwd: "/home/dev/app", timestamp: "2026-07-01T00:00:00Z" },
+    { type: "session", id: "session-a", cwd: "/home/dev/app", timestamp: "2026-07-01T00:00:00Z" },
     { type: "message", message: { role: "user", content: "Ship the feature" } },
     { type: "message", message: { role: "assistant", content: "ok", model: "claude-opus-4", provider: "anthropic" } },
   ]);
   clearSessionsCache();
 
   const ctx = createMockCtx();
-  let capturedFactory;
-  ctx.ui.custom = async (factory, opts) => {
-    capturedFactory = factory;
-    // simulate the user picking the only session
-    return { file: join(getSessionsDir(), "projA", "s1.jsonl"), name: "Ship the feature" };
-  };
+  const modals = installModalDriver(ctx);
   const switched = [];
   ctx.switchSession = async (file) => {
     switched.push(file);
@@ -88,45 +134,51 @@ test("/sessions: opens the sidebar overlay and restores a selected session", asy
   };
 
   await runCommand("sessions", "", ctx);
-  assert.ok(capturedFactory, "must open the sidebar overlay");
-  const component = capturedFactory(
-    { requestRender() {}, terminal: { rows: 30 } },
-    makeTheme(),
-    {},
-    () => {},
-  );
-  assert.ok(component.render(60).join("\n").includes("Ship the feature"));
+
+  assert.equal(modals.length, 1, "loading and selection should share one modal");
+  assert.deepEqual(modals[0].options, MCP_STYLE_MODAL_OPTIONS);
+  assert.match(modals[0].initialText, /Loading sessions/i);
+  assert.ok(modals[0].renders.some((text) => text.includes("Ship the feature")));
   assert.equal(switched.length, 1);
   assert.ok(switched[0].endsWith("s1.jsonl"));
+  assert.ok(
+    !ctx.ui._uiCalls.some(([call, message]) => call === "notify" && /Loading session/i.test(message)),
+    "loading state must stay inside the modal",
+  );
 });
 
-test("/projects: opens folder sidebar and drills down to a session", async () => {
+test("/projects: loads in a centered modal and drills down in the same style", async () => {
+  freshAgentDir();
   const { pi, runCommand } = createMockPi();
   sessionsExtension(pi);
   writeSession("projB", "s2.jsonl", [
-    { type: "session", cwd: "/home/dev/other", timestamp: "2026-07-02T00:00:00Z" },
+    { type: "session", id: "session-b", cwd: "/home/dev/other", timestamp: "2026-07-02T00:00:00Z" },
     { type: "message", message: { role: "user", content: "Fix pipeline" } },
   ]);
   clearSessionsCache();
 
   const ctx = createMockCtx();
-  let calls = 0;
+  const modals = installModalDriver(ctx);
   const switched = [];
-  ctx.ui.custom = async (factory) => {
-    calls++;
-    // 1st call: folder picker → returns a folder; 2nd call: session picker → returns a session
-    if (calls === 1) {
-      return { folder: "/home/dev/other", sessions: [], sessionCount: 1, totalMessages: 1, latestDate: "2026-07-02T00:00:00Z" };
-    }
-    return { file: join(getSessionsDir(), "projB", "s2.jsonl"), name: "Fix pipeline" };
-  };
   ctx.switchSession = async (file) => {
     switched.push(file);
     return { cancelled: false };
   };
+
   await runCommand("projects", "", ctx);
+
+  assert.equal(modals.length, 2, "project picker and drill-down each use a modal");
+  for (const modal of modals) {
+    assert.deepEqual(modal.options, MCP_STYLE_MODAL_OPTIONS);
+  }
+  assert.match(modals[0].initialText, /Loading projects/i);
+  assert.ok(modals[0].renders.some((text) => text.includes("/home/dev/other")));
+  assert.ok(modals[1].renders.some((text) => text.includes("Fix pipeline")));
   assert.equal(switched.length, 1);
   assert.ok(switched[0].endsWith("s2.jsonl"));
+  assert.ok(
+    !ctx.ui._uiCalls.some(([call, message]) => call === "notify" && /Loading projects/i.test(message)),
+  );
 });
 
 test("/projects: escape from folder list exits", async () => {

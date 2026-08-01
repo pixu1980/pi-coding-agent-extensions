@@ -13,9 +13,149 @@ import {
   type Focusable,
 } from "@earendil-works/pi-tui";
 import type { Theme } from "@earendil-works/pi-coding-agent";
-import { SIDEBAR_WIDTH, SIDEBAR_OVERHEAD } from "./_constants.ts";
+import { SIDEBAR_OVERHEAD } from "./_constants.ts";
 import type { SessionSummary, FolderSummary } from "./_types.ts";
 import { formatDate } from "./_sessions.ts";
+
+const ITEM_ROWS = 4;
+
+function visibleItemCount(terminalRows: number): number {
+  const availableRows = Math.max(ITEM_ROWS, terminalRows - SIDEBAR_OVERHEAD - 2);
+  return Math.min(10, Math.max(1, Math.floor((availableRows + 1) / ITEM_ROWS)));
+}
+
+function modalRow(theme: Theme, content: string, innerWidth: number): string {
+  const clipped = truncateToWidth(content, innerWidth, "", true);
+  return theme.fg("border", "│")
+    + clipped
+    + " ".repeat(Math.max(0, innerWidth - visibleWidth(clipped)))
+    + theme.fg("border", "│");
+}
+
+// ── Async catalogue modal ─────────────────────────────────────────
+
+type CatalogModalResult = SessionSummary | FolderSummary | undefined;
+type CatalogModalState = "loading" | "empty" | "error" | "ready" | "disposed";
+
+export class SessionCatalogModalComponent implements Focusable {
+  private _focused = false;
+  private state: CatalogModalState = "loading";
+  private child: SessionSidebarComponent | FolderSidebarComponent | undefined;
+  private loaded = 0;
+  private total = 0;
+  private errorMessage = "";
+
+  constructor(
+    private readonly theme: Theme,
+    private readonly done: (result: CatalogModalResult) => void,
+    private readonly terminalRows: number,
+    private readonly title: string,
+    private readonly loadingMessage: string,
+  ) {}
+
+  get focused(): boolean {
+    return this._focused;
+  }
+
+  set focused(value: boolean) {
+    this._focused = value;
+    if (this.child) this.child.focused = value;
+  }
+
+  setProgress(loaded: number, total: number): void {
+    if (this.state !== "loading") return;
+    this.loaded = loaded;
+    this.total = total;
+  }
+
+  showSessions(sessions: SessionSummary[], title = "📋 Sessions"): void {
+    if (this.state === "disposed") return;
+    if (sessions.length === 0) {
+      this.state = "empty";
+      return;
+    }
+    this.child = new SessionSidebarComponent(
+      this.theme,
+      sessions,
+      (result) => this.done(result),
+      this.terminalRows,
+      title,
+    );
+    this.child.focused = this._focused;
+    this.state = "ready";
+  }
+
+  showFolders(folders: FolderSummary[]): void {
+    if (this.state === "disposed") return;
+    if (folders.length === 0) {
+      this.state = "empty";
+      return;
+    }
+    this.child = new FolderSidebarComponent(
+      this.theme,
+      folders,
+      (result) => this.done(result),
+      this.terminalRows,
+    );
+    this.child.focused = this._focused;
+    this.state = "ready";
+  }
+
+  showError(error: unknown): void {
+    if (this.state === "disposed") return;
+    this.errorMessage = error instanceof Error ? error.message : String(error);
+    this.state = "error";
+  }
+
+  handleInput(data: string): void {
+    if (this.child) {
+      this.child.handleInput(data);
+      return;
+    }
+    if (
+      matchesKey(data, Key.escape)
+      || matchesKey(data, Key.ctrl("c"))
+      || (this.state !== "loading" && matchesKey(data, Key.enter))
+    ) {
+      this.done(undefined);
+    }
+  }
+
+  render(width: number): string[] {
+    if (this.child) return this.child.render(width);
+    if (width < 2) return [""];
+
+    const innerWidth = width - 2;
+    const border = (value: string) => this.theme.fg("border", value);
+    const progress = this.total > 0 ? ` ${this.loaded}/${this.total}` : "";
+    const message = this.state === "loading"
+      ? `${this.loadingMessage}${progress}`
+      : this.state === "error"
+        ? `Error loading sessions: ${this.errorMessage}`
+        : "No sessions found.";
+
+    return [
+      border(`╭${"─".repeat(innerWidth)}╮`),
+      modalRow(this.theme, ` ${this.theme.fg("accent", this.theme.bold(this.title))}`, innerWidth),
+      border(`├${"─".repeat(innerWidth)}┤`),
+      modalRow(this.theme, "", innerWidth),
+      modalRow(this.theme, ` ${this.theme.fg(this.state === "error" ? "error" : "muted", message)}`, innerWidth),
+      modalRow(this.theme, "", innerWidth),
+      modalRow(this.theme, ` ${this.theme.fg("dim", "Esc close")}`, innerWidth),
+      border(`╰${"─".repeat(innerWidth)}╯`),
+    ];
+  }
+
+  invalidate(): void {
+    this.child?.invalidate();
+  }
+
+  dispose(): void {
+    this.child?.dispose();
+    this.child = undefined;
+    this.state = "disposed";
+  }
+}
 
 // ── Session Sidebar Component ─────────────────────────────────────
 
@@ -30,7 +170,6 @@ export class SessionSidebarComponent implements Focusable {
   private query = "";
   private theme: Theme;
   private done: (result: SessionSummary | undefined) => void;
-  private width: number;
   /** Number of session items that fit in the overlay */
   private visibleItems: number;
 
@@ -48,10 +187,7 @@ export class SessionSidebarComponent implements Focusable {
     this.filtered = [...sessions];
     this.done = done;
     this.title = title;
-    this.width = SIDEBAR_WIDTH;
-    // Overlay: 55% of terminal minus overhead
-    const overlayHeight = Math.floor(terminalRows * 0.55);
-    this.visibleItems = Math.min(10, Math.max(3, overlayHeight - SIDEBAR_OVERHEAD));
+    this.visibleItems = visibleItemCount(terminalRows);
   }
 
   handleInput(data: string): void {
@@ -136,20 +272,14 @@ export class SessionSidebarComponent implements Focusable {
     );
   }
 
-  render(_width: number): string[] {
-    const w = this.width;
+  render(width: number): string[] {
+    if (width < 2) return [""];
+    const w = width;
     const th = this.theme;
     const innerW = w - 2;
     const lines: string[] = [];
 
-    const pad = (s: string, len: number) => {
-      const vis = visibleWidth(s);
-      return s + " ".repeat(Math.max(0, len - vis));
-    };
-
-    const row = (content: string) =>
-      th.fg("border", "│") + pad(content, innerW) + th.fg("border", "│");
-
+    const row = (content: string) => modalRow(th, content, innerW);
     const selectedStyle = (s: string) => th.bg("selectedBg", th.fg("accent", s));
     const normalStyle = (s: string) => th.fg("text", s);
 
@@ -266,7 +396,6 @@ export class FolderSidebarComponent implements Focusable {
   private query = "";
   private theme: Theme;
   private done: (result: FolderSummary | undefined) => void;
-  private width: number;
   private visibleItems: number;
 
   constructor(
@@ -279,9 +408,7 @@ export class FolderSidebarComponent implements Focusable {
     this.folders = folders;
     this.filtered = [...folders];
     this.done = done;
-    this.width = SIDEBAR_WIDTH;
-    const overlayHeight = Math.floor(terminalRows * 0.55);
-    this.visibleItems = Math.min(10, Math.max(3, overlayHeight - SIDEBAR_OVERHEAD));
+    this.visibleItems = visibleItemCount(terminalRows);
   }
 
   handleInput(data: string): void {
@@ -354,20 +481,14 @@ export class FolderSidebarComponent implements Focusable {
     );
   }
 
-  render(_width: number): string[] {
-    const w = this.width;
+  render(width: number): string[] {
+    if (width < 2) return [""];
+    const w = width;
     const th = this.theme;
     const innerW = w - 2;
     const lines: string[] = [];
 
-    const pad = (s: string, len: number) => {
-      const vis = visibleWidth(s);
-      return s + " ".repeat(Math.max(0, len - vis));
-    };
-
-    const row = (content: string) =>
-      th.fg("border", "│") + pad(content, innerW) + th.fg("border", "│");
-
+    const row = (content: string) => modalRow(th, content, innerW);
     const selectedStyle = (s: string) => th.bg("selectedBg", th.fg("accent", s));
     const normalStyle = (s: string) => th.fg("text", s);
 

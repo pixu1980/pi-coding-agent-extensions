@@ -6,11 +6,11 @@
 
 Session history overlay for [pi.dev](https://pi.dev). Browse, search, and restore past sessions with auto-naming based on chat content.
 
-**Screenshot idea:** A right-side overlay panel listing past sessions with auto-names, dates, message counts, and model info.
+**Screenshot idea:** A centered modal listing past sessions with auto-names, dates, message counts, and model info.
 
 ## Features
 
-- **📋 Session browser** - Sidebar overlay (right side) shows all past sessions
+- **📋 Session browser** - Centered modal, matching `/mcp`, shows all past sessions
 - **📁 Project overview** - `/projects` groups sessions by project directory with aggregated metadata
 - **🏷️ Auto-naming** - Sessions are named from the first user message content
 - **🔍 Search/filter** - Type to filter by name, model, or project path
@@ -81,10 +81,11 @@ Select a project to drill down into its individual sessions.
 
 ## How it works
 
-1. Scans `~/.pi/agent/sessions/` for session JSONL files
-2. Parses each session to extract: first message text, message count, model info
-3. Shows them in a right-side overlay panel
-4. On selection, uses `ctx.switchSession()` to load the session
+1. Opens a centered loading modal immediately
+2. Scans `~/.pi/agent/sessions/` asynchronously with bounded concurrency
+3. Parses each session to extract message previews, counts, model and provider
+4. Reuses the same modal for search and selection
+5. On selection, uses `ctx.switchSession()` to load the session
 
 ## License
 

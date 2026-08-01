@@ -8,6 +8,7 @@ import {
   parseSessionFile,
   formatDate,
   getSessionsDir,
+  getSessions,
   clearSessionsCache,
   listSessions,
 } from "../lib/_sessions.ts";
@@ -104,7 +105,34 @@ test("groupSessionsByFolder: groups by cwd and sorts folders newest first", () =
   assert.equal(folders[1].totalMessages, 3);
 });
 
-// ── Unit: listSessions (isolated dir) ─────────────────────────────
+// ── Unit: session listing (isolated dir) ─────────────────────────
+
+test("getSessions: loads asynchronously and reports progress", async () => {
+  freshAgentDir();
+  writeSession("projA", "1.jsonl", [
+    { type: "session", id: "session-a", cwd: "/a", timestamp: "2026-07-01T00:00:00Z" },
+    { type: "message", message: { role: "user", content: "first session" } },
+    { type: "message", message: { role: "assistant", content: "reply", model: "gpt-5", provider: "openai" } },
+    { type: "message", message: { role: "user", content: "latest request" } },
+  ]);
+  writeSession("projB", "2.jsonl", [
+    { type: "session", id: "session-b", cwd: "/b", timestamp: "2026-08-01T00:00:00Z" },
+    { type: "message", message: { role: "user", content: "second session" } },
+  ]);
+  clearSessionsCache();
+
+  const progress = [];
+  const pending = getSessions((loaded, total) => progress.push([loaded, total]));
+  assert.ok(pending instanceof Promise, "session discovery must not block the TUI thread");
+
+  const sessions = await pending;
+  assert.equal(sessions.length, 2);
+  assert.deepEqual(progress.at(-1), [2, 2]);
+  const enriched = sessions.find((session) => session.cwd === "/a");
+  assert.equal(enriched.lastUserMessage, "latest request");
+  assert.equal(enriched.model, "gpt-5");
+  assert.equal(enriched.provider, "openai");
+});
 
 test("listSessions: reads nested project dirs, newest first", async () => {
   freshAgentDir(); // isolate from other tests' session files

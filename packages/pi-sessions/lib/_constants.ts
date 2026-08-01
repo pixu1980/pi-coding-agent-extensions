@@ -4,14 +4,15 @@
 
 export const SESSION_DIR_NAME = "sessions";
 export const MAX_NAME_LENGTH = 60;
-export const SIDEBAR_WIDTH = 68;
+/** Match the centered /mcp panel width. */
+export const MODAL_WIDTH = 82;
 /** Maximum number of sessions to load (prevents OOM with thousands of files). */
 export const MAX_SESSIONS = 500;
 /** Cache TTL in milliseconds (5 minutes). */
 export const CACHE_TTL_MS = 300_000;
 
 /**
- * Overhead rows in the sidebar UI (borders, header, search bar, footer):
+ * Overhead rows in the modal UI (borders, header, search bar, footer):
  *   ┌────┐   top border
  *   │    │   header (Sessions)
  *   ├────┤   separator

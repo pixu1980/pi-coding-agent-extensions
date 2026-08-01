@@ -2,9 +2,11 @@
  * pi-sessions — session file discovery and parsing (private module)
  */
 
-import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { createReadStream, readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { createInterface } from "node:readline";
 import { SESSION_DIR_NAME, MAX_NAME_LENGTH, MAX_SESSIONS, CACHE_TTL_MS } from "./_constants.ts";
 import type { SessionSummary, TextContentBlock } from "./_types.ts";
 
@@ -13,6 +15,8 @@ import type { SessionSummary, TextContentBlock } from "./_types.ts";
 let cachedSessions: SessionSummary[] | null = null;
 let cacheTimestamp = 0;
 let cacheDirMtime = 0;
+let pendingSessions: Promise<SessionSummary[]> | null = null;
+let cacheGeneration = 0;
 
 /**
  * Invalidate the session cache when the sessions directory changes.
@@ -27,22 +31,37 @@ function getSessionsDirMtime(): number {
   }
 }
 
+export type SessionListProgress = (loaded: number, total: number) => void;
+
 /**
- * Get sessions with caching. Cache is invalidated when the sessions
- * directory modification time changes.
+ * Get sessions asynchronously with caching. Cache is invalidated when the
+ * sessions directory changes or its TTL expires.
  */
-export function getSessions(): SessionSummary[] {
+export async function getSessions(onProgress?: SessionListProgress): Promise<SessionSummary[]> {
   const now = Date.now();
   const currentMtime = getSessionsDirMtime();
 
   if (cachedSessions && (now - cacheTimestamp) < CACHE_TTL_MS && currentMtime === cacheDirMtime) {
+    onProgress?.(cachedSessions.length, cachedSessions.length);
     return cachedSessions;
   }
+  if (pendingSessions) return pendingSessions;
 
-  cachedSessions = listSessions();
-  cacheTimestamp = now;
-  cacheDirMtime = currentMtime;
-  return cachedSessions;
+  const generation = cacheGeneration;
+  const request = listSessionsAsync(onProgress);
+  pendingSessions = request;
+
+  try {
+    const sessions = await request;
+    if (generation === cacheGeneration) {
+      cachedSessions = sessions;
+      cacheTimestamp = Date.now();
+      cacheDirMtime = getSessionsDirMtime();
+    }
+    return sessions;
+  } finally {
+    if (pendingSessions === request) pendingSessions = null;
+  }
 }
 
 /** Clear session cache. */
@@ -50,6 +69,8 @@ export function clearSessionsCache(): void {
   cachedSessions = null;
   cacheTimestamp = 0;
   cacheDirMtime = 0;
+  pendingSessions = null;
+  cacheGeneration++;
 }
 
 // ── Session Listing ────────────────────────────────────────────────
@@ -103,69 +124,194 @@ export function autoNameSession(content: unknown): string {
   return truncated;
 }
 
+interface SessionScan {
+  generatedName: string;
+  explicitName?: string;
+  date: string;
+  messageCount: number;
+  model?: string;
+  provider?: string;
+  cwd?: string;
+  lastUserMessage?: string;
+}
+
+function createSessionScan(): SessionScan {
+  return {
+    generatedName: "Unknown session",
+    date: "",
+    messageCount: 0,
+  };
+}
+
+function scanSessionEntry(scan: SessionScan, entry: Record<string, any>): void {
+  if (entry.type === "session") {
+    if (typeof entry.cwd === "string") scan.cwd = entry.cwd;
+    if (typeof entry.timestamp === "string") scan.date = entry.timestamp;
+    return;
+  }
+  if (entry.type === "session_info") {
+    scan.explicitName = typeof entry.name === "string" && entry.name.trim()
+      ? entry.name.trim()
+      : undefined;
+    return;
+  }
+  if (entry.type !== "message" || !entry.message) return;
+
+  const message = entry.message as Record<string, any>;
+  if (message.role === "user") {
+    if (scan.generatedName === "Unknown session") {
+      scan.generatedName = autoNameSession(message.content);
+    }
+    scan.lastUserMessage = autoNameSession(message.content);
+    scan.messageCount++;
+    return;
+  }
+  if (message.role === "assistant") {
+    if (typeof message.model === "string") scan.model = message.model;
+    if (typeof message.provider === "string") scan.provider = message.provider;
+    scan.messageCount++;
+  }
+}
+
+function scanSessionLine(scan: SessionScan, line: string): void {
+  if (!line.trim()) return;
+  try {
+    const entry = JSON.parse(line);
+    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+      scanSessionEntry(scan, entry as Record<string, any>);
+    }
+  } catch {
+    // Best-effort discovery skips malformed JSONL lines.
+  }
+}
+
+function finishSessionSummary(
+  filePath: string,
+  scan: SessionScan,
+  mtimeMs: number,
+  mtime: Date,
+): SessionSummary {
+  return {
+    file: filePath,
+    name: scan.explicitName || scan.generatedName,
+    date: scan.date || mtime.toISOString(),
+    messageCount: scan.messageCount,
+    model: scan.model,
+    provider: scan.provider,
+    cwd: scan.cwd,
+    mtime: mtimeMs,
+    lastUserMessage: scan.lastUserMessage,
+  };
+}
+
 /**
  * Parse a session JSONL file and extract summary info.
  */
 export function parseSessionFile(filePath: string): SessionSummary | null {
   try {
     const content = readFileSync(filePath, "utf8");
-    const lines = content.trim().split("\n");
-    if (lines.length === 0) return null;
-
     const stats = statSync(filePath);
-    let name = "Unknown session";
-    let date = "";
-    let messageCount = 0;
-    let model: string | undefined;
-    let provider: string | undefined;
-    let cwd: string | undefined;
-    let lastUserMessage: string | undefined;
-
-    for (const line of lines) {
-      try {
-        const entry = JSON.parse(line);
-
-        if (entry.type === "session") {
-          cwd = entry.cwd;
-          date = entry.timestamp || "";
-        } else if (entry.type === "message" && entry.message) {
-          // First user message → derive name
-          if (entry.message.role === "user" && !name || name === "Unknown session") {
-            name = autoNameSession(entry.message.content);
-          }
-          // Last user message (overwritten on each user message)
-          if (entry.message.role === "user") {
-            lastUserMessage = autoNameSession(entry.message.content);
-          }
-          // Track model from last assistant message
-          if (entry.message.role === "assistant") {
-            if (entry.message.model) model = entry.message.model;
-            if (entry.message.provider) provider = entry.message.provider;
-          }
-          // Count user + assistant messages only (skip tool results for count display)
-          if (entry.message.role === "user" || entry.message.role === "assistant") {
-            messageCount++;
-          }
-        }
-      } catch {
-        // Skip malformed lines
-      }
+    const scan = createSessionScan();
+    for (const line of content.split("\n")) {
+      scanSessionLine(scan, line);
     }
-
-    return {
-      file: filePath,
-      name,
-      date: date || stats.mtime.toISOString(),
-      messageCount,
-      model,
-      provider,
-      cwd,
-      mtime: stats.mtimeMs,
-      lastUserMessage,
-    };
+    return finishSessionSummary(filePath, scan, stats.mtimeMs, stats.mtime);
   } catch {
     return null;
   }
+}
+
+const MAX_CONCURRENT_SESSION_READS = 10;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  worker: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workers = Array.from(
+    { length: Math.min(MAX_CONCURRENT_SESSION_READS, items.length) },
+    async () => {
+      while (true) {
+        const index = nextIndex++;
+        if (index >= items.length) return;
+        results[index] = await worker(items[index]!, index);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
+}
+
+async function parseSessionFileAsync(filePath: string): Promise<SessionSummary | null> {
+  try {
+    const stats = await stat(filePath);
+    const input = createReadStream(filePath, { encoding: "utf8" });
+    const lines = createInterface({ input, crlfDelay: Infinity });
+    const scan = createSessionScan();
+    try {
+      for await (const line of lines) {
+        scanSessionLine(scan, line);
+      }
+    } finally {
+      lines.close();
+      input.destroy();
+    }
+    return finishSessionSummary(filePath, scan, stats.mtimeMs, stats.mtime);
+  } catch {
+    return null;
+  }
+}
+
+async function findSessionCandidates(): Promise<string[]> {
+  const sessionsDir = getSessionsDir();
+  try {
+    const projects = (await readdir(sessionsDir, { withFileTypes: true }))
+      .filter((entry) => entry.isDirectory());
+    const filesByProject = await Promise.all(projects.map(async (project) => {
+      const projectPath = join(sessionsDir, project.name);
+      try {
+        return (await readdir(projectPath, { withFileTypes: true }))
+          .filter((entry) => entry.name.endsWith(".jsonl"))
+          .map((entry) => join(projectPath, entry.name));
+      } catch {
+        return [];
+      }
+    }));
+    const candidates = await mapWithConcurrency(filesByProject.flat(), async (path) => {
+      try {
+        const stats = await stat(path);
+        return stats.isFile() ? { path, mtime: stats.mtimeMs } : null;
+      } catch {
+        return null;
+      }
+    });
+
+    return candidates
+      .filter((entry): entry is { path: string; mtime: number } => entry !== null)
+      .sort((left, right) => right.mtime - left.mtime)
+      .slice(0, MAX_SESSIONS)
+      .map((entry) => entry.path);
+  } catch {
+    return [];
+  }
+}
+
+async function listSessionsAsync(onProgress?: SessionListProgress): Promise<SessionSummary[]> {
+  const files = await findSessionCandidates();
+  let loaded = 0;
+  const summaries = await mapWithConcurrency(files, async (file) => {
+    try {
+      return await parseSessionFileAsync(file);
+    } finally {
+      loaded++;
+      onProgress?.(loaded, files.length);
+    }
+  });
+  return summaries
+    .filter((summary): summary is SessionSummary => summary !== null)
+    .sort((left, right) => right.mtime - left.mtime);
 }
 
 /**

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { SessionSidebarComponent, FolderSidebarComponent } from "../lib/_components.ts";
 import { makeTheme } from "../../../test/harness.mjs";
 import { sampleSession, KEY } from "./_fixtures.mjs";
@@ -98,5 +99,33 @@ test("folder sidebar: renders and selects on enter", () => {
   assert.equal(result, folders[0]);
   fb.handleInput(KEY.escape);
   assert.equal(result, undefined);
+});
+
+test("session and project modals stay within the supplied terminal bounds", () => {
+  const sessions = Array.from({ length: 15 }, (_, index) =>
+    sampleSession({ name: `Session ${index}`, file: `/session-${index}` }),
+  );
+  const folders = sessions.map((session, index) => ({
+    folder: `/home/dev/project-${index}`,
+    sessions: [session],
+    sessionCount: 1,
+    totalMessages: session.messageCount,
+    latestDate: session.date,
+    latestModel: session.model,
+  }));
+
+  const components = [
+    new SessionSidebarComponent(makeTheme(), sessions, () => {}, 30),
+    new FolderSidebarComponent(makeTheme(), folders, () => {}, 30),
+  ];
+
+  for (const component of components) {
+    const lines = component.render(42);
+    assert.ok(lines.length <= 30, `modal rendered ${lines.length} rows in a 30-row terminal`);
+    assert.ok(
+      lines.every((line) => visibleWidth(line) <= 42),
+      "every rendered line must fit the width supplied by the overlay",
+    );
+  }
 });
 

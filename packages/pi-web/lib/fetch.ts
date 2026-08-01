@@ -2,7 +2,7 @@
  * Core fetch pipeline: URL → validated → fetched (with timeout, byte cap,
  * manual redirects re-validated per hop) → Markdown (or plain text).
  */
-import { generateId, Semaphore } from "./utils.ts";
+import { generateId, Semaphore } from "./_utils.ts";
 import { validateTargetHost } from "./ssrf.ts";
 import { htmlToMarkdown } from "./html-to-markdown.ts";
 

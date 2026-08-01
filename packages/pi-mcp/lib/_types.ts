@@ -557,6 +557,8 @@ export function getServerPrefix(
 
 /**
  * Format a tool name with server prefix.
+ * With prefix "none" the command is bare and dash-separated
+ * (e.g. pix_frontend_vanilla_reactive → `pix-frontend-vanilla-reactive`).
  */
 export function formatToolName(
   toolName: string,
@@ -565,7 +567,8 @@ export function formatToolName(
 ): string {
   const p = getServerPrefix(serverName, prefix);
   const sanitized = toolName.replace(/\./g, "_");
-  return p ? `${p}_${sanitized}` : sanitized;
+  if (!p) return sanitized.replace(/_/g, "-"); // "none": bare dash-separated command
+  return `${p}_${sanitized}`;
 }
 
 export function resolveToolPrefix(
@@ -581,13 +584,20 @@ export function sanitizePromptName(name: string): string {
   return /^[0-9]/.test(cleaned) ? `_${cleaned}` : cleaned;
 }
 
+/**
+ * Format an MCP prompt as a slash command. With prefix "none" the command is
+ * the bare sanitized prompt name (e.g. `pix-code-review`); every other mode
+ * keeps the legacy `mcp__<server>__<prompt>` shape.
+ */
 export function formatPromptCommandName(
   promptName: string,
   serverName: string,
   prefix: ToolPrefix,
 ): string {
-  const serverPart = getServerPrefix(serverName, prefix) || serverName.replace(/-/g, "_") || "server";
-  return `mcp__${serverPart}__${sanitizePromptName(promptName)}`;
+  const serverPart = getServerPrefix(serverName, prefix);
+  const sanitized = sanitizePromptName(promptName);
+  if (!serverPart) return sanitized; // "none": bare prompt command
+  return `mcp__${serverPart}__${sanitized}`;
 }
 
 function normalizeToolName(value: string): string {

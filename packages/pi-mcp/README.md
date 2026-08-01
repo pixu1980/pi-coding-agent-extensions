@@ -196,7 +196,7 @@ In the configuration examples below, `30000` is illustrative only. If `requestTi
 | `requestTimeoutMs` | Request timeout in milliseconds for live MCP calls (overrides global; if omitted or `<= 0`, the MCP SDK default timeout is used) |
 | `exposeResources` | Expose MCP resources as tools (default: true) |
 | `directTools` | `true`, `string[]`, or `false` — register tools individually instead of through proxy |
-| `toolPrefix` | Override global `settings.toolPrefix` for this server (`"server"`, `"short"`, `"none"`, or `"mcp"`) |
+| `toolPrefix` | Override global `settings.toolPrefix` for this server (`"server"`, `"short"`, `"none"`, or `"mcp"`). With `"none"` tool commands are bare and dash-separated (`pix_frontend_vanilla_reactive` → `/pix-frontend-vanilla-reactive`) and prompt commands are bare (`pix-code-review` → `/pix-code-review`) |
 | `includeTools` | `string[]` of tool names or glob patterns to expose (matches original names like `get_screenshot`, generated resource names like `read_figjam`, and prefixed names like `figma_get_screenshot`) |
 | `excludeTools` | `string[]` of tool names or glob patterns to hide (applied after `includeTools`) |
 | `debug` | Show server stderr (default: false) |
@@ -277,7 +277,7 @@ When any enabled server uses `eager` or `keep-alive`, initialization also starts
 
 | Setting | Description |
 |---------|-------------|
-| `toolPrefix` | `"server"` (default), `"short"` (strips `-mcp` suffix), `"none"`, or `"mcp"` (prefixes with `mcp__`, using server-mode normalization). Per-server `toolPrefix` overrides this for that server. |
+| `toolPrefix` | `"server"` (default), `"short"` (strips `-mcp` suffix), `"none"` (bare dash-separated tool commands, bare prompt commands), or `"mcp"` (prefixes with `mcp__`, using server-mode normalization). Per-server `toolPrefix` overrides this for that server. |
 | `idleTimeout` | Global idle timeout in minutes (default: 10, 0 to disable) |
 | `requestTimeoutMs` | Global request timeout in milliseconds for live MCP calls (if omitted or `<= 0`, the MCP SDK default timeout is used) |
 | `showStatusIcon` | Show the plug icon in MCP status and connection text (default: `true`). Set to `false` for plain `MCP: ...` text. |

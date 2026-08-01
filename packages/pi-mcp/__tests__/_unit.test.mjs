@@ -24,6 +24,7 @@ import { computeServerHash, parseDirectToolSelectors, getMissingConfiguredDirect
 import { formatSchema, findToolByName } from "../lib/_tool-metadata.ts";
 import { createJsonSchemaValidator } from "../lib/_json-schema-validator.ts";
 import { McpUiError, ServerError, ConsentError } from "../lib/_errors.ts";
+import { formatToolName, formatPromptCommandName } from "../lib/_types.ts";
 
 // ── abort.ts ──────────────────────────────────────────────────────
 
@@ -233,4 +234,32 @@ test("error subclasses keep their type and code", () => {
   const consentErr = new ConsentError("denied", {});
   assert.ok(consentErr instanceof McpUiError);
   assert.equal(consentErr.code, "CONSENT_REQUIRED");
+});
+
+// ── _types.ts: comandi slash nudi (toolPrefix "none") ────────────────
+// Richiesta: /pix-frontend-vanilla-reactive, /pix-process-code-review,
+// /pix-data-indexed-db — niente prefisso server, trattini al posto degli underscore.
+
+test("formatToolName with \"none\": bare dash-separated tool command", () => {
+  assert.equal(formatToolName("pix_frontend_vanilla_reactive", "pix-galaxy-mcp", "none"), "pix-frontend-vanilla-reactive");
+  assert.equal(formatToolName("pix_process_code_review", "pix-galaxy-mcp", "none"), "pix-process-code-review");
+  assert.equal(formatToolName("pix_data_indexed_db", "pix-galaxy-mcp", "none"), "pix-data-indexed-db");
+  assert.equal(formatToolName("pix", "pix-galaxy-mcp", "none"), "pix");
+});
+
+test("formatPromptCommandName with \"none\": bare prompt command (no mcp__server__ prefix)", () => {
+  assert.equal(formatPromptCommandName("pix-code-review", "pix-galaxy-mcp", "none"), "pix-code-review");
+  assert.equal(formatPromptCommandName("pix-generate-component", "pix-galaxy-mcp", "none"), "pix-generate-component");
+  assert.equal(formatPromptCommandName("pix-a11y-test", "pix-galaxy-mcp", "none"), "pix-a11y-test");
+});
+
+test("other prefix modes keep the legacy naming (regression)", () => {
+  // Tools
+  assert.equal(formatToolName("pix_process_code_review", "pix-galaxy-mcp", "server"), "pix_galaxy_mcp_pix_process_code_review");
+  assert.equal(formatToolName("pix_process_code_review", "pix-galaxy-mcp", "short"), "pix_galaxy_pix_process_code_review");
+  assert.equal(formatToolName("pix_process_code_review", "pix-galaxy-mcp", "mcp"), "mcp__pix_galaxy_mcp_pix_process_code_review");
+  // Prompts keep the mcp__server__ prefix in every non-none mode
+  assert.equal(formatPromptCommandName("pix-code-review", "pix-galaxy-mcp", "server"), "mcp__pix_galaxy_mcp__pix-code-review");
+  assert.equal(formatPromptCommandName("pix-code-review", "pix-galaxy-mcp", "short"), "mcp__pix_galaxy__pix-code-review");
+  assert.equal(formatPromptCommandName("pix-code-review", "pix-galaxy-mcp", "mcp"), "mcp__mcp__pix_galaxy_mcp__pix-code-review");
 });

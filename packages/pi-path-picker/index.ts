@@ -17,7 +17,8 @@
 import { readdirSync, statSync } from "node:fs";
 import { resolve, join, sep, basename, dirname, isAbsolute } from "node:path";
 import { homedir } from "node:os";
-import type { ExtensionAPI, AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-tui";
 
 /**
  * Directories whose contents should NOT be shown in path autocomplete

@@ -4,4 +4,4 @@
  * Exposes the extension entry only; all implementation details stay private.
  */
 
-export { default } from "./extension.ts";
+export { default } from "./_extension.ts";

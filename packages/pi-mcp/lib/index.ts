@@ -5,4 +5,4 @@
  * are internal (underscore-prefixed generic helpers, domain-named modules).
  */
 
-export * from "./extension.ts";
+export * from "./_extension.ts";

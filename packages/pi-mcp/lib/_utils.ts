@@ -2,7 +2,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { spawnSync } from "node:child_process";
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
-import type { McpConfig, ServerEntry } from "./types.ts";
+import type { McpConfig, ServerEntry } from "./_types.ts";
 
 async function execOpen(pi: ExtensionAPI, target: string, browser?: string, signal?: AbortSignal) {
   const os = platform();

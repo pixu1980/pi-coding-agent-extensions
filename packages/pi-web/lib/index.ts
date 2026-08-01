@@ -5,4 +5,4 @@
  * importable but are internal.
  */
 
-export { default } from "./extension.ts";
+export { default } from "./_extension.ts";

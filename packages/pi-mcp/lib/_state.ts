@@ -1,14 +1,14 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { ConsentManager } from "./consent-manager.ts";
-import type { McpLifecycleManager } from "./lifecycle.ts";
-import type { McpServerManager } from "./server-manager.ts";
-import type { AuthStorageOptions } from "./mcp-auth.ts";
-import type { ToolMetadata, PromptMetadata, McpConfig, UiSessionMessages, UiStreamSummary } from "./types.ts";
-import type { UiResourceHandler } from "./ui-resource-handler.ts";
-import type { UiServerHandle } from "./ui-server.ts";
-import type { McpRuntimeOwner } from "./runtime-owner.ts";
-import type { McpOAuthRuntime } from "./mcp-auth-flow.ts";
-import type { McpStatusEventBus } from "./mcp-status.ts";
+import type { ConsentManager } from "./_consent-manager.ts";
+import type { McpLifecycleManager } from "./_lifecycle.ts";
+import type { McpServerManager } from "./_server-manager.ts";
+import type { AuthStorageOptions } from "./_mcp-auth.ts";
+import type { ToolMetadata, PromptMetadata, McpConfig, UiSessionMessages, UiStreamSummary } from "./_types.ts";
+import type { UiResourceHandler } from "./_ui-resource-handler.ts";
+import type { UiServerHandle } from "./_ui-server.ts";
+import type { McpRuntimeOwner } from "./_runtime-owner.ts";
+import type { McpOAuthRuntime } from "./_mcp-auth-flow.ts";
+import type { McpStatusEventBus } from "./_mcp-status.ts";
 
 export interface CompletedUiSession {
   serverName: string;

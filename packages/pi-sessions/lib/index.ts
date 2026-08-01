@@ -4,4 +4,4 @@
  * Exposes the extension entry only; parsing/components/overlays stay private.
  */
 
-export { default } from "./extension.ts";
+export { default } from "./_extension.ts";

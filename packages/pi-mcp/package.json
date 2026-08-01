@@ -26,7 +26,7 @@
     "node": ">=20"
   },
   "bin": {
-    "pi-mcp": "lib/cli.js"
+    "pi-mcp": "lib/_cli.js"
   },
   "scripts": {
     "test": "node --import tsx --test __tests__/index.test.mjs",

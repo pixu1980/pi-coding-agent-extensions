@@ -323,7 +323,7 @@ export async function maybeStartUiSession(
         active = false;
         cleanupStreamListener();
 
-        if (state.uiServer === handle) {
+        if (handle && state.uiServer === handle) {
           const messages = handle.getSessionMessages();
           const stream = handle.getStreamSummary();
           const hasContent =

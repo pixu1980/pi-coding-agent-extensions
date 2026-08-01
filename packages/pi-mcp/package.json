@@ -1,6 +1,7 @@
 {
   "name": "@pixu1980/pi-mcp",
   "version": "0.1.2",
+  "private": false,
   "description": "MCP (Model Context Protocol) adapter for Pi coding agent — fork of pi-mcp-adapter with configurable tool advisory threshold",
   "type": "module",
   "types": "./index.ts",
@@ -28,12 +29,9 @@
     "pi-mcp": "cli.js"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "test:oauth": "PI_MCP_ADAPTER_TEST_AUTH_STORE=memory node --import tsx --test --test-concurrency=1 mcp-auth.test.ts mcp-auth-flow.test.ts mcp-callback-server.test.ts mcp-oauth-provider.test.ts",
-    "test:oauth-provider": "PI_MCP_ADAPTER_TEST_AUTH_STORE=memory node --import tsx --test mcp-oauth-provider.test.ts",
-    "test:conformance": "bash conformance/run.sh"
+    "test": "node --import tsx --test unit.test.mjs e2e.test.mjs",
+    "test:watch": "node --import tsx --test --watch unit.test.mjs e2e.test.mjs",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage unit.test.mjs e2e.test.mjs"
   },
   "repository": {
     "type": "git",
@@ -133,13 +131,17 @@
     "zod": "4.4.3"
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": "*",
-    "@earendil-works/pi-tui": "*",
+    "@earendil-works/pi-ai": ">=0.83.0",
+    "@earendil-works/pi-coding-agent": ">=0.83.0",
+    "@earendil-works/pi-tui": ">=0.83.0",
     "typebox": "*",
     "zod": "4.4.3"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-coding-agent": {
       "optional": true
     },
     "@earendil-works/pi-tui": {

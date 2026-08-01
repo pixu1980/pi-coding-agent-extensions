@@ -622,7 +622,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         action: Type.Optional(Type.String({ description: "Action: 'ui-messages', 'auth-start', or 'auth-complete'" })),
       }),
       renderResult: renderMcpToolResult,
-      async execute(_toolCallId, params: {
+      async execute(_toolCallId: string, params: {
         tool?: string;
         args?: string | Record<string, unknown>;
         connect?: string;
@@ -633,7 +633,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         includeSchemas?: boolean;
         server?: string;
         action?: string;
-      }, signal, _onUpdate, _ctx) {
+      }, signal?: AbortSignal, _onUpdate?: unknown, _ctx?: unknown) {
         const executeOwner = currentOwner;
         let parsedArgs: Record<string, unknown> | undefined;
         if (params.args !== undefined && params.args !== "") {

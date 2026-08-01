@@ -144,10 +144,12 @@ export function resolveCommandSecretsRecord(
 ): Record<string, string> | undefined {
   if (!values) return undefined;
 
-  return Object.fromEntries(Object.entries(values).map(([key, value]) => [
-    key,
-    resolveCommandSecret(value, context(key)),
-  ]));
+  const resolved: Record<string, string> = {};
+  for (const [key, value] of Object.entries(values)) {
+    const next = resolveCommandSecret(value, context(key));
+    if (next !== undefined) resolved[key] = next;
+  }
+  return resolved;
 }
 
 export function resolveServerUrl(definition: Pick<ServerEntry, "url">): string | undefined {

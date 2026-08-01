@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file. See [commit
 * **path-picker:** remove path_pick tool ([6701c52](https://github.com/pixu1980/pi-coding-agent-extensions/commit/6701c52bc8e272d5720bd00c5b05e01438e4c1cf))
 * **path-picker:** update package.json ([4cab5dd](https://github.com/pixu1980/pi-coding-agent-extensions/commit/4cab5dd539603f80d98cb937f45293ecdb1cb987))
 * **pi-ask:** add interactive ask and questionnaire tools ([8988b1e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/8988b1e4ff2de0bb313165049f50f730873df02d))
-* **pi-ask:** rename questionnaire to interview with sequential waves, grill mode and guardrails ([6163152](https://github.com/pixu1980/pi-coding-agent-extensions/commit/61631523a549cc639600dcdbe02c62e5dc7efa87))
+* **pi-ask:** rename questionnaire to interview with sequential waves, sharp interviews and guardrails ([6163152](https://github.com/pixu1980/pi-coding-agent-extensions/commit/61631523a549cc639600dcdbe02c62e5dc7efa87))
 * **pi-mcp:** add MCP adapter extension ([eb1e2ed](https://github.com/pixu1980/pi-coding-agent-extensions/commit/eb1e2ed5dc7cdc3326816115402f33acf578474b))
 * **pi-mcp:** bare dash-separated slash commands with toolPrefix none ([3b3eb57](https://github.com/pixu1980/pi-coding-agent-extensions/commit/3b3eb57d3abb1a50b20749a99e8e23c0b9523533))
 * **pi-path-picker:** remove /pick command, fix autocomplete close on quote delete ([fb123d4](https://github.com/pixu1980/pi-coding-agent-extensions/commit/fb123d406537a1617303893ee7ff273dfdd0f79d))

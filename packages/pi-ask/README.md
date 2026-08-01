@@ -23,13 +23,11 @@ Requires **Node.js ≥ 22** (uses `--experimental-strip-types`).
 
 | Resource | What it does |
 |---|---|
-| `ask` tool | One question: options + custom answer + optional note + optional multi-select |
-| `interview` tool | A batch of questions split into **sequential questionnaires** (≤10 questions each) with tab navigation, a review tab before submit, and optional **multi-wave** support (baseline + follow-up) |
-| `/ask <topic>` | Command that tells the model to ask you a single question |
-| `/ask-interview <topic>` | Command that tells the model to run a structured interview / questionnaire |
-| `/ask-grill <topic>` | Relentless interview to sharpen a plan or design (one question at a time, recommended answers) — replaces the `grill-me` skill |
-| `/ask-grill-docs <topic>` | Domain-aware grilling against CONTEXT.md glossary, ADRs and the code — replaces the `grill-with-docs` skill |
-| Auto-trigger | Phrases like "fammi una domanda", "fammi un questionario", or "grillami" route into the matching mode automatically |
+| `ask` tool | One question: options + custom answer + optional note + optional multi-select — also covers sharp plan interviews (recommended answers, codebase exploration) |
+| `interview` tool | A batch of questions as **sequential questionnaires** with tab navigation, a review tab before submit, and **caller-controlled waves** of any length (respected in full); the "con dominio" variant adds domain-aware interviews (CONTEXT.md / ADR) |
+| `/ask <topic>` | Command that tells the model to ask you a single question (or run a sharp plan interview) |
+| `/ask-interview <topic>` | Command that tells the model to run a structured interview / questionnaire; append "con dominio" or `--docs` for a domain-aware interview |
+| Auto-trigger | Phrases like "fammi una domanda", "fammi un questionario", "sfida il piano", or "intervistami col dominio" route into the matching mode automatically |
 
 The tools are callable by the model automatically (no setup). The slash
 commands make the "interview mode" flow explicit.
@@ -130,13 +128,13 @@ as a single unlabelled wave.
 
 ## Slash commands & auto-trigger
 
-- `/ask <topic>` — single-question mode about a topic.
+- `/ask <topic>` — single-question mode about a topic. Also handles sharp plan interviews:
+  when you ask to sharpen a plan, the model asks one question at a time with
+  recommended answers and codebase exploration.
 - `/ask-interview <topic>` — structured interview (multi-question, sequential
-  questionnaires, optional waves) about a topic.
-- `/ask-grill <topic>` — relentless plan-sharpening interview (one question at
-  a time, recommended answers).
-- `/ask-grill-docs <topic>` — domain-aware grilling against CONTEXT.md
-  glossary, ADRs and the code (absorbs `grill-with-docs`).
+  questionnaires, optional waves) about a topic. Append "con dominio" or
+  `--docs` for a domain-aware interview against CONTEXT.md glossary, ADRs and
+  the code.
 
 The same modes activate automatically from natural language, so you do not
 have to remember the commands:
@@ -145,12 +143,12 @@ have to remember the commands:
 |---|---|
 | "fammi una domanda", "chiedimi qualcosa", "ask me one question" | `/ask` |
 | "intervistami", "fammi un questionario", "due wave di domande" | `/ask-interview` |
-| "grillami", "grill me", "sfida il piano" | `/ask-grill` |
-| "grillami col dominio", "contro il domain model" | `/ask-grill-docs` |
+| "intervistami sul piano", "sfida il piano", "stress-test il piano" | `/ask` (sharp) |
+| "intervistami col dominio", "contro il domain model" | `/ask-interview` (docs) |
 
 ## Guardrails
 
-When your prompt signals ask / interview / grill intent, pi-ask appends a
+When your prompt signals ask / interview intent, pi-ask appends a
 **mandatory directive to the system prompt** (via `before_agent_start`) that
 forces the model to drive the session through the `ask` / `interview` tool
 instead of replying with plain-text questions. The guardrail lives inside the

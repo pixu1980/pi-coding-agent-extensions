@@ -122,7 +122,7 @@ function getSessions(): SessionSummary[] {
 }
 
 /** Clear session cache. */
-function clearSessionsCache(): void {
+export function clearSessionsCache(): void {
   cachedSessions = null;
   cacheTimestamp = 0;
   cacheDirMtime = 0;
@@ -147,7 +147,7 @@ const SIDEBAR_OVERHEAD = 8;
 /**
  * Get the pi.dev sessions directory.
  */
-function getSessionsDir(): string {
+export function getSessionsDir(): string {
   const agentDir = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
   return join(agentDir, SESSION_DIR_NAME);
 }
@@ -174,7 +174,7 @@ function isTextBlock(value: unknown): value is TextContentBlock {
 /**
  * Auto-generate a session name from the first user message content.
  */
-function autoNameSession(content: unknown): string {
+export function autoNameSession(content: unknown): string {
   if (!content) return "Empty session";
 
   let text = "";
@@ -204,7 +204,7 @@ function autoNameSession(content: unknown): string {
 /**
  * Parse a session JSONL file and extract summary info.
  */
-function parseSessionFile(filePath: string): SessionSummary | null {
+export function parseSessionFile(filePath: string): SessionSummary | null {
   try {
     const content = readFileSync(filePath, "utf8");
     const lines = content.trim().split("\n");
@@ -270,7 +270,7 @@ function parseSessionFile(filePath: string): SessionSummary | null {
  * List all session files and return parsed summaries, newest first.
  * Limits to MAX_SESSIONS to prevent OOM.
  */
-function listSessions(): SessionSummary[] {
+export function listSessions(): SessionSummary[] {
   const sessionsDir = getSessionsDir();
   if (!existsSync(sessionsDir)) return [];
 
@@ -321,7 +321,7 @@ function listSessions(): SessionSummary[] {
  * Format a date string for display.
  * Parses ISO 8601 dates robustly, handling missing timezone.
  */
-function formatDate(isoStr: string): string {
+export function formatDate(isoStr: string): string {
   try {
     // Normalise: if no timezone offset/Z, treat as UTC
     const normalised = /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith("Z") && !isoStr.endsWith("+00:00")
@@ -353,7 +353,7 @@ function formatDate(isoStr: string): string {
  * Group sessions by project directory (cwd).
  * Returns folders sorted by latest session date, newest first.
  */
-function groupSessionsByFolder(sessions: SessionSummary[]): FolderSummary[] {
+export function groupSessionsByFolder(sessions: SessionSummary[]): FolderSummary[] {
   const groups = new Map<string, SessionSummary[]>();
 
   for (const session of sessions) {
@@ -390,7 +390,7 @@ function groupSessionsByFolder(sessions: SessionSummary[]): FolderSummary[] {
 
 // ── Sidebar Component ──────────────────────────────────────────────
 
-class SessionSidebarComponent implements Focusable {
+export class SessionSidebarComponent implements Focusable {
   /** Focusable interface - set by TUI when focus changes */
   focused = false;
 
@@ -627,7 +627,7 @@ class SessionSidebarComponent implements Focusable {
 
 // ── Folder Sidebar Component ───────────────────────────────────────
 
-class FolderSidebarComponent implements Focusable {
+export class FolderSidebarComponent implements Focusable {
   focused = false;
 
   private folders: FolderSummary[] = [];

@@ -1,7 +1,7 @@
 /**
  * pi-ask — pure answer-building helpers
  *
- * Selection logic shared by the `ask` and `questionnaire` UI components.
+ * Selection logic shared by the `ask` and `interview` UI components.
  * No TUI imports: unit-testable without a terminal.
  */
 

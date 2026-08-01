@@ -30,8 +30,6 @@
   "files": [
     "index.ts",
     "lib/**",
-    "skills/**",
-    "assets/**",
     "README.md"
   ],
   "publishConfig": {
@@ -46,9 +44,6 @@
   "pi": {
     "extensions": [
       "./index.ts"
-    ],
-    "skills": [
-      "./skills"
     ]
   },
   "peerDependencies": {

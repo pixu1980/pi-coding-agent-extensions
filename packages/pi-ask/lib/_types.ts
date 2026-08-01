@@ -1,8 +1,8 @@
 /**
  * pi-ask — schemas, types and pure helpers
  *
- * TypeBox schemas for the `ask` and `questionnaire` tool parameters, the
- * TS types consumed by the UI components, and the pure normalization /
+ * TypeBox schemas for the `ask` and `interview` tool parameters, the TS
+ * types consumed by the UI components, and the pure normalization /
  * formatting helpers shared by both tools. Nothing here touches the TUI,
  * which keeps this module unit-testable without a terminal.
  */
@@ -37,9 +37,20 @@ export const QuestionSchema = Type.Object({
 	allowNote: Type.Optional(Type.Boolean({ description: "Allow attaching a note to the answer (default: true)" })),
 });
 
-export const QuestionnaireParams = Type.Object({
-	title: Type.Optional(Type.String({ description: "Optional questionnaire title" })),
-	questions: Type.Array(QuestionSchema, { description: "Questions to ask", minItems: 1 }),
+export const WaveSchema = Type.Object({
+	label: Type.Optional(Type.String({ description: "Optional wave label (e.g. 'Wave 1 — Baseline')" })),
+	questions: Type.Array(QuestionSchema, { description: "Questions in this wave", minItems: 1 }),
+});
+
+export const InterviewParams = Type.Object({
+	title: Type.Optional(Type.String({ description: "Optional interview title" })),
+	waves: Type.Optional(
+		Type.Array(WaveSchema, {
+			description: "One or more waves of questions (e.g. baseline + follow-up). Each wave is a labelled group of questions.",
+			minItems: 1,
+		}),
+	),
+	questions: Type.Optional(Type.Array(QuestionSchema, { description: "Flat questions (treated as a single wave). Shorthand for a one-wave interview." })),
 });
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -68,6 +79,14 @@ export interface NormalizedQuestion {
 	allowOther: boolean;
 	multiSelect: boolean;
 	allowNote: boolean;
+	/** Wave this question belongs to (set when the interview has waves) */
+	waveLabel?: string;
+}
+
+/** A labelled group of questions (e.g. "Wave 1 — Baseline"). */
+export interface NormalizedWave {
+	label?: string;
+	questions: NormalizedQuestion[];
 }
 
 export interface SelectAnswer {
@@ -79,9 +98,11 @@ export interface SelectAnswer {
 	note?: string;
 }
 
-export interface QuestionnaireAnswer {
+export interface InterviewAnswer {
 	questionId: string;
 	questionLabel: string;
+	/** Wave label when the interview has waves */
+	waveLabel?: string;
 	/** One or more selected answers (multi-select / custom) */
 	answers: SelectAnswer[];
 }
@@ -97,10 +118,10 @@ export interface AskDetails {
 	cancelled: boolean;
 }
 
-export interface QuestionnaireDetails {
+export interface InterviewDetails {
 	title?: string;
-	questions: NormalizedQuestion[];
-	answers: QuestionnaireAnswer[];
+	waves: NormalizedWave[];
+	answers: InterviewAnswer[];
 	cancelled: boolean;
 }
 
@@ -158,6 +179,32 @@ export function normalizeQuestions(
 }
 
 /**
+ * Normalize interview params into waves. Accepts either an explicit
+ * `waves` array (labelled groups) or a flat `questions` list, which is
+ * treated as a single unlabelled wave. Each question carries its wave
+ * label so the UI can group tabs and the review can prefix answers.
+ */
+export function normalizeInterview(params: {
+	title?: string;
+	waves?: Array<{ label?: string; questions: Array<{ id: string; label?: string; prompt: string; options: AskOption[]; allowOther?: boolean; multiSelect?: boolean; allowNote?: boolean }> }>;
+	questions?: Array<{ id: string; label?: string; prompt: string; options: AskOption[]; allowOther?: boolean; multiSelect?: boolean; allowNote?: boolean }>;
+}): { title?: string; waves: NormalizedWave[] } {
+	const waves: NormalizedWave[] = [];
+
+	if (params.waves && params.waves.length > 0) {
+		for (const wave of params.waves) {
+			const normalized = normalizeQuestions(wave.questions);
+			for (const q of normalized) q.waveLabel = wave.label?.trim() || undefined;
+			waves.push({ label: wave.label?.trim() || undefined, questions: normalized });
+		}
+	} else if (params.questions && params.questions.length > 0) {
+		waves.push({ questions: normalizeQuestions(params.questions) });
+	}
+
+	return { title: params.title, waves };
+}
+
+/**
  * Build the options shown in the UI: the normalized options plus the
  * "Type something." pseudo-option when custom answers are allowed.
  */
@@ -184,7 +231,7 @@ export function summarizeAnswers(answers: SelectAnswer[]): string {
 	return answers.map(formatSelectionAnswer).join(", ");
 }
 
-/** "Scope: 2. Frontend — note: ..." — one line of a questionnaire result. */
-export function formatQuestionnaireLine(questionLabel: string, answers: SelectAnswer[]): string {
+/** "Scope: 2. Frontend — note: ..." — one line of an interview result. */
+export function formatInterviewLine(questionLabel: string, answers: SelectAnswer[]): string {
 	return `${questionLabel}: ${summarizeAnswers(answers)}`;
 }

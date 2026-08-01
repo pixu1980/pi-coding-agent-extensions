@@ -9,5 +9,5 @@ import "./_ask-ui.test.mjs";
 import "./_ask.test.mjs";
 import "./_interview.test.mjs";
 import "./_logic.test.mjs";
-import "./_questionnaire-ui.test.mjs";
+import "./_interview-ui.test.mjs";
 import "./_types.test.mjs";

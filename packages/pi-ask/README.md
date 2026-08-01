@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="./assets/banner.svg" alt="pi-ask — interactive Q&A for pi.dev" width="1100">
+  <img src="./lib/banner.svg" alt="pi-ask — interactive Q&A for pi.dev" width="1100">
 </p>
 
 # pi-ask — interactive Q&A for pi.dev
 
 Multiple choice and single answer questions with **notes** and **custom answers**,
 Claude Code style. When the agent needs input — requirements, preferences,
-decisions — it calls the `ask` / `questionnaire` tools and the question is
+decisions — it calls the `ask` / `interview` tools and the question is
 rendered as a full-screen picker in the terminal. The developer answers with a
 **number key**, the **arrow keys**, or types a **custom answer**; a **note** can
 be attached to any answer with `n`.
@@ -24,12 +24,15 @@ Requires **Node.js ≥ 22** (uses `--experimental-strip-types`).
 | Resource | What it does |
 |---|---|
 | `ask` tool | One question: options + custom answer + optional note + optional multi-select |
-| `questionnaire` tool | A batch of questions with tab navigation and a review tab before submit |
-| `/interview <topic>` | Command that tells the model to interview you, one question at a time |
-| `interview` skill | Guidelines the model follows when it asks you questions |
+| `interview` tool | A batch of questions split into **sequential questionnaires** (≤10 questions each) with tab navigation, a review tab before submit, and optional **multi-wave** support (baseline + follow-up) |
+| `/ask <topic>` | Command that tells the model to ask you a single question |
+| `/ask-interview <topic>` | Command that tells the model to run a structured interview / questionnaire |
+| `/ask-grill <topic>` | Relentless interview to sharpen a plan or design (one question at a time, recommended answers) — replaces the `grill-me` skill |
+| `/ask-grill-docs <topic>` | Domain-aware grilling against CONTEXT.md glossary, ADRs and the code — replaces the `grill-with-docs` skill |
+| Auto-trigger | Phrases like "fammi una domanda", "fammi un questionario", or "grillami" route into the matching mode automatically |
 
-The tools are callable by the model automatically (no setup). The `/interview`
-command and the skill make the "interview mode" flow explicit.
+The tools are callable by the model automatically (no setup). The slash
+commands make the "interview mode" flow explicit.
 
 ## How answering works
 
@@ -78,16 +81,80 @@ to the next answer you pick. The note travels with the answer back to the model:
 Q1: 1. Frontend — note: team prefers it
 ```
 
-## Questionnaire
+## Interview
 
-The `questionnaire` tool renders a tab bar: one tab per question (labels chosen
-by the model) plus a **Submit** tab. Move between tabs freely with `←` / `→`
+The `interview` tool renders a tab bar: one tab per question (labels chosen by
+us) plus a **Submit** tab. Move between tabs freely with `←` / `→`
 (or Tab / Shift+Tab) — questions can be answered in any order. Answer a question
 with a digit (records and advances to the next tab) or by highlighting an option
 with `↑` / `↓` and pressing `Enter`. Enter records the highlighted option (or the
-current multi-selects) and **jumps straight to the Submit tab**; on the Submit
-tab, Enter submits everything. Unanswered questions are listed on the review
-screen, and answers can be edited by tabbing back.
+current multi-selects) and **advances to the next question**; on the last
+question it lands on the Submit tab, where Enter submits everything. Unanswered
+questions are listed on the review screen, and answers can be edited by tabbing
+back.
+
+### Waves (caller-controlled structure)
+
+Long interviews are broken into **sequential questionnaires**: each wave
+renders on its own with a header (`Questionnaire 1/2`, `Questionnaire 2/2`)
+and its own review + Submit step — the next questionnaire only starts after
+you confirm the previous one.
+
+The caller controls the grouping: pass `waves` with a label and **any number
+of questions per wave** (decided by hierarchical or structural criteria —
+sections, difficulty, phases). Each wave is respected in full, never split,
+so a 20-question baseline stays one questionnaire if that is how you
+structured it.
+
+### Waves
+
+Pass `waves` to the `interview` tool when the questionnaire spans phases
+measured at different points in time (e.g. a baseline and a follow-up). Each wave is a labelled group of questions with any
+length — the caller decides the grouping by hierarchical/structural criteria;
+waves are rendered one after the other as sequential questionnaires:
+
+```json
+{
+  "title": "Progetto di ricerca",
+  "waves": [
+    { "label": "Wave 1 — Baseline",  "questions": [ { "id": "w1q1", "prompt": "...", "options": [...] }, ... ] },
+    { "label": "Wave 2 — Follow-up", "questions": [ { "id": "w2q1", "prompt": "...", "options": [...] }, ... ] }
+  ]
+}
+```
+
+Each wave renders as its own questionnaire: a header shows the wave label
+(e.g. "Wave 1 — Baseline"), and answers carry the wave label in the final
+result so the two waves can be compared. A flat `questions` list is treated
+as a single unlabelled wave.
+
+## Slash commands & auto-trigger
+
+- `/ask <topic>` — single-question mode about a topic.
+- `/ask-interview <topic>` — structured interview (multi-question, sequential
+  questionnaires, optional waves) about a topic.
+- `/ask-grill <topic>` — relentless plan-sharpening interview (one question at
+  a time, recommended answers).
+- `/ask-grill-docs <topic>` — domain-aware grilling against CONTEXT.md
+  glossary, ADRs and the code (absorbs `grill-with-docs`).
+
+The same modes activate automatically from natural language, so you do not
+have to remember the commands:
+
+| You write | Mode |
+|---|---|
+| "fammi una domanda", "chiedimi qualcosa", "ask me one question" | `/ask` |
+| "intervistami", "fammi un questionario", "due wave di domande" | `/ask-interview` |
+| "grillami", "grill me", "sfida il piano" | `/ask-grill` |
+| "grillami col dominio", "contro il domain model" | `/ask-grill-docs` |
+
+## Guardrails
+
+When your prompt signals ask / interview / grill intent, pi-ask appends a
+**mandatory directive to the system prompt** (via `before_agent_start`) that
+forces the model to drive the session through the `ask` / `interview` tool
+instead of replying with plain-text questions. The guardrail lives inside the
+extension, so it is active **only when pi-ask is installed**.
 
 ## Non-interactive modes
 
@@ -97,7 +164,7 @@ return the question and options without an answer so the model can adapt.
 ## Example: requirements interview
 
 ```
-you: /interview new CLI tool
+you: /ask-interview new CLI tool
 pi:  Which language?                    → 1. TypeScript  2. Rust  3. Go  4. Python
      (n) note: "team is Rust-first"
 pi:  How will it be distributed?        → 1. npm  2. Homebrew  3. cargo  4. binary tarball

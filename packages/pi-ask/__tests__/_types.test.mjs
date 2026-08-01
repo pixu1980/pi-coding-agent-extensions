@@ -10,13 +10,14 @@ import assert from "node:assert/strict";
 
 import {
 	AskParams,
-	QuestionnaireParams,
+	InterviewParams,
 	normalizeOptions,
 	normalizeQuestions,
+	normalizeInterview,
 	buildDisplayOptions,
 	formatSelectionAnswer,
 	summarizeAnswers,
-	formatQuestionnaireLine,
+	formatInterviewLine,
 } from "../lib/_types.ts";
 
 // ── Schema smoke tests ────────────────────────────────────────────────────
@@ -29,9 +30,10 @@ test("AskParams is a TypeBox object schema with the expected properties", () => 
 	assert.equal(AskParams.properties?.allowOther?.anyOf?.[1]?.default ?? AskParams.properties?.allowOther?.default, undefined);
 });
 
-test("QuestionnaireParams wraps an array of questions", () => {
-	assert.equal(QuestionnaireParams.type, "object");
-	assert.equal(QuestionnaireParams.properties?.questions?.type, "array");
+test("InterviewParams wraps waves and/or questions", () => {
+	assert.equal(InterviewParams.type, "object");
+	assert.equal(InterviewParams.properties?.waves?.type, "array");
+	assert.equal(InterviewParams.properties?.questions?.type, "array");
 });
 
 // ── normalizeOptions ──────────────────────────────────────────────────────
@@ -104,6 +106,54 @@ test("normalizeQuestions honours a start index for labels", () => {
 	assert.equal(out[0].label, "Q7");
 });
 
+// ── normalizeInterview ────────────────────────────────────────────────────
+
+test("normalizeInterview treats flat questions as a single unlabelled wave", () => {
+	const out = normalizeInterview({
+		title: "T",
+		questions: [{ id: "a", prompt: "A?", options: [{ label: "x" }] }],
+	});
+	assert.equal(out.title, "T");
+	assert.equal(out.waves.length, 1);
+	assert.equal(out.waves[0].label, undefined);
+	assert.equal(out.waves[0].questions.length, 1);
+	assert.equal(out.waves[0].questions[0].waveLabel, undefined);
+});
+
+test("normalizeInterview keeps labelled waves and stamps each question", () => {
+	const out = normalizeInterview({
+		waves: [
+			{
+				label: "Wave 1 — Baseline",
+				questions: [{ id: "a", prompt: "A?", options: [{ label: "x" }] }],
+			},
+			{
+				label: "Wave 2 — Follow-up",
+				questions: [{ id: "b", prompt: "B?", options: [{ label: "y" }] }],
+			},
+		],
+	});
+	assert.equal(out.waves.length, 2);
+	assert.equal(out.waves[0].label, "Wave 1 — Baseline");
+	assert.equal(out.waves[1].questions[0].waveLabel, "Wave 2 — Follow-up");
+});
+
+test("normalizeInterview defaults question labels per wave", () => {
+	const out = normalizeInterview({
+		waves: [
+			{ label: "W1", questions: [{ id: "a", prompt: "A?", options: [{ label: "x" }] }] },
+			{ label: "W2", questions: [{ id: "b", prompt: "B?", options: [{ label: "y" }] }] },
+		],
+	});
+	assert.deepEqual(out.waves[0].questions.map((q) => q.label), ["Q1"]);
+	assert.deepEqual(out.waves[1].questions.map((q) => q.label), ["Q1"]); // labels restart per wave
+});
+
+test("normalizeInterview returns no waves when nothing is provided", () => {
+	const out = normalizeInterview({});
+	assert.equal(out.waves.length, 0);
+});
+
 // ── buildDisplayOptions ───────────────────────────────────────────────────
 
 test("buildDisplayOptions appends Type something when allowOther", () => {
@@ -139,7 +189,7 @@ test("formatSelectionAnswer appends the note when present", () => {
 	);
 });
 
-// ── summarizeAnswers / formatQuestionnaireLine ────────────────────────────
+// ── summarizeAnswers / formatInterviewLine ────────────────────────────────
 
 test("summarizeAnswers joins multiple selections", () => {
 	const out = summarizeAnswers([
@@ -149,8 +199,8 @@ test("summarizeAnswers joins multiple selections", () => {
 	assert.equal(out, "1. PostgreSQL, 3. Redis");
 });
 
-test("formatQuestionnaireLine prefixes the question label", () => {
-	const out = formatQuestionnaireLine("Scope", [
+test("formatInterviewLine prefixes the question label", () => {
+	const out = formatInterviewLine("Scope", [
 		{ value: "fe", label: "Frontend", index: 2, note: "team prefers it" },
 	]);
 	assert.equal(out, "Scope: 2. Frontend — note: team prefers it");

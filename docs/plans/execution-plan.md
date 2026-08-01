@@ -38,33 +38,33 @@ pubblicabile nel monorepo (convenzioni come pi-path-picker).
 
 ## Phase 1 — Scaffold + fondamenti (TDD)
 
-- [ ] 1. Scaffold `packages/pi-ask/` (package.json con manifest `pi`, peer deps, keywords `pi-package`; index.ts barrel; lib/; __tests__/; README.md; skills/)
-- [ ] 2. `lib/_types.ts`: schemi TypeBox (`Option`, `Question`, `AskParams`, `QuestionnaireParams`) + tipi TS + helper puri (`normalizeQuestions`, `buildAskOptions`, `formatAnswerSummary`)
-- [ ] 3. Test `__tests__/_types.test.mjs`: validazione schemi + helper puri (prima falliscono, poi passano)
+- [x] 1. Scaffold `packages/pi-ask/` (package.json con manifest `pi`, peer deps, keywords `pi-package`; index.ts barrel; lib/; __tests__/; README.md; skills/)
+- [x] 2. `lib/_types.ts`: schemi TypeBox (`Option`, `Question`, `AskParams`, `QuestionnaireParams`) + tipi TS + helper puri (`normalizeQuestions`, `buildAskOptions`, `formatAnswerSummary`)
+- [x] 3. Test `__tests__/_types.test.mjs`: validazione schemi + helper puri (prima falliscono, poi passano)
 
 ## Phase 2 — Tool `ask` (domanda singola)
 
-- [ ] 4. `lib/_ask.ts`: componente `ctx.ui.custom` — opzioni numerate (1-9 + frecce), nota con `n`, "Type something", multi-select opzionale, fallback non-TUI
-- [ ] 5. Registrazione tool in `index.ts` con `renderCall`/`renderResult` compatti
-- [ ] 6. Test: logica selezione/nota/custom/multi (separata dalla UI in `_logic.ts` per testabilità)
+- [x] 4. `lib/_ask.ts`: componente `ctx.ui.custom` — opzioni numerate (1-9 + frecce), nota con `n`, "Type something", multi-select opzionale, fallback non-TUI
+- [x] 5. Registrazione tool in `index.ts` con `renderCall`/`renderResult` compatti
+- [x] 6. Test: logica selezione/nota/custom/multi (separata dalla UI in `_logic.ts` per testabilità) + test UI con driver fake TUI (harness del monorepo)
 
 ## Phase 3 — Tool `questionnaire` (multi-domanda)
 
-- [ ] 7. `lib/_questionnaire.ts`: tab bar (domande + Submit), nota per domanda, custom per domanda, multi-select per domanda, riepilogo modificabile
-- [ ] 8. Registrazione tool + `renderCall`/`renderResult`
-- [ ] 9. Test: navigazione, mappa risposte, submit/cancel
+- [x] 7. `lib/_questionnaire.ts`: tab bar (domande + Submit), nota per domanda, custom per domanda, multi-select per domanda, riepilogo modificabile
+- [x] 8. Registrazione tool + `renderCall`/`renderResult`
+- [x] 9. Test: navigazione, mappa risposte, submit/cancel (driver fake TUI, 8 test)
 
 ## Phase 4 — Modalità intervista
 
-- [ ] 10. `skills/interview/SKILL.md` (guidelines per il modello: quando usare `ask` vs `questionnaire`, come formulare opzioni)
-- [ ] 11. Command `/interview <topic>`: messaggio al modello che lo istruisce a porre domande una alla volta via `ask`
-- [ ] 12. Test: skill esiste e command registrato (test harness del monorepo)
+- [x] 10. `skills/interview/SKILL.md` (guidelines per il modello: quando usare `ask` vs `questionnaire`, come formulare opzioni)
+- [x] 11. Command `/interview <topic>`: messaggio al modello che lo istruisce a porre domande una alla volta via `ask`
+- [x] 12. Test: skill esiste, command registrato, prompt inviato come followUp (harness del monorepo)
 
 ## Phase 5 — Polish + docs + release
 
-- [ ] 13. README completo (install, usage, tasti, GIF/banner come gli altri package)
-- [ ] 14. `test:all` del monorepo verde + verifica manuale con `pi -e .`
-- [ ] 15. Bump versione 0.1.0 + CHANGELOG + tag + publish npm (`node scripts/release.mjs`)
+- [x] 13. README completo (install, usage, tasti, banner SVG in stile monorepo)
+- [x] 14. `test:all` del monorepo verde (7/7 package, 245 test) + smoke test con `pi -e .` reale
+- [ ] 15. Bump versione + CHANGELOG + tag + publish npm (`node scripts/release.mjs`) — **in attesa di ok utente**
 
 ## Fuori scope (candidati futuri)
 

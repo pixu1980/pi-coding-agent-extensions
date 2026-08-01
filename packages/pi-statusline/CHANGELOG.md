@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.5...@pixu1980/pi-statusline@0.1.6) (2026-08-01)
+
+### Features
+
+* **pi-ask:** add interactive ask and questionnaire tools ([8988b1e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/8988b1e4ff2de0bb313165049f50f730873df02d))
+* **pi-mcp:** bare dash-separated slash commands with toolPrefix none ([3b3eb57](https://github.com/pixu1980/pi-coding-agent-extensions/commit/3b3eb57d3abb1a50b20749a99e8e23c0b9523533))
 ## [0.1.5](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.4...@pixu1980/pi-statusline@0.1.5) (2026-08-01)
 
 ### Features

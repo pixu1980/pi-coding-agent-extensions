@@ -184,8 +184,18 @@ const USER_DATA = {
   initialPrompt: "",
 };
 
-test("renderResponsive: wide width renders the verbose level", () => {
+test("renderResponsive: very wide width renders the full-label level", () => {
   const line = renderResponsive(USER_DATA, 10_000);
+  assert.equal(
+    strip(line),
+    "Project: ~/Projects/pixu1980/pi-coding-agent-extensions › Branch: main › Model: DeepSeek V4 Flash Effort: High › Context: 0/1.0M (0%)",
+    "full-label level spells out section names, keeps the full path, separate effort label and pct",
+  );
+});
+
+test("renderResponsive: wide width degrades to the verbose labeled level", () => {
+  const full = renderResponsive(USER_DATA, 10_000);
+  const line = renderResponsive(USER_DATA, visibleWidth(full) - 1);
   assert.equal(
     strip(line),
     "P: ~/Projects/pixu1980/pi-coding-agent-extensions › B: main › M: DeepSeek V4 Flash E: High › C: 0/1.0M (0%)",
@@ -194,7 +204,8 @@ test("renderResponsive: wide width renders the verbose level", () => {
 });
 
 test("renderResponsive: medium width degrades to the compact level", () => {
-  const verbose = renderResponsive(USER_DATA, 10_000);
+  const full = renderResponsive(USER_DATA, 10_000);
+  const verbose = renderResponsive(USER_DATA, visibleWidth(full) - 1);
   const line = renderResponsive(USER_DATA, visibleWidth(verbose) - 1);
   assert.equal(
     strip(line),
@@ -204,7 +215,8 @@ test("renderResponsive: medium width degrades to the compact level", () => {
 });
 
 test("renderResponsive: narrow width degrades to the minimal level", () => {
-  const verbose = renderResponsive(USER_DATA, 10_000);
+  const full = renderResponsive(USER_DATA, 10_000);
+  const verbose = renderResponsive(USER_DATA, visibleWidth(full) - 1);
   const compact = renderResponsive(USER_DATA, visibleWidth(verbose) - 1);
   const line = renderResponsive(USER_DATA, visibleWidth(compact) - 1);
   assert.equal(
@@ -215,19 +227,22 @@ test("renderResponsive: narrow width degrades to the minimal level", () => {
 });
 
 test("renderResponsive: levels are progressively narrower (monotonic)", () => {
-  const l1 = renderResponsive(DATA, 10_000);
+  const l0 = renderResponsive(DATA, 10_000);
+  const l1 = renderResponsive(DATA, visibleWidth(l0) - 1);
   const l2 = renderResponsive(DATA, visibleWidth(l1) - 1);
   const l3 = renderResponsive(DATA, visibleWidth(l2) - 1);
+  assert.ok(visibleWidth(l1) < visibleWidth(l0), "verbose narrower than full-label");
   assert.ok(visibleWidth(l2) < visibleWidth(l1), "compact narrower than verbose");
   assert.ok(visibleWidth(l3) < visibleWidth(l2), "minimal narrower than compact");
   assert.ok(visibleWidth(l3) <= visibleWidth(l2) - 1);
 });
 
 test("renderResponsive: preserves colors at every level", () => {
-  const verbose = renderResponsive(DATA, 10_000);
+  const full = renderResponsive(DATA, 10_000);
+  const verbose = renderResponsive(DATA, visibleWidth(full) - 1);
   const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
   const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
-  for (const line of [verbose, compact, minimal]) {
+  for (const line of [full, verbose, compact, minimal]) {
     assert.ok(line.includes("\x1b[38;2;255;180;100m"), "model stays orange-gold");
     assert.ok(line.includes("\x1b[38;2;180;220;100m"), "effort stays lime-green");
     assert.ok(line.includes("\x1b[38;2;140;140;140m"), "labels/separators stay dim grey");
@@ -236,21 +251,44 @@ test("renderResponsive: preserves colors at every level", () => {
   }
 });
 
+test("renderResponsive: compact/minimal keep the '/' between used and total gradient-colored", () => {
+  const full = renderResponsive(DATA, 10_000);
+  const verbose = renderResponsive(DATA, visibleWidth(full) - 1);
+  const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
+  const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
+  for (const line of [compact, minimal]) {
+    // 901k → reset → gradient-coded '/' → reset → gradient-coded 1.0M
+    assert.match(
+      line,
+      /901k\x1b\[0m\x1b\[38;2;\d+;\d+;\d+m\/\x1b\[0m\x1b\[38;2;\d+;\d+;\d+m1\.0M/,
+      "the '/' keeps the context percentage gradient instead of dim grey",
+    );
+    assert.ok(
+      !line.includes("\x1b[38;2;140;140;140m/\x1b[0m") &&
+      !line.includes("901k\x1b[0m\x1b[38;2;140;140;140m/"),
+      "no dim-grey slash adjacent to the context numbers",
+    );
+  }
+});
+
 test("renderResponsive: model name passes through verbatim at every level", () => {
   const withBadge = { ...DATA, model: "DeepSeek V4 Flash (New)" };
-  const l1 = renderResponsive(withBadge, 10_000);
+  const l0 = renderResponsive(withBadge, 10_000);
+  const l1 = renderResponsive(withBadge, visibleWidth(l0) - 1);
   const l2 = renderResponsive(withBadge, visibleWidth(l1) - 1);
   const l3 = renderResponsive(withBadge, visibleWidth(l2) - 1);
-  for (const line of [l1, l2, l3]) {
+  for (const line of [l0, l1, l2, l3]) {
     assert.ok(strip(line).includes("DeepSeek V4 Flash (New)"), "model badge is preserved, not dropped");
   }
 });
 
 test("renderResponsive: git status shows at every level", () => {
-  const verbose = renderResponsive(DATA, 10_000);
-  assert.ok(verbose.includes("⇡3"), "verbose keeps ahead");
-  assert.ok(verbose.includes("⇣1"), "verbose keeps behind");
-  assert.ok(verbose.includes("!2"), "verbose keeps dirty");
+  const full = renderResponsive(DATA, 10_000);
+  assert.ok(full.includes("⇡3"), "full-label keeps ahead");
+  assert.ok(full.includes("⇣1"), "full-label keeps behind");
+  assert.ok(full.includes("!2"), "full-label keeps dirty");
+  const verbose = renderResponsive(DATA, visibleWidth(full) - 1);
+  assert.ok(verbose.includes("⇡3"));
   const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
   assert.ok(compact.includes("⇡3"));
   const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
@@ -270,6 +308,8 @@ test("renderResponsive: empty git → branch/git_status sections collapse", () =
   const line = renderResponsive(noGit, 10_000);
   assert.ok(!strip(line).includes("feature/x"));
   assert.ok(!strip(line).includes("B:"), "no empty branch section");
+  assert.ok(!strip(line).includes("Branch:"), "no empty branch section in full-label level");
+  assert.ok(!strip(line).includes("Status:"), "no empty status section in full-label level");
 });
 
 test("renderResponsive: custom short project name already stays put", () => {

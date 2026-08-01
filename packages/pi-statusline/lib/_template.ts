@@ -9,7 +9,10 @@
  * Colors: labels/separators = dim grey, values = section color, C: = gradient.
  *
  * Responsive (preset-auto): renderResponsive() picks the most verbose of the
- * three RESPONSIVE_LEVELS templates that fits the available width.
+ * four RESPONSIVE_LEVELS templates that fits the available width.
+ * Static text sandwiched between two context tokens (e.g. the "/" in
+ * {context_used}/{context_total}) is colored with the same percentage gradient
+ * so it never falls back to dim grey.
  */
 
 import type { StatusLineData, StatusLineSettings } from "./_types.js";
@@ -106,6 +109,7 @@ type Segment = StaticSeg | TokenSeg;
 
 type RenderOp =
   | { kind: "static"; text: string }
+  | { kind: "ctx-sep"; text: string }
   | { kind: "required-token"; name: string }
   | { kind: "optional-token"; name: string; decorator: string };
 
@@ -138,7 +142,16 @@ export function compileTemplate(template: string): CompiledTemplate | string {
         ops.push({ kind: "optional-token", name: next.name, decorator: s.text });
         i++;
       } else {
-        ops.push({ kind: "static", text: s.text });
+        // Static text between two context tokens (e.g. "/" in
+        // {context_used}/{context_total}) is part of the context value, so it
+        // must be colored with the percentage gradient, not dim grey.
+        const prev = segs[i - 1];
+        const isCtxSep =
+          prev?.type === "token" &&
+          next?.type === "token" &&
+          CTX_TOKEN.has(prev.name) &&
+          CTX_TOKEN.has(next.name);
+        ops.push(isCtxSep ? { kind: "ctx-sep", text: s.text } : { kind: "static", text: s.text });
       }
     } else if (s.type === "token") {
       if (s.optional) {
@@ -160,6 +173,9 @@ export function compileTemplate(template: string): CompiledTemplate | string {
       switch (op.kind) {
         case "static":
           out.push(DIM + op.text + R);
+          break;
+        case "ctx-sep":
+          out.push(gradient(op.text, data.contextPct / 100));
           break;
         case "required-token": {
           const val = resolveToken(op.name, data);
@@ -232,17 +248,20 @@ function basenameOf(p: string): string {
  */
 export function renderResponsive(data: StatusLineData, width: number): string {
   const short: StatusLineData = { ...data, project: basenameOf(data.project) };
+  // Levels 0–1 show the full project path; levels 2–3 switch to the bare
+  // dirname to save space.
   const candidates: Array<[StatusLineData, (d: StatusLineData) => string]> = [
     [data, RESPONSIVE_RENDERERS[0]!],
-    [short, RESPONSIVE_RENDERERS[1]!],
+    [data, RESPONSIVE_RENDERERS[1]!],
     [short, RESPONSIVE_RENDERERS[2]!],
+    [short, RESPONSIVE_RENDERERS[3]!],
   ];
   for (const [d, render] of candidates) {
     const line = renderStatusLine(d, render);
     if (estWidth(line) <= width) return line;
   }
   // Nothing fits: return the minimal level and let the caller truncate.
-  return renderStatusLine(short, RESPONSIVE_RENDERERS[2]!);
+  return renderStatusLine(short, RESPONSIVE_RENDERERS[3]!);
 }
 
 // ── Public pipeline ────────────────────────────────────────────

@@ -88,8 +88,12 @@ test("widget render (preset-auto): degrades format as width shrinks", async () =
   const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
 
   const wide = strip(component.render(400)[0]);
-  assert.ok(wide.includes("P:"), "wide terminal shows the verbose labeled format");
-  assert.ok(wide.includes("E: High"), "verbose keeps the separate effort label");
+  assert.ok(wide.includes("Project:"), "very wide terminal shows the full-label format");
+  assert.ok(wide.includes("Effort: High"), "full-label keeps the separate effort label");
+
+  const verbose = strip(component.render(60)[0]);
+  assert.ok(verbose.includes("P:"), "wide terminal shows the verbose labeled format");
+  assert.ok(verbose.includes("E: High"), "verbose keeps the separate effort label");
 
   const medium = strip(component.render(40)[0]);
   assert.ok(medium.includes("claude-opus-4 - High"), "medium merges model-effort");

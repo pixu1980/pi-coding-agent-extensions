@@ -74,12 +74,16 @@ export const PRESET_TEMPLATES: Record<Exclude<FormatPreset, "custom">, string> =
 // On every re-render the widget picks the most verbose level that fits the
 // available width, falling back to more compact forms:
 //
-//   level 1 (verbose): P: ~/…/pi-coding-agent-extensions › B: main › M: … E: High › C: 0/1.0M (0%)
-//   level 2 (compact): P: pi-coding-agent-extensions › B: main › M: … - High › C: 0/1.0M
-//   level 3 (minimal): pi-coding-agent-extensions | main | … - High | 0/1.0M
+//   level 0 (full labels): Project: ~/…/pi-coding-agent-extensions › Branch: main › Model: … Effort: High › Context: 0/1.0M (0%)
+//   level 1 (verbose):     P: ~/…/pi-coding-agent-extensions › B: main › M: … E: High › C: 0/1.0M (0%)
+//   level 2 (compact):     P: pi-coding-agent-extensions › B: main › M: … - High › C: 0/1.0M
+//   level 3 (minimal):     pi-coding-agent-extensions | main | … - High | 0/1.0M
 //
-// Levels 2–3 use the bare project name (dirname) instead of the full path.
+// Level 0 spells out the section labels (Project/Branch/Status/Model/Effort/Context);
+// levels 1–3 use single-letter labels. Levels 2–3 use the bare project name
+// (dirname) instead of the full path.
 export const RESPONSIVE_LEVELS: readonly string[] = [
+  "Project: {project} › Branch: {branch} Status: {git_status} › Model: {model} Effort: {effort} › Context: {context}",
   "P: {project} › B: {branch} S: {git_status} › M: {model} E: {effort} › C: {context}",
   "P: {project} › B: {branch} S: {git_status} › M: {model} - {effort} › C: {context_used}/{context_total}",
   "{project} | {branch} {git_status} | {model} - {effort} | {context_used}/{context_total}",

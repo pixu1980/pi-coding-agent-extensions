@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP (Model Context Protocol) adapter for Pi coding agent — fork of pi-mcp-adapter with configurable tool advisory threshold",
   "type": "module",
   "types": "./index.ts",

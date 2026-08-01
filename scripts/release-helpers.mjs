@@ -1,8 +1,9 @@
 import { join } from 'node:path';
 
-export function standardVersionCommand(root, packageName, dryRun) {
+export function standardVersionCommand(root, packageName, dryRun, firstRelease = false) {
   const executable = join(root, 'node_modules', '.bin', 'standard-version');
   const mode = dryRun ? '--dry-run' : '--no-verify';
+  const firstReleaseFlag = firstRelease ? '--first-release ' : '';
 
-  return `"${executable}" ${mode} --tag-prefix "${packageName}@"`;
+  return `"${executable}" ${firstReleaseFlag}${mode} --tag-prefix "${packageName}@"`;
 }

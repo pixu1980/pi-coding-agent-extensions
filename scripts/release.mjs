@@ -118,8 +118,11 @@ for (const pkg of packages) {
   console.log(`\n── ${name} ────────────────────────────────`);
   console.log(`   versione corrente: ${version}`);
 
+  // Un tag mancante indica un rilascio iniziale per questa versione.
+  const isFirstRelease = !tagExists(tag);
+
   // Controlla se il tag esiste già
-  if (tagExists(tag)) {
+  if (!isFirstRelease) {
     console.log(`   tag trovato: ${tag}`);
 
     if (!packageHasChangesSinceTag(tag, `packages/${pkg}`)) {
@@ -139,12 +142,12 @@ for (const pkg of packages) {
   // ── Rilascio ──
   if (isDryRun) {
     console.log(`   [dry-run] standard-version --tag-prefix "${name}@"`);
-    execIn(pkgPath, standardVersionCommand(ROOT, name, true), { stdio: 'inherit' });
+    execIn(pkgPath, standardVersionCommand(ROOT, name, true, isFirstRelease), { stdio: 'inherit' });
     console.log(`   [dry-run] pnpm publish (saltato)`);
   } else {
     try {
       // Bump + tag
-      execIn(pkgPath, standardVersionCommand(ROOT, name, false), { stdio: 'inherit' });
+      execIn(pkgPath, standardVersionCommand(ROOT, name, false, isFirstRelease), { stdio: 'inherit' });
 
       // Push tag
       console.log(`   → push tag...`);

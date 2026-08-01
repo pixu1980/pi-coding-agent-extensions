@@ -16,3 +16,10 @@ test('adds dry-run when requested', () => {
     '"/repo/node_modules/.bin/standard-version" --dry-run --tag-prefix "package@"',
   );
 });
+
+test('keeps the configured version for an untagged first release', () => {
+  assert.equal(
+    standardVersionCommand('/repo', 'package', false, true),
+    '"/repo/node_modules/.bin/standard-version" --first-release --no-verify --tag-prefix "package@"',
+  );
+});

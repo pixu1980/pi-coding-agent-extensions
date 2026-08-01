@@ -1,6 +1,7 @@
 {
   "name": "@pixu1980/pi-web",
   "version": "0.1.0",
+  "private": false,
   "description": "Scrape any webpage into clean, context-ready Markdown for pi.dev — fetch URLs, get readable Markdown with title/source metadata, and pull extra slices on demand",
   "type": "module",
   "author": "Emiliano 'pixu1980' Pisu",
@@ -44,10 +45,11 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --import tsx --test index.test.mjs",
+    "test": "node --import tsx --test index.test.mjs index.e2e.test.mjs",
     "typecheck": "tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext --skipLibCheck --allowImportingTsExtensions index.ts fetch.ts html-to-markdown.ts ssrf.ts storage.ts format.ts config.ts utils.ts",
     "release": "standard-version --no-verify && pnpm publish",
-    "release:dry": "standard-version --dry-run"
+    "release:dry": "standard-version --dry-run",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage index.test.mjs index.e2e.test.mjs"
   },
   "pi": {
     "extensions": [
@@ -61,8 +63,8 @@
     "typebox": "^1.3.9"
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": "*",
-    "@earendil-works/pi-tui": "*"
+    "@earendil-works/pi-coding-agent": ">=0.83.0",
+    "@earendil-works/pi-tui": ">=0.83.0"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": {

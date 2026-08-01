@@ -26,13 +26,13 @@ export default function piWebExtension(pi: ExtensionAPI) {
 
   // Rebuild the page cache from the current session branch on reload/restore.
   pi.on("session_start", (_event, ctx) => {
-    const data: unknown[] = [];
+    const entries: unknown[] = [];
     for (const entry of ctx.sessionManager.getBranch()) {
       if (entry.type === "custom" && entry.customType === ENTRY_TYPE) {
-        data.push((entry as { data?: unknown }).data);
+        entries.push(entry);
       }
     }
-    restorePages(data);
+    restorePages(entries);
   });
 
   function persist(page: FetchedPage): void {

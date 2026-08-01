@@ -22,12 +22,13 @@ const CACHE_TTL_MS = 2000; // recompute at most every 2s
 
 // ── Helpers ────────────────────────────────────────────────────
 
-function run(cmd: string): string | null {
+function run(cmd: string, cwd: string): string | null {
   try {
     return execSync(cmd, {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
       timeout: 3000,
+      cwd,
     }).trim();
   } catch {
     return null;
@@ -35,18 +36,18 @@ function run(cmd: string): string | null {
 }
 
 function hasGit(cwd: string): boolean {
-  const out = run("git rev-parse --is-inside-work-tree 2>/dev/null");
+  const out = run("git rev-parse --is-inside-work-tree 2>/dev/null", cwd);
   return out === "true";
 }
 
-function getBranch(): string | null {
-  const out = run("git rev-parse --abbrev-ref HEAD 2>/dev/null");
+function getBranch(cwd: string): string | null {
+  const out = run("git rev-parse --abbrev-ref HEAD 2>/dev/null", cwd);
   if (!out || out === "HEAD") return null;
   return out;
 }
 
-function getAheadBehind(): { ahead: number; behind: number; hasUpstream: boolean } {
-  const out = run("git rev-list --count --left-right @{upstream}...HEAD 2>/dev/null");
+function getAheadBehind(cwd: string): { ahead: number; behind: number; hasUpstream: boolean } {
+  const out = run("git rev-list --count --left-right @{upstream}...HEAD 2>/dev/null", cwd);
   if (!out) return { ahead: 0, behind: 0, hasUpstream: false };
   const parts = out.split("\t");
   if (parts.length !== 2) return { ahead: 0, behind: 0, hasUpstream: false };
@@ -57,8 +58,8 @@ function getAheadBehind(): { ahead: number; behind: number; hasUpstream: boolean
   };
 }
 
-function getDirty(): number {
-  const out = run("git status --porcelain 2>/dev/null");
+function getDirty(cwd: string): number {
+  const out = run("git status --porcelain 2>/dev/null", cwd);
   if (!out) return 0;
   return out.split("\n").filter(Boolean).length;
 }
@@ -70,7 +71,7 @@ function getDirty(): number {
  * Pass `force = true` to bypass cache (used after branch change).
  */
 export function getGitStatus(cwd: string, force = false): { status: GitStatus | null; hasGit: boolean } {
-  const currentBranch = getBranch();
+  const currentBranch = getBranch(cwd);
 
   // Return cached if still fresh and same branch
   if (!force && cache && cache.timestamp > Date.now() - CACHE_TTL_MS && cache.branch === currentBranch) {
@@ -82,8 +83,8 @@ export function getGitStatus(cwd: string, force = false): { status: GitStatus | 
     return { hasGit: false, status: null };
   }
 
-  const aheadBehind = getAheadBehind();
-  const dirty = getDirty();
+  const aheadBehind = getAheadBehind(cwd);
+  const dirty = getDirty(cwd);
 
   const status: GitStatus = {
     branch: currentBranch ?? "HEAD",

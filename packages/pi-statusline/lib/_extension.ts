@@ -18,6 +18,7 @@ import type {
   ReadonlyFooterDataProvider,
   Theme,
 } from "@earendil-works/pi-coding-agent";
+import { truncateToWidth } from "@earendil-works/pi-tui";
 import type { TUI } from "@earendil-works/pi-tui";
 import type { StatusLineData, StatusLineSettings } from "./_types.ts";
 import { DEFAULT_SETTINGS } from "./_types.ts";
@@ -134,7 +135,9 @@ function createFooter(ctx: ExtensionContext) {
           const padLen = Math.max(1, width - leftW - rightW);
           const line = left + " ".repeat(padLen) + right;
 
-          if (estWidth(line) > width) return [leftRaw + "  " + rightRaw];
+          if (estWidth(line) > width) {
+            return [truncateToWidth(leftRaw + "  " + rightRaw, Math.max(1, width))];
+          }
           return [line];
         } catch {
           return ["pi-statusline"];
@@ -152,9 +155,9 @@ export default function (pi: ExtensionAPI): void {
     ctx.ui.setWidget(
       "pi-statusline",
       (_tui, _theme) => ({
-        render(): string[] {
+        render(width: number): string[] {
           const line = formatLine(ctx);
-          return [line];
+          return [truncateToWidth(line, Math.max(1, width))];
         },
         invalidate() {
           cachedTmpl = null;

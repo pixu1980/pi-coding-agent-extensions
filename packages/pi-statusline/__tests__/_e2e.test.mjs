@@ -16,6 +16,7 @@ if (!process.env.PI_CODING_AGENT_DIR) {
 
 import { loadSettings, saveSettings } from "../lib/_settings-ui.ts";
 import { DEFAULT_SETTINGS } from "../lib/_types.ts";
+import { visibleWidth } from "@earendil-works/pi-tui";
 import { initTheme } from "@earendil-works/pi-coding-agent";
 import statuslineExtension from "../index.ts";
 import { createMockPi, createMockCtx, makeModel, makeTheme } from "../../../test/harness.mjs";
@@ -57,6 +58,25 @@ test("widget render: shows model, git and effort", async () => {
   assert.ok(lines[0].includes("High"), "effort level in widget");
 });
 
+test("widget render: truncates to width (no overflow crash)", async () => {
+  const { pi, emit } = createMockPi();
+  statuslineExtension(pi);
+  const ctx = createMockCtx({
+    model: makeModel("anthropic", "deepseek-v4-flash-very-long-model-name"),
+    cwd: "/some/very/long/nested/project/path/that/pushes/the/statusline/past/118/columns",
+  });
+  await emit("session_start", {}, ctx);
+
+  const widget = ctx.ui._uiCalls.find(([c]) => c === "setWidget");
+  const component = widget[2]({ requestRender() {}, terminal: { rows: 30 } }, makeTheme());
+  for (const width of [30, 60, 118]) {
+    const lines = component.render(width);
+    assert.ok(lines.length === 1, "single line");
+    const w = visibleWidth(lines[0]);
+    assert.ok(w <= width, `line width ${w} must not exceed ${width}`);
+  }
+});
+
 test("footer render: shows mcp server count and provider/model", async () => {
   const { pi, emit } = createMockPi();
   statuslineExtension(pi);
@@ -71,6 +91,26 @@ test("footer render: shows mcp server count and provider/model", async () => {
   assert.ok(lines[0].includes("1 servers enabled"), "mcp server count in footer");
   assert.ok(lines[0].includes("claude-opus-4"), "model name in footer");
   assert.ok(lines[0].includes("anthropic"), "provider in footer");
+  component.dispose();
+});
+
+test("footer render: never exceeds width (no overflow crash)", async () => {
+  const { pi, emit } = createMockPi();
+  statuslineExtension(pi);
+  const ctx = createMockCtx({
+    model: makeModel("anthropic", "deepseek-v4-flash-very-long-model-name"),
+  });
+  await emit("session_start", {}, ctx);
+
+  const footer = ctx.ui._uiCalls.find(([c]) => c === "setFooter");
+  const tui = { requestRender() {}, terminal: { rows: 30 } };
+  const component = footer[1](tui, makeTheme(), { onBranchChange: () => () => {} });
+  for (const width of [30, 60, 118]) {
+    const lines = component.render(width);
+    assert.ok(lines.length === 1, "single line");
+    const w = visibleWidth(lines[0]);
+    assert.ok(w <= width, `line width ${w} must not exceed ${width}`);
+  }
   component.dispose();
 });
 

@@ -66,6 +66,7 @@ export function getProjectPath(cwd: string, style: string): string {
     const root = execSync("git rev-parse --show-toplevel 2>/dev/null", {
       encoding: "utf-8",
       stdio: ["ignore", "pipe", "ignore"],
+      cwd,
     }).trim();
     if (!root) return path.basename(cwd);
 

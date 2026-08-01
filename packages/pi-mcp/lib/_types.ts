@@ -36,16 +36,6 @@ export interface McpStatusSnapshot {
   readonly disabledCount: number;
 }
 
-// Import sources for config
-export type ImportKind = 
-  | "cursor" 
-  | "claude-code" 
-  | "claude-desktop" 
-  | "codex" 
-  | "opencode"
-  | "windsurf" 
-  | "vscode";
-
 // Tool definition from MCP server
 export interface McpTool {
   name: string;
@@ -381,7 +371,6 @@ export interface McpOutputGuardSettings {
 
 // Settings
 export type ToolPrefix = "server" | "none" | "short" | "mcp";
-export type HostConfigDiscovery = "off" | "prompt" | "on";
 export type McpFooterStatus = "full" | "compact" | "off";
 
 export interface McpTraceSettings {
@@ -401,8 +390,6 @@ export interface McpSettings {
   showStatusIcon?: boolean;
   /** Footer status verbosity: full details, compact connected/enabled count, or no footer status. Defaults to full. */
   mcpFooterStatus?: McpFooterStatus;
-  /** Discover detected host-specific MCP configs only when explicitly enabled. */
-  hostConfigDiscovery?: HostConfigDiscovery;
   idleTimeout?: number; // minutes, default 10, 0 to disable
   requestTimeoutMs?: number; // milliseconds, overrides the SDK request timeout when > 0
   directTools?: boolean;
@@ -450,7 +437,6 @@ export interface McpSettings {
 // Root config
 export interface McpConfig {
   mcpServers: Record<string, ServerEntry>;
-  imports?: ImportKind[];
   settings?: McpSettings;
 }
 

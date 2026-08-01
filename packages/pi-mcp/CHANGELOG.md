@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.5](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.4...@pixu1980/pi-mcp@0.1.5) (2026-08-01)
+
+### Bug Fixes
+
+* **pi-statusline:** truncate widget and footer lines to terminal width ([2bf4424](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2bf4424d9600eed7eec56ace0e6ddecb3c6c54e0))
 ## [0.1.4](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.3...@pixu1980/pi-mcp@0.1.4) (2026-08-01)
 
 ### Bug Fixes

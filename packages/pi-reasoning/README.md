@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-reasoning — automatic reasoning levels" width="1100">
+</p>
+
 # pi-reasoning — pi.dev extension
 
 Automatic reasoning level management for [pi.dev](https://pi.dev). Sets the

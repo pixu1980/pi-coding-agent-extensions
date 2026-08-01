@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-sessions — browse and restore conversation history" width="1100">
+</p>
+
 # pi-sessions
 
 Session history overlay for [pi.dev](https://pi.dev). Browse, search, and restore past sessions with auto-naming based on chat content.

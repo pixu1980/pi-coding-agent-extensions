@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-web — clean web pages for context" width="1100">
+</p>
+
 # pi-web
 
 Scrape any webpage into clean, context-ready **Markdown** for [pi.dev](https://pi.dev). Fetch one or more URLs, get readable Markdown with title/source metadata, and pull the rest of a long page in bounded slices — everything you need to drop web content straight into the conversation context.

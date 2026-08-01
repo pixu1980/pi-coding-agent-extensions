@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-statusline — terminal workspace telemetry" width="1100">
+</p>
+
 # pi-statusline
 
 > Statusline extension for [pi](https://pi.dev) — replicates `/statusline` from Claude Code with customizable templates, git status, model info, and context usage with gradient colors.

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-path-picker — filesystem path autocomplete" width="1100">
+</p>
+
 # pi-path-picker — pi.dev extension
 
 Interactive file path autocomplete inside the TUI prompt.  

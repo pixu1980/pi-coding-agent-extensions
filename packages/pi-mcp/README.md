@@ -1,5 +1,5 @@
-<p>
-  <img src="banner.png" alt="pi-mcp-adapter" width="1100">
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-mcp — MCP without the context tax" width="1100">
 </p>
 
 # @pixu1980/pi-mcp

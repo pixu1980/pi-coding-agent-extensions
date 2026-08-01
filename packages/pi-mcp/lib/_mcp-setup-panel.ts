@@ -448,13 +448,16 @@ export class McpSetupPanel {
     const conflictNote = this.discovery.conflicts.length > 0
       ? ` ${this.discovery.conflicts.length} same-name conflict${this.discovery.conflicts.length === 1 ? "" : "s"} reported.`
       : "";
+    const importIssueNote = this.discovery.importIssues.length > 0
+      ? ` ${this.discovery.importIssues.length} invalid host config${this.discovery.importIssues.length === 1 ? " was" : "s were"} skipped.`
+      : "";
     if (!this.discovery.hasAnyConfig) {
-      return `Create a shared .mcp.json, adopt host imports, or quick-add RepoPrompt from this screen.${hostNote}${conflictNote}`;
+      return `Create a shared .mcp.json, adopt host imports, or quick-add RepoPrompt from this screen.${hostNote}${conflictNote}${importIssueNote}`;
     }
     if (this.discovery.totalServerCount === 0 && this.discovery.imports.length > 0) {
-      return `Detected ${this.discovery.imports.length} compatibility import source${this.discovery.imports.length === 1 ? "" : "s"}. Adopt them into Pi or inspect the underlying files.${hostNote}${conflictNote}`;
+      return `Detected ${this.discovery.imports.length} compatibility import source${this.discovery.imports.length === 1 ? "" : "s"}. Adopt them into Pi or inspect the underlying files.${hostNote}${conflictNote}${importIssueNote}`;
     }
-    return `Shared MCP files are preferred. Pi-owned files are only for compatibility imports and adapter-specific overrides.${hostNote}${conflictNote}`;
+    return `Shared MCP files are preferred. Pi-owned files are only for compatibility imports and adapter-specific overrides.${hostNote}${conflictNote}${importIssueNote}`;
   }
 
   private getActionPreview(action: ActionId): string[] {

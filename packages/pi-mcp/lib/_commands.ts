@@ -354,19 +354,22 @@ export interface PanelFlowResult {
 function buildSharedConfigNoticeLines(configOverridePath: string | undefined, cwd: string): { lines: string[]; fingerprint: string | null } {
   const discovery = getMcpDiscoverySummary(configOverridePath, cwd);
   const onboardingState = loadOnboardingState();
-  if (!discovery.hasSharedServers || onboardingState.sharedConfigHintShown) {
-    return { lines: [], fingerprint: null };
-  }
+  const lines = discovery.importIssues.map(
+    (issue) => `Skipped invalid ${issue.kind} MCP config at ${issue.path}: ${issue.message}`,
+  );
+  let fingerprint: string | null = null;
 
-  const sharedSources = discovery.sources.filter((source) => source.kind === "shared" && source.serverCount > 0);
-  const sourceList = sharedSources.map((source) => source.path).join(", ");
-  return {
-    lines: [
+  if (discovery.hasSharedServers && !onboardingState.sharedConfigHintShown) {
+    const sharedSources = discovery.sources.filter((source) => source.kind === "shared" && source.serverCount > 0);
+    const sourceList = sharedSources.map((source) => source.path).join(", ");
+    lines.push(
       `Using standard MCP config from ${sourceList}.`,
       "Pi only writes compatibility imports and adapter-specific overrides into Pi-owned files when needed.",
-    ],
-    fingerprint: discovery.fingerprint,
-  };
+    );
+    fingerprint = discovery.fingerprint;
+  }
+
+  return { lines, fingerprint };
 }
 
 export async function openMcpSetup(

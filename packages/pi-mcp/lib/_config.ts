@@ -77,6 +77,12 @@ export interface HostConfigSummary extends ImportConfigSummary {
   active: boolean;
 }
 
+export interface ImportConfigIssue {
+  kind: ImportKind;
+  path: string;
+  message: string;
+}
+
 export interface McpConfigConflict {
   serverName: string;
   sources: Array<{ kind: "shared" | "pi" | "host"; path: string }>;
@@ -95,6 +101,7 @@ export interface RepoPromptDiscovery {
 export interface McpDiscoverySummary {
   sources: ConfigDiscoverySource[];
   imports: ImportConfigSummary[];
+  importIssues: ImportConfigIssue[];
   hostConfigs: HostConfigSummary[];
   hostConfigDiscovery: HostConfigDiscovery;
   conflicts: McpConfigConflict[];
@@ -168,9 +175,20 @@ export function getMcpDiscoverySummary(overridePath?: string, cwd = process.cwd(
     } satisfies ConfigDiscoverySource;
   });
 
+  const importIssues: ImportConfigIssue[] = [];
+  const recordImportIssue = (issue: ImportConfigIssue): void => {
+    if (!importIssues.some((entry) => entry.kind === issue.kind && entry.path === issue.path && entry.message === issue.message)) {
+      importIssues.push(issue);
+    }
+  };
   const imports = (Object.keys(IMPORT_PATHS) as ImportKind[])
     .map((kind) => {
-      const imported = loadImportedConfig(kind, cwd, `Failed to inspect imported MCP config from ${kind}:`);
+      const imported = loadImportedConfig(
+        kind,
+        cwd,
+        `Failed to inspect imported MCP config from ${kind}:`,
+        recordImportIssue,
+      );
       if (!imported) return null;
       return {
         kind,
@@ -190,9 +208,10 @@ export function getMcpDiscoverySummary(overridePath?: string, cwd = process.cwd(
   const summaryWithoutRepoPrompt = {
     sources,
     imports,
+    importIssues,
     hostConfigs,
     hostConfigDiscovery,
-    conflicts: getConfigConflicts(sourceSpecs, imports, cwd),
+    conflicts: getConfigConflicts(sourceSpecs, imports, cwd, recordImportIssue),
     hasAnyConfig,
     hasAnyDetectedPaths,
     hasSharedServers,
@@ -203,6 +222,7 @@ export function getMcpDiscoverySummary(overridePath?: string, cwd = process.cwd(
   const fingerprint = JSON.stringify({
     sources: sources.map((source) => [source.id, source.exists, source.serverCount]),
     imports: imports.map((entry) => [entry.kind, entry.path, entry.serverCount]),
+    importIssues: importIssues.map((entry) => [entry.kind, entry.path, entry.message]),
     hostConfigDiscovery,
     conflicts: summaryWithoutRepoPrompt.conflicts,
   });
@@ -263,6 +283,7 @@ function getConfigConflicts(
   sourceSpecs: ConfigSourceSpec[],
   imports: ImportConfigSummary[],
   cwd: string,
+  onImportIssue: (issue: ImportConfigIssue) => void,
 ): McpConfigConflict[] {
   const seen = new Map<string, Array<{ kind: "shared" | "pi" | "host"; path: string }>>();
   const record = (name: string, source: { kind: "shared" | "pi" | "host"; path: string }): void => {
@@ -274,7 +295,12 @@ function getConfigConflicts(
   // Host candidates are listed first because, when enabled, they are the
   // lowest-precedence fallback. The fixed IMPORT_PATHS order is deterministic.
   for (const entry of imports) {
-    const imported = loadImportedConfig(entry.kind, cwd, `Failed to inspect imported MCP config from ${entry.kind}:`);
+    const imported = loadImportedConfig(
+      entry.kind,
+      cwd,
+      `Failed to inspect imported MCP config from ${entry.kind}:`,
+      onImportIssue,
+    );
     if (!imported) continue;
     for (const name of Object.keys(extractServers(imported.value, entry.kind))) {
       record(name, { kind: "host", path: imported.path });
@@ -285,7 +311,12 @@ function getConfigConflicts(
     if (!loaded) continue;
     if (loaded.imports?.length) {
       for (const importKind of loaded.imports) {
-        const imported = loadImportedConfig(importKind, cwd, `Failed to inspect imported MCP config from ${importKind}:`);
+        const imported = loadImportedConfig(
+          importKind,
+          cwd,
+          `Failed to inspect imported MCP config from ${importKind}:`,
+          onImportIssue,
+        );
         if (!imported) continue;
         for (const name of Object.keys(extractServers(imported.value, importKind))) {
           record(name, { kind: "host", path: imported.path });
@@ -501,10 +532,28 @@ function readImportedConfig(path: string): unknown {
   return path.endsWith(".toml") ? parseToml(raw) : parseJsonConfig(raw);
 }
 
+function summarizeImportError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.split(/\r?\n/, 1)[0]?.trim() || "Unknown config error";
+}
+
+function reportImportIssue(
+  issue: ImportConfigIssue,
+  warningPrefix: string,
+  onIssue?: (issue: ImportConfigIssue) => void,
+): void {
+  if (onIssue) {
+    onIssue(issue);
+    return;
+  }
+  console.warn(`${warningPrefix} ${issue.message} (${issue.path})`);
+}
+
 function loadImportedConfig(
   importKind: ImportKind,
   cwd: string,
   warningPrefix: string,
+  onIssue?: (issue: ImportConfigIssue) => void,
 ): { path: string; value: unknown } | null {
   if (importKind === "opencode") {
     let merged: Record<string, unknown> = {};
@@ -520,7 +569,11 @@ function loadImportedConfig(
           highestPrecedencePath = path;
         }
       } catch (error) {
-        console.warn(warningPrefix, error);
+        reportImportIssue(
+          { kind: importKind, path, message: summarizeImportError(error) },
+          warningPrefix,
+          onIssue,
+        );
       }
     }
 
@@ -533,7 +586,11 @@ function loadImportedConfig(
     try {
       return { path, value: readImportedConfig(path) };
     } catch (error) {
-      console.warn(warningPrefix, error);
+      reportImportIssue(
+        { kind: importKind, path, message: summarizeImportError(error) },
+        warningPrefix,
+        onIssue,
+      );
     }
   }
 

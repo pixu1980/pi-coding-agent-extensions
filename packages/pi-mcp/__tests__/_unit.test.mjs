@@ -6,6 +6,11 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { throwIfAborted, abortable } from "../lib/_abort.ts";
 import {
@@ -41,6 +46,51 @@ test("abortable: throws when aborted before settle", async () => {
   const ac = new AbortController();
   ac.abort();
   await assert.rejects(abortable(Promise.resolve(42), ac.signal));
+});
+
+// ── config.ts: best-effort host discovery ────────────────────────
+
+test("MCP discovery reports invalid Codex TOML without logging an Error stack", () => {
+  const home = mkdtempSync(join(tmpdir(), "pi-mcp-invalid-codex-"));
+  const cwd = join(home, "project");
+  const codexDir = join(home, ".codex");
+  mkdirSync(cwd, { recursive: true });
+  mkdirSync(codexDir, { recursive: true });
+  writeFileSync(
+    join(codexDir, "config.toml"),
+    '[mcp_servers.duplicate]\ncommand = "first"\n[mcp_servers.duplicate]\ncommand = "second"\n',
+  );
+
+  const configModuleUrl = new URL("../lib/_config.ts", import.meta.url).href;
+  const script = `
+    const warnings = [];
+    console.warn = (...args) => warnings.push(args.map((value) => String(value)).join(" "));
+    const { getMcpDiscoverySummary } = await import(${JSON.stringify(configModuleUrl)});
+    const summary = getMcpDiscoverySummary(undefined, ${JSON.stringify(cwd)});
+    process.stdout.write(JSON.stringify({ warnings, importIssues: summary.importIssues }));
+  `;
+  const packageDir = fileURLToPath(new URL("..", import.meta.url));
+  const output = execFileSync(
+    process.execPath,
+    ["--import", "tsx", "--input-type=module", "--eval", script],
+    {
+      cwd: packageDir,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: home,
+        PI_CODING_AGENT_DIR: join(home, ".pi", "agent"),
+      },
+    },
+  );
+  const result = JSON.parse(output);
+
+  assert.deepEqual(result.warnings, [], "best-effort discovery must not write over the TUI");
+  assert.equal(result.importIssues.length, 1);
+  assert.equal(result.importIssues[0].kind, "codex");
+  assert.equal(result.importIssues[0].path, join(codexDir, "config.toml"));
+  assert.match(result.importIssues[0].message, /Invalid TOML document/i);
+  assert.ok(!result.importIssues[0].message.includes("\n"), "modal warning must fit on one line");
 });
 
 // ── utils.ts: env interpolation ───────────────────────────────────

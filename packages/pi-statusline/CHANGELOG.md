@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.4](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.3...@pixu1980/pi-statusline@0.1.4) (2026-08-01)
+
+### Features
+
+* **pi-statusline:** add responsive auto format ([714350f](https://github.com/pixu1980/pi-coding-agent-extensions/commit/714350fbc3f855752ab6ea6aed64530de3c19bbe))
 ## [0.1.3](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.2...@pixu1980/pi-statusline@0.1.3) (2026-08-01)
 
 ### Bug Fixes

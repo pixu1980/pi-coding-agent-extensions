@@ -4,7 +4,7 @@ import { createPanelKeys, type PanelKeybindings, type PanelKeys } from "./panel-
 import { isServerDisabled, isToolAllowed } from "./types.ts";
 import type { McpConfig, McpPanelCallbacks, McpPanelResult, ServerProvenance, ToolPrefix } from "./types.ts";
 import { resourceNameToToolName } from "./resource-tools.ts";
-import { sanitizeTerminalText, stripOscSequences } from "./utils.ts";
+import { sanitizeTerminalText, stripOscSequences } from "./_utils.ts";
 import type { MetadataCache, ServerCacheEntry, CachedTool } from "./metadata-cache.ts";
 
 interface PanelTheme {

@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, realpathSync, readdirSync, statSync, writeFileSync, renameSync, mkdirSync, openSync, readSync, closeSync } from "node:fs";
 import { join, dirname, extname, resolve, sep } from "node:path";
 import { getAgentPath } from "./agent-dir.ts";
-import { throwIfAborted } from "./abort.ts";
+import { throwIfAborted } from "./_abort.ts";
 import crossSpawn from "cross-spawn";
 
 const CACHE_VERSION = 1;

@@ -7,18 +7,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { throwIfAborted, abortable } from "./abort.ts";
+import { throwIfAborted, abortable } from "../lib/_abort.ts";
 import {
   interpolateEnvVars,
   toStringRecord,
   interpolateEnvRecord,
   resolveCommandSecret,
   resolveCommandSecretsRecord,
-} from "./utils.ts";
-import { computeServerHash, parseDirectToolSelectors, getMissingConfiguredDirectToolServers } from "./metadata-cache.ts";
-import { formatSchema, findToolByName } from "./tool-metadata.ts";
-import { createJsonSchemaValidator } from "./json-schema-validator.ts";
-import { McpUiError, ServerError, ConsentError } from "./errors.ts";
+} from "../lib/_utils.ts";
+import { computeServerHash, parseDirectToolSelectors, getMissingConfiguredDirectToolServers } from "../lib/metadata-cache.ts";
+import { formatSchema, findToolByName } from "../lib/tool-metadata.ts";
+import { createJsonSchemaValidator } from "../lib/json-schema-validator.ts";
+import { McpUiError, ServerError, ConsentError } from "../lib/_errors.ts";
 
 // ── abort.ts ──────────────────────────────────────────────────────
 

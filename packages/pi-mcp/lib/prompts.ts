@@ -3,13 +3,13 @@ import type {
   GetPromptResult,
   PromptMessage,
 } from "@modelcontextprotocol/sdk/types.js";
-import type { McpExtensionState } from "./state.ts";
+import type { McpExtensionState } from "./_state.ts";
 import { isServerDisabled, type McpConfig, type PromptMetadata } from "./types.ts";
 import { formatPromptCommandName } from "./types.ts";
 import { lazyConnect } from "./init.ts";
 import { isServerCacheValid, loadMetadataCache, reconstructPromptMetadata } from "./metadata-cache.ts";
-import { logger } from "./logger.ts";
-import { truncateAtWord } from "./utils.ts";
+import { logger } from "./_logger.ts";
+import { truncateAtWord } from "./_utils.ts";
 
 /**
  * Resolve prompt metadata for slash-command registration at extension load

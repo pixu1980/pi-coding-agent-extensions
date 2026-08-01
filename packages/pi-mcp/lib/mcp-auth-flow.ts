@@ -34,8 +34,8 @@ import {
   type StoredTokens,
 } from "./mcp-auth.ts"
 import { isServerDisabled, type ServerEntry } from "./types.ts"
-import { formatTerminalError, interpolateEnvRecord, interpolateEnvVars } from "./utils.ts"
-import { abortable, throwIfAborted } from "./abort.ts"
+import { formatTerminalError, interpolateEnvRecord, interpolateEnvVars } from "./_utils.ts"
+import { abortable, throwIfAborted } from "./_abort.ts"
 import { combineAbortSignals, isAbortError } from "./runtime-owner.ts"
 
 /** Auth status for a server */

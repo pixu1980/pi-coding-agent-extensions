@@ -1,5 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { McpExtensionState } from "./state.ts";
+import type { McpExtensionState } from "./_state.ts";
 import { isServerDisabled, type McpAdapterOptions, type PromptMetadata, type ToolMetadata } from "./types.ts";
 import { existsSync } from "node:fs";
 import { cloneMcpConfig, loadMcpConfig } from "./config.ts";
@@ -22,9 +22,9 @@ import {
 import { McpServerManager } from "./server-manager.ts";
 import { buildToolMetadata, totalToolCount } from "./tool-metadata.ts";
 import { UiResourceHandler } from "./ui-resource-handler.ts";
-import { formatMcpStatus, openUrl, parallelLimit, sanitizeTerminalText } from "./utils.ts";
-import { logger } from "./logger.ts";
-import { throwIfAborted } from "./abort.ts";
+import { formatMcpStatus, openUrl, parallelLimit, sanitizeTerminalText } from "./_utils.ts";
+import { logger } from "./_logger.ts";
+import { throwIfAborted } from "./_abort.ts";
 import { getAuthStorageOptions } from "./mcp-auth.ts";
 import { createOAuthRuntime, hasPendingAuth, shutdownOAuth, type McpOAuthRuntime } from "./mcp-auth-flow.ts";
 import {

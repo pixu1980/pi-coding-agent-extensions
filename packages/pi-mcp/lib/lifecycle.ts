@@ -1,8 +1,8 @@
 import { isServerDisabled, type ServerDefinition } from "./types.ts";
 import type { McpServerManager } from "./server-manager.ts";
 import { hasPendingAuth } from "./mcp-auth-flow.ts";
-import { logger } from "./logger.ts";
-import { formatTerminalError, sanitizeTerminalText } from "./utils.ts";
+import { logger } from "./_logger.ts";
+import { formatTerminalError, sanitizeTerminalText } from "./_utils.ts";
 
 export type ReconnectCallback = (serverName: string) => void;
 export type ReconnectFailureCallback = (serverName: string, error: unknown) => void;

@@ -8,10 +8,10 @@ import type {
   CallToolResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { ConsentManager } from "./consent-manager.ts";
-import { ServerError, wrapError } from "./errors.ts";
-import { formatAuthRequiredMessage } from "./utils.ts";
+import { ServerError, wrapError } from "./_errors.ts";
+import { formatAuthRequiredMessage } from "./_utils.ts";
 import { buildHostHtmlTemplate, buildCspMetaContent } from "./host-html-template.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./_logger.ts";
 import type { McpServerManager } from "./server-manager.ts";
 import { SessionRecoveryAuthRequiredError, withSessionRecovery, type SessionRecoveryDeps } from "./session-recovery.ts";
 import {

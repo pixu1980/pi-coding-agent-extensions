@@ -1,9 +1,9 @@
 import { getToolUiResourceUri } from "@modelcontextprotocol/ext-apps/app-bridge";
-import type { McpExtensionState } from "./state.ts";
+import type { McpExtensionState } from "./_state.ts";
 import type { ToolMetadata, McpTool, McpResource, ServerEntry, ToolPrefix } from "./types.ts";
 import { formatToolName, isToolAllowed, resolveToolPrefix } from "./types.ts";
 import { resourceNameToToolName } from "./resource-tools.ts";
-import { extractToolUiStreamMode } from "./utils.ts";
+import { extractToolUiStreamMode } from "./_utils.ts";
 
 export function buildToolMetadata(
   tools: McpTool[],

@@ -1,7 +1,7 @@
 import { complete } from "@earendil-works/pi-ai/compat";
 import type { Api, AssistantMessage, Message, Model, TextContent } from "@earendil-works/pi-ai";
-import { truncateAtWord } from "./utils.ts";
-import { throwIfAborted } from "./abort.ts";
+import { truncateAtWord } from "./_utils.ts";
+import { throwIfAborted } from "./_abort.ts";
 import type { ExtensionUIContext, ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {

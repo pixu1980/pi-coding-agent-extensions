@@ -1,5 +1,5 @@
 import type { ExtensionUIContext } from "@earendil-works/pi-coding-agent";
-import { formatTerminalError } from "./utils.ts";
+import { formatTerminalError } from "./_utils.ts";
 
 export interface McpRuntimeOwner {
   readonly signal: AbortSignal;

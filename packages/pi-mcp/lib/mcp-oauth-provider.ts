@@ -29,7 +29,7 @@ import {
   type StoredTokens,
   type StoredClientInfo,
 } from "./mcp-auth.ts"
-import { resolveCommandSecret } from "./utils.ts"
+import { resolveCommandSecret } from "./_utils.ts"
 
 type IssuerBoundClientInformation = OAuthClientInformationMixed & { issuer?: string }
 type IssuerBoundTokens = OAuthTokens & { issuer?: string }

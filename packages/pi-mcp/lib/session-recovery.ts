@@ -22,8 +22,8 @@
 //   - treat AbortError/cancellation as a session failure
 import { StreamableHTTPError } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
-import { logger } from "./logger.ts";
-import { throwIfAborted } from "./abort.ts";
+import { logger } from "./_logger.ts";
+import { throwIfAborted } from "./_abort.ts";
 import { isServerDisabled, type McpConfig } from "./types.ts";
 import type { McpServerManager, ServerConnection } from "./server-manager.ts";
 

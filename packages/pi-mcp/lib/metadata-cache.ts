@@ -27,7 +27,7 @@ import {
   resolveBearerToken,
   resolveConfigPath,
   resolveServerUrl,
-} from "./utils.ts";
+} from "./_utils.ts";
 
 const CACHE_VERSION = 1;
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;

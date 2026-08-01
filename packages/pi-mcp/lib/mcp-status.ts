@@ -1,4 +1,4 @@
-import type { McpExtensionState } from "./state.ts";
+import type { McpExtensionState } from "./_state.ts";
 import {
   MCP_STATUS_EVENT,
   MCP_STATUS_SNAPSHOT_VERSION,

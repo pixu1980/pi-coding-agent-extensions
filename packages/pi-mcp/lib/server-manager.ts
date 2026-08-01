@@ -27,7 +27,7 @@ import {
 } from "./types.ts";
 import { resolveNpxBinary } from "./npx-resolver.ts";
 import { createJsonSchemaValidator } from "./json-schema-validator.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./_logger.ts";
 import { McpOAuthProvider } from "./mcp-oauth-provider.ts";
 import { extractOAuthConfig, supportsOAuth, type McpOAuthRuntime } from "./mcp-auth-flow.ts";
 import type { AuthStorageOptions } from "./mcp-auth.ts";
@@ -43,8 +43,8 @@ import {
   resolveCommandSecretsRecord,
   resolveConfigPath,
   resolveServerUrl,
-} from "./utils.ts";
-import { abortable, throwIfAborted } from "./abort.ts";
+} from "./_utils.ts";
+import { abortable, throwIfAborted } from "./_abort.ts";
 import { combineAbortSignals } from "./runtime-owner.ts";
 import {
   createMcpTraceWriter,

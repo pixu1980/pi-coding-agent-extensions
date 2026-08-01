@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { UrlElicitationRequiredError, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { McpExtensionState } from "./state.ts";
+import type { McpExtensionState } from "./_state.ts";
 import {
   extractUiPromptText,
   UI_STREAM_HOST_CONTEXT_KEY,
@@ -11,12 +11,12 @@ import {
   type UiModelContextParams,
   type UiStreamMode,
 } from "./types.ts";
-import { logger } from "./logger.ts";
+import { logger } from "./_logger.ts";
 import { startUiServer, type UiServerHandle } from "./ui-server.ts";
 import { isGlimpseAvailable, openGlimpseWindow } from "./glimpse-ui.ts";
 import type { SessionRecoveryDeps } from "./session-recovery.ts";
 import { combineAbortSignals, isAbortError } from "./runtime-owner.ts";
-import { throwIfAborted } from "./abort.ts";
+import { throwIfAborted } from "./_abort.ts";
 
 let activeGlimpseWindow: { close(): void } | null = null;
 

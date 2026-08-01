@@ -13,8 +13,8 @@ import assert from "node:assert/strict";
 
 process.env.MCP_DIRECT_TOOLS = ""; // no direct-tool env overrides
 
-import { createMcpAdapter } from "./index.ts";
-import { createMockPi, createMockCtx } from "../../test/harness.mjs";
+import { createMcpAdapter } from "../index.ts";
+import { createMockPi, createMockCtx } from "../../../test/harness.mjs";
 
 function install(overrides = {}) {
   const { pi, emit, runCommand, commands, tools, handlers, calls } = createMockPi(overrides);

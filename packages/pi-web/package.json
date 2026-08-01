@@ -29,14 +29,9 @@
   ],
   "files": [
     "index.ts",
-    "fetch.ts",
-    "html-to-markdown.ts",
-    "ssrf.ts",
-    "storage.ts",
-    "format.ts",
-    "config.ts",
-    "utils.ts",
-    "README.md"
+    "lib/**",
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public"
@@ -45,11 +40,11 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --import tsx --test index.test.mjs index.e2e.test.mjs",
+    "test": "node --import tsx --test __tests__/index.test.mjs",
     "typecheck": "tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext --skipLibCheck --allowImportingTsExtensions index.ts fetch.ts html-to-markdown.ts ssrf.ts storage.ts format.ts config.ts utils.ts",
     "release": "commit-and-tag-version --no-verify && pnpm publish",
     "release:dry": "commit-and-tag-version --dry-run",
-    "test:coverage": "node --import tsx --test --experimental-test-coverage index.test.mjs index.e2e.test.mjs"
+    "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs"
   },
   "pi": {
     "extensions": [

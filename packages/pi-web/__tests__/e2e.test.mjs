@@ -19,9 +19,9 @@ import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import piWebExtension from "./index.ts";
-import { storePage, clearPages, readSlice } from "./storage.ts";
-import { createMockPi, createMockCtx } from "../../test/harness.mjs";
+import piWebExtension from "../index.ts";
+import { storePage, clearPages, readSlice } from "../lib/storage.ts";
+import { createMockPi, createMockCtx } from "../../../test/harness.mjs";
 
 // ── Local server fixture ─────────────────────────────────────────
 

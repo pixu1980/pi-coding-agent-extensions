@@ -3,9 +3,9 @@ import test from "node:test";
 import http from "node:http";
 import { once } from "node:events";
 
-import { fetchPage, fetchPages } from "./fetch.ts";
-import { storePage, getPage, readSlice, clearPages, restorePages } from "./storage.ts";
-import { formatFetchResult, formatMultiFetchSummary } from "./format.ts";
+import { fetchPage, fetchPages } from "../lib/fetch.ts";
+import { storePage, getPage, readSlice, clearPages, restorePages } from "../lib/storage.ts";
+import { formatFetchResult, formatMultiFetchSummary } from "../lib/format.ts";
 
 // ── Test HTTP server fixtures ───────────────────────────────────────────
 

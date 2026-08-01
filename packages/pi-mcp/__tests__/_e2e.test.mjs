@@ -79,3 +79,45 @@ test("adapter factory is reusable per mock pi instance", () => {
   assert.notEqual(a.handlers, b.handlers);
   assert.ok(a.tools.has("mcp") && b.tools.has("mcp"));
 });
+
+test("load-time init with keep-alive servers is skipped when the runtime is unbound (headless CLI)", async () => {
+  // Simulates `pi install` / trust evaluation: extensions are loaded with a
+  // runtime whose action methods still throw until bindCore() runs (and in CLI
+  // processes, they are never bound). Regression: this used to print
+  // "MCP initialization failed: Extension runtime not initialized..." on every
+  // install command after pi-mcp was added to settings.
+  const notInitialized = () => {
+    throw new Error("Extension runtime not initialized. Action methods cannot be called during extension loading.");
+  };
+  const { pi, calls } = createMockPi({
+    getActiveTools: notInitialized,
+    setActiveTools: notInitialized,
+  });
+
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args.join(" "));
+  try {
+    const adapter = createMcpAdapter({
+      config: {
+        mcpServers: {
+          "keep-alive-server": {
+            command: "/usr/bin/false",
+            lifecycle: "keep-alive",
+          },
+        },
+      },
+    });
+    adapter(pi);
+    // Give the scheduled setImmediate load-time init a chance to run.
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  } finally {
+    console.error = originalError;
+  }
+
+  assert.ok(
+    !errors.some((line) => line.includes("MCP initialization failed")),
+    `unexpected error output: ${errors.join("\n")}`,
+  );
+  assert.equal(calls.setActiveTools.length, 0, "no action methods may be called while unbound");
+});

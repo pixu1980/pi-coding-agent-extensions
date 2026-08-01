@@ -116,6 +116,42 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       ? (Type as { Unsafe: (value: never) => unknown }).Unsafe(schema as never)
       : schema;
 
+  // pi only replaces the extension-runtime action stubs once bindCore() runs. Until
+  // then (and forever, in headless CLI contexts such as `pi install`, where extensions
+  // are loaded only to evaluate project trust) action methods throw
+  // "Extension runtime not initialized". Tool-surface bookkeeping is best-effort, so
+  // degrade to no-ops instead of propagating that error.
+  const isRuntimeNotBoundError = (error: unknown): boolean =>
+    error instanceof Error && error.message.includes("Extension runtime not initialized");
+
+  const getActiveToolsSafe = (): string[] | undefined => {
+    try {
+      return pi.getActiveTools?.();
+    } catch (error) {
+      if (isRuntimeNotBoundError(error)) return undefined;
+      throw error;
+    }
+  };
+
+  const setActiveToolsSafe = (tools: string[]): void => {
+    try {
+      pi.setActiveTools(tools);
+    } catch (error) {
+      if (isRuntimeNotBoundError(error)) return;
+      throw error;
+    }
+  };
+
+  const isRuntimeBound = (): boolean => {
+    try {
+      pi.getActiveTools?.();
+      return true;
+    } catch (error) {
+      if (isRuntimeNotBoundError(error)) return false;
+      throw error;
+    }
+  };
+
   function directToolFingerprint(spec: DirectToolSpec): string {
     return JSON.stringify({
       serverName: spec.serverName,
@@ -154,7 +190,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     const unregistered = toolNames.filter((toolName) => unregisterTool?.(toolName) === true);
     const fallbackNames = toolNames.filter((toolName) => !unregistered.includes(toolName));
     const remove = new Set(toolNames);
-    const activeTools = pi.getActiveTools?.();
+    const activeTools = getActiveToolsSafe();
     if (!activeTools || activeTools.length === 0) {
       for (const toolName of fallbackNames) fallbackDeactivatedTools.add(toolName);
       return unregistered;
@@ -162,7 +198,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     const nextActiveTools = activeTools.filter((name) => !remove.has(name));
     if (nextActiveTools.length !== activeTools.length) {
       for (const toolName of fallbackNames) fallbackDeactivatedTools.add(toolName);
-      pi.setActiveTools(nextActiveTools);
+      setActiveToolsSafe(nextActiveTools);
     }
     return unregistered;
   }
@@ -186,9 +222,9 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         registerDirectTool(spec);
         registeredDirectTools.set(spec.prefixedName, fingerprint);
         if (fallbackDeactivatedTools.delete(spec.prefixedName)) {
-          const activeTools = pi.getActiveTools?.();
+          const activeTools = getActiveToolsSafe();
           if (activeTools && !activeTools.includes(spec.prefixedName)) {
-            pi.setActiveTools([...activeTools, spec.prefixedName]);
+            setActiveToolsSafe([...activeTools, spec.prefixedName]);
           }
         }
         (previous ? updated : added).push(spec.prefixedName);
@@ -291,7 +327,11 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       if (initPromise !== promise && initPromise !== null) {
         return;
       }
-      console.error(`MCP initialization failed: ${formatTerminalError(err)}`);
+      if (isRuntimeNotBoundError(err)) {
+        logger.debug(`MCP: load-time initialization skipped (extension runtime not bound): ${formatTerminalError(err)}`);
+      } else {
+        console.error(`MCP initialization failed: ${formatTerminalError(err)}`);
+      }
       initPromise = null;
       if (state) return;
 
@@ -314,6 +354,9 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     if (!hasStartupServer) return;
     setImmediate(() => {
       if (lifecycleGeneration !== 0 || state || initPromise) return;
+      // Headless CLI contexts (pi install/update/config, trust evaluation) never bind
+      // the extension runtime; skip the eager connect there instead of failing later.
+      if (!isRuntimeBound()) return;
       const generation = ++lifecycleGeneration;
       const owner = createMcpRuntimeOwner();
       const oauthRuntime = createOAuthRuntime(owner.signal);
@@ -762,9 +805,9 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         registerProxyTool(description);
         return;
       }
-      const activeTools = pi.getActiveTools?.();
+      const activeTools = getActiveToolsSafe();
       if (activeTools && !activeTools.includes("mcp")) {
-        pi.setActiveTools([...activeTools, "mcp"]);
+        setActiveToolsSafe([...activeTools, "mcp"]);
       }
       return;
     }

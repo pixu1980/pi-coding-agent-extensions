@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.7](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.6...@pixu1980/pi-mcp@0.1.7) (2026-08-01)
+
+### Features
+
+* **pi-ask:** add interactive ask and questionnaire tools ([8988b1e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/8988b1e4ff2de0bb313165049f50f730873df02d))
 ## [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.5...@pixu1980/pi-mcp@0.1.6) (2026-08-01)
 
 ### Features

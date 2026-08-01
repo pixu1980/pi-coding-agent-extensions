@@ -26,11 +26,7 @@
   ],
   "files": [
     "index.ts",
-    "colors.ts",
-    "git.ts",
-    "settings-ui.ts",
-    "template.ts",
-    "types.ts",
+    "lib/**",
     "README.md",
     "CHANGELOG.md"
   ],
@@ -40,8 +36,8 @@
   "scripts": {
     "release": "commit-and-tag-version --no-verify && pnpm publish",
     "release:dry": "commit-and-tag-version --dry-run",
-    "test": "node --import tsx --test index.test.mjs",
-    "test:coverage": "node --import tsx --test --experimental-test-coverage index.test.mjs"
+    "test": "node --import tsx --test __tests__/index.test.mjs",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs"
   },
   "pi": {
     "extensions": [

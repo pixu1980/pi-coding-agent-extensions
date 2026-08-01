@@ -22,6 +22,12 @@
     "test:coverage": "node scripts/test-all.mjs --coverage"
   },
   "devDependencies": {
-    "standard-version": "9.5.0"
+    "commit-and-tag-version": "^13.1.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion@<5": "^1.1.17",
+      "brace-expansion@>=5": "^5.0.9"
+    }
   }
 }

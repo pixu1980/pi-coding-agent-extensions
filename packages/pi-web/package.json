@@ -47,8 +47,8 @@
   "scripts": {
     "test": "node --import tsx --test index.test.mjs index.e2e.test.mjs",
     "typecheck": "tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext --skipLibCheck --allowImportingTsExtensions index.ts fetch.ts html-to-markdown.ts ssrf.ts storage.ts format.ts config.ts utils.ts",
-    "release": "standard-version --no-verify && pnpm publish",
-    "release:dry": "standard-version --dry-run",
+    "release": "commit-and-tag-version --no-verify && pnpm publish",
+    "release:dry": "commit-and-tag-version --dry-run",
     "test:coverage": "node --import tsx --test --experimental-test-coverage index.test.mjs index.e2e.test.mjs"
   },
   "pi": {
@@ -78,8 +78,8 @@
     "@earendil-works/pi-coding-agent": "^0.83.0",
     "@earendil-works/pi-tui": "^0.83.0",
     "@types/turndown": "^5.0.6",
-    "standard-version": "9.5.0",
     "tsx": "^4.23.1",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "commit-and-tag-version": "^13.1.2"
   }
 }

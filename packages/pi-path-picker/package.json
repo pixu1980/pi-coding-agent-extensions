@@ -35,8 +35,8 @@
   },
   "scripts": {
     "test": "node --import tsx --test index.test.mjs",
-    "release": "standard-version --no-verify && pnpm publish",
-    "release:dry": "standard-version --dry-run",
+    "release": "commit-and-tag-version --no-verify && pnpm publish",
+    "release:dry": "commit-and-tag-version --dry-run",
     "test:coverage": "node --import tsx --test --experimental-test-coverage index.test.mjs"
   },
   "pi": {
@@ -57,7 +57,7 @@
     }
   },
   "devDependencies": {
-    "standard-version": "9.5.0",
-    "tsx": "^4.23.1"
+    "tsx": "^4.23.1",
+    "commit-and-tag-version": "^13.1.2"
   }
 }

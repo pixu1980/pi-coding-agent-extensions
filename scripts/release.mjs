@@ -8,7 +8,7 @@
  * <package-name>@<current-version>).
  *
  * Per ogni package modificato:
- *   1. standard-version locale --no-verify --tag-prefix "<name>@"
+ *   1. commit-and-tag-version locale --no-verify --tag-prefix "<name>@"
  *      → bump semver, CHANGELOG, commit + tag
  *   2. npm publish
  *
@@ -141,7 +141,7 @@ for (const pkg of packages) {
 
   // ── Rilascio ──
   if (isDryRun) {
-    console.log(`   [dry-run] standard-version --tag-prefix "${name}@"`);
+    console.log(`   [dry-run] commit-and-tag-version --tag-prefix "${name}@"`);
     execIn(pkgPath, standardVersionCommand(ROOT, name, true, isFirstRelease), { stdio: 'inherit' });
     console.log(`   [dry-run] pnpm publish (saltato)`);
   } else {

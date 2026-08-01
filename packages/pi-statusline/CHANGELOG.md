@@ -2,16 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
-## [Unreleased]
+## [0.1.5](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.4...@pixu1980/pi-statusline@0.1.5) (2026-08-01)
 
 ### Features
 
-* **pi-statusline:** add full-label responsive level (Project/Branch/Status/Model/Effort/Context) for very wide terminals
-
-### Bug Fixes
-
-* **pi-statusline:** keep the context separator `/` gradient-colored when the `(pct)` suffix is dropped
-
+* **pi-statusline:** add full-label responsive level for wide terminals ([dda2fdb](https://github.com/pixu1980/pi-coding-agent-extensions/commit/dda2fdb0ce57974bb42f1dd560cc7df6c59b15e6))
 ## [0.1.4](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.3...@pixu1980/pi-statusline@0.1.4) (2026-08-01)
 
 ### Features

@@ -57,7 +57,7 @@
     }
   },
   "devDependencies": {
-    "tsx": "^4.23.1",
-    "commit-and-tag-version": "^13.1.2"
+    "tsx": "4.23.1",
+    "commit-and-tag-version": "13.1.2"
   }
 }

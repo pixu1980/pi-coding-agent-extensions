@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-ask",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": false,
   "description": "Interactive Q&A for pi coding agent - multiple choice and single answer questions with notes and custom answers, Claude Code style",
   "type": "module",

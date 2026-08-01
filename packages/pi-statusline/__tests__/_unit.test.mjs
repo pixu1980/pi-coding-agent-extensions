@@ -29,10 +29,12 @@ import {
   resolveTemplate,
   compileTemplate,
   renderStatusLine,
+  renderResponsive,
 } from "../lib/_template.ts";
 import { getGitStatus, invalidateGitCache } from "../lib/_git.ts";
 import { loadSettings, saveSettings } from "../lib/_settings-ui.ts";
 import { PRESET_TEMPLATES, DEFAULT_SETTINGS } from "../lib/_types.ts";
+import { visibleWidth } from "@earendil-works/pi-tui";
 
 // ── Sample data ────────────────────────────────────────────────────
 
@@ -162,6 +164,119 @@ test("renderStatusLine: unknown-but-valid optional token empty when no git", () 
 test("renderStatusLine: initial prompt token renders", () => {
   const compiled = compileTemplate("{initial_prompt}");
   assert.ok(renderStatusLine(DATA, compiled).includes("Refactor the auth module"));
+});
+
+// ── Unit: responsive cascade (preset-auto) ────────────────────────
+
+const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+// Data matching the user's real-world example (clean repo, empty context)
+const USER_DATA = {
+  project: "~/Projects/pixu1980/pi-coding-agent-extensions",
+  git: { branch: "main", ahead: 0, behind: 0, dirty: 0, hasUpstream: true },
+  hasGit: true,
+  model: "DeepSeek V4 Flash",
+  modelContext: 1_000_000,
+  effort: "High",
+  contextUsed: 0,
+  contextTotal: 1_000_000,
+  contextPct: 0,
+  initialPrompt: "",
+};
+
+test("renderResponsive: wide width renders the verbose level", () => {
+  const line = renderResponsive(USER_DATA, 10_000);
+  assert.equal(
+    strip(line),
+    "P: ~/Projects/pixu1980/pi-coding-agent-extensions › B: main › M: DeepSeek V4 Flash E: High › C: 0/1.0M (0%)",
+    "verbose level keeps the full path, separate effort label and pct",
+  );
+});
+
+test("renderResponsive: medium width degrades to the compact level", () => {
+  const verbose = renderResponsive(USER_DATA, 10_000);
+  const line = renderResponsive(USER_DATA, visibleWidth(verbose) - 1);
+  assert.equal(
+    strip(line),
+    "P: pi-coding-agent-extensions › B: main › M: DeepSeek V4 Flash - High › C: 0/1.0M",
+    "compact level uses the bare project name and merges model-effort",
+  );
+});
+
+test("renderResponsive: narrow width degrades to the minimal level", () => {
+  const verbose = renderResponsive(USER_DATA, 10_000);
+  const compact = renderResponsive(USER_DATA, visibleWidth(verbose) - 1);
+  const line = renderResponsive(USER_DATA, visibleWidth(compact) - 1);
+  assert.equal(
+    strip(line),
+    "pi-coding-agent-extensions | main | DeepSeek V4 Flash - High | 0/1.0M",
+    "minimal level drops labels and uses pipe separators",
+  );
+});
+
+test("renderResponsive: levels are progressively narrower (monotonic)", () => {
+  const l1 = renderResponsive(DATA, 10_000);
+  const l2 = renderResponsive(DATA, visibleWidth(l1) - 1);
+  const l3 = renderResponsive(DATA, visibleWidth(l2) - 1);
+  assert.ok(visibleWidth(l2) < visibleWidth(l1), "compact narrower than verbose");
+  assert.ok(visibleWidth(l3) < visibleWidth(l2), "minimal narrower than compact");
+  assert.ok(visibleWidth(l3) <= visibleWidth(l2) - 1);
+});
+
+test("renderResponsive: preserves colors at every level", () => {
+  const verbose = renderResponsive(DATA, 10_000);
+  const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
+  const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
+  for (const line of [verbose, compact, minimal]) {
+    assert.ok(line.includes("\x1b[38;2;255;180;100m"), "model stays orange-gold");
+    assert.ok(line.includes("\x1b[38;2;180;220;100m"), "effort stays lime-green");
+    assert.ok(line.includes("\x1b[38;2;140;140;140m"), "labels/separators stay dim grey");
+    // gradient code sits directly before the used-token count at every level
+    assert.match(line, /\x1b\[38;2;\d+;\d+;\d+m901k/, "context keeps the gradient");
+  }
+});
+
+test("renderResponsive: model name passes through verbatim at every level", () => {
+  const withBadge = { ...DATA, model: "DeepSeek V4 Flash (New)" };
+  const l1 = renderResponsive(withBadge, 10_000);
+  const l2 = renderResponsive(withBadge, visibleWidth(l1) - 1);
+  const l3 = renderResponsive(withBadge, visibleWidth(l2) - 1);
+  for (const line of [l1, l2, l3]) {
+    assert.ok(strip(line).includes("DeepSeek V4 Flash (New)"), "model badge is preserved, not dropped");
+  }
+});
+
+test("renderResponsive: git status shows at every level", () => {
+  const verbose = renderResponsive(DATA, 10_000);
+  assert.ok(verbose.includes("⇡3"), "verbose keeps ahead");
+  assert.ok(verbose.includes("⇣1"), "verbose keeps behind");
+  assert.ok(verbose.includes("!2"), "verbose keeps dirty");
+  const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
+  assert.ok(compact.includes("⇡3"));
+  const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
+  assert.ok(minimal.includes("⇡3"));
+});
+
+test("renderResponsive: too-narrow width falls back to minimal, never crashes", () => {
+  const line = renderResponsive(DATA, 10);
+  assert.ok(strip(line).includes("my-app"), "fallback still shows project");
+  assert.ok(strip(line).includes("claude-opus-4 - High"));
+  // Caller truncates; here we just verify it doesn't throw and is colored.
+  assert.ok(line.includes("\x1b["), "fallback remains ANSI-colored");
+});
+
+test("renderResponsive: empty git → branch/git_status sections collapse", () => {
+  const noGit = { ...DATA, git: null, hasGit: false };
+  const line = renderResponsive(noGit, 10_000);
+  assert.ok(!strip(line).includes("feature/x"));
+  assert.ok(!strip(line).includes("B:"), "no empty branch section");
+});
+
+test("renderResponsive: custom short project name already stays put", () => {
+  const short = { ...DATA, project: "my-app" };
+  const l1 = renderResponsive(short, 10_000);
+  const l2 = renderResponsive(short, visibleWidth(l1) - 1);
+  assert.ok(strip(l2).includes("P: my-app"));
 });
 
 // ── Unit: git detection (uses process.cwd — temp repo) ────────────

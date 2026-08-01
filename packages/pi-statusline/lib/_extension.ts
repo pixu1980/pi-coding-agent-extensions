@@ -27,6 +27,7 @@ import {
   resolveTemplate,
   compileTemplate,
   renderStatusLine,
+  renderResponsive,
   validateTemplate,
 } from "./_template.ts";
 import { loadSettings, saveSettings, openSettingsPanel } from "./_settings-ui.ts";
@@ -89,9 +90,15 @@ function buildData(ctx: ExtensionContext): StatusLineData {
   };
 }
 
-function formatLine(ctx: ExtensionContext, overrideTmpl?: string): string {
+function formatLine(ctx: ExtensionContext, width?: number): string {
   const data = buildData(ctx);
-  const tmpl = overrideTmpl ?? resolveTemplate(settings);
+
+  // Responsive mode: pick the most verbose level that fits the width.
+  if (settings.format === "preset-auto") {
+    return renderResponsive(data, width ?? 120);
+  }
+
+  const tmpl = resolveTemplate(settings);
 
   if (cachedTmpl !== tmpl || !compiledRender || compileError) {
     const result = compileTemplate(tmpl);
@@ -156,7 +163,7 @@ export default function (pi: ExtensionAPI): void {
       "pi-statusline",
       (_tui, _theme) => ({
         render(width: number): string[] {
-          const line = formatLine(ctx);
+          const line = formatLine(ctx, width);
           return [truncateToWidth(line, Math.max(1, width))];
         },
         invalidate() {

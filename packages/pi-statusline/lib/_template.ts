@@ -7,11 +7,15 @@
  *   {initial_prompt}
  *
  * Colors: labels/separators = dim grey, values = section color, C: = gradient.
+ *
+ * Responsive (preset-auto): renderResponsive() picks the most verbose of the
+ * three RESPONSIVE_LEVELS templates that fits the available width.
  */
 
 import type { StatusLineData, StatusLineSettings } from "./_types.js";
-import { PRESET_TEMPLATES, KNOWN_TOKENS } from "./_types.js";
+import { PRESET_TEMPLATES, KNOWN_TOKENS, RESPONSIVE_LEVELS } from "./_types.js";
 import { gradient, fmtTokens } from "./_colors.js";
+import { estWidth } from "./_helpers.js";
 
 // ── ANSI constants ─────────────────────────────────────────────
 
@@ -27,7 +31,7 @@ const VAL: Record<string, string> = {
   git_dirty: "\x1b[38;2;160;160;160m",
   model: "\x1b[38;2;255;180;100m",     // orange-gold
   effort: "\x1b[38;2;180;220;100m",    // lime-green
-  context: "",                          // gradient (handled after)
+  context: "",                          // gradient (applied at emit time)
   context_used: "",
   context_total: "",
   context_pct: "",
@@ -148,8 +152,8 @@ export function compileTemplate(template: string): CompiledTemplate | string {
   // Phase 3: return render function with inline coloring
   // Strategy:
   //   - All static/decorator text → dim grey
-  //   - Token values → their VAL color (except context tokens → left plain for gradient)
-  //   - Context tokens → colored with gradient AFTER all rendering
+  //   - Token values → their VAL color
+  //   - Context tokens → colored with the pct gradient directly (pct is in data)
   return (data: StatusLineData): string => {
     const out: string[] = [];
     for (const op of ops) {
@@ -160,10 +164,11 @@ export function compileTemplate(template: string): CompiledTemplate | string {
         case "required-token": {
           const val = resolveToken(op.name, data);
           const c = VAL[op.name];
-          if (c && !CTX_TOKEN.has(op.name)) {
+          if (CTX_TOKEN.has(op.name)) {
+            out.push(gradient(val, data.contextPct / 100));
+          } else if (c) {
             out.push(c + val + R);
           } else {
-            // context tokens: emit raw value for later gradient coloring
             out.push(val);
           }
           break;
@@ -173,7 +178,9 @@ export function compileTemplate(template: string): CompiledTemplate | string {
           if (val) {
             out.push(DIM + op.decorator + R);
             const c = VAL[op.name];
-            if (c && !CTX_TOKEN.has(op.name)) {
+            if (CTX_TOKEN.has(op.name)) {
+              out.push(gradient(val, data.contextPct / 100));
+            } else if (c) {
               out.push(c + val + R);
             } else {
               out.push(val);
@@ -205,26 +212,43 @@ function cleanup(text: string): string {
   return text.trim();
 }
 
-// ── Gradient for context ───────────────────────────────────────
+// ── Responsive cascade (preset-auto) ──────────────────────────
+// Compile the three constant levels once; validated templates can't fail.
 
-export function applyColors(text: string, data: StatusLineData): string {
-  const fullCtx = `${fmtTokens(data.contextUsed)}/${fmtTokens(data.contextTotal)} (${data.contextPct}%)`;
-  if (text.includes(fullCtx)) {
-    const idx = text.indexOf(fullCtx);
-    return text.slice(0, idx) + gradient(fullCtx, data.contextPct / 100) + text.slice(idx + fullCtx.length);
+const RESPONSIVE_RENDERERS: Array<(d: StatusLineData) => string> = RESPONSIVE_LEVELS.map((t) => {
+  const c = compileTemplate(t);
+  return typeof c === "function" ? c : () => "";
+});
+
+function basenameOf(p: string): string {
+  const parts = p.split(/[\\/]/).filter(Boolean);
+  return parts.length > 0 ? parts[parts.length - 1]! : p;
+}
+
+/**
+ * Pick the most verbose responsive level that fits `width` visible columns.
+ * Levels 2–3 switch the project to its bare name (dirname) to save space.
+ * Returns a fully-colored line; callers may still truncate the result.
+ */
+export function renderResponsive(data: StatusLineData, width: number): string {
+  const short: StatusLineData = { ...data, project: basenameOf(data.project) };
+  const candidates: Array<[StatusLineData, (d: StatusLineData) => string]> = [
+    [data, RESPONSIVE_RENDERERS[0]!],
+    [short, RESPONSIVE_RENDERERS[1]!],
+    [short, RESPONSIVE_RENDERERS[2]!],
+  ];
+  for (const [d, render] of candidates) {
+    const line = renderStatusLine(d, render);
+    if (estWidth(line) <= width) return line;
   }
-  const pctStr = `${data.contextPct}%`;
-  if (text.includes(pctStr)) {
-    const idx = text.indexOf(pctStr);
-    return text.slice(0, idx) + gradient(pctStr, data.contextPct / 100) + text.slice(idx + pctStr.length);
-  }
-  return text;
+  // Nothing fits: return the minimal level and let the caller truncate.
+  return renderStatusLine(short, RESPONSIVE_RENDERERS[2]!);
 }
 
 // ── Public pipeline ────────────────────────────────────────────
 
 export function renderStatusLine(data: StatusLineData, compiled: CompiledTemplate): string {
   const raw = compiled(data);
-  const cleaned = cleanup(raw);
-  return applyColors(cleaned, data);
+  return cleanup(raw);
 }
+

@@ -44,7 +44,7 @@ export async function openSettingsPanel(ctx: ExtensionCommandContext): Promise<v
       id: "format",
       label: "Format",
       currentValue: settings.format,
-      values: ["preset-full", "preset-compact", "preset-minimal", "custom"] as FormatPreset[],
+      values: ["preset-auto", "preset-full", "preset-compact", "preset-minimal", "custom"] as FormatPreset[],
     },
     {
       id: "projectStyle",

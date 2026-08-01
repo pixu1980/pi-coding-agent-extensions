@@ -77,6 +77,46 @@ test("widget render: truncates to width (no overflow crash)", async () => {
   }
 });
 
+test("widget render (preset-auto): degrades format as width shrinks", async () => {
+  const { pi, emit } = createMockPi();
+  statuslineExtension(pi);
+  const ctx = createMockCtx({ model: makeModel("anthropic", "claude-opus-4") });
+  await emit("session_start", {}, ctx);
+
+  const widget = ctx.ui._uiCalls.find(([c]) => c === "setWidget");
+  const component = widget[2]({ requestRender() {}, terminal: { rows: 30 } }, makeTheme());
+  const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+
+  const wide = strip(component.render(400)[0]);
+  assert.ok(wide.includes("P:"), "wide terminal shows the verbose labeled format");
+  assert.ok(wide.includes("E: High"), "verbose keeps the separate effort label");
+
+  const medium = strip(component.render(40)[0]);
+  assert.ok(medium.includes("claude-opus-4 - High"), "medium merges model-effort");
+  assert.ok(!medium.includes("E: High"), "medium drops the separate effort label");
+
+  const narrow = strip(component.render(20)[0]);
+  assert.ok(!narrow.includes("P:"), "narrow drops the labels entirely");
+  assert.ok(visibleWidth(narrow) <= 20, "narrow never overflows");
+});
+
+test("widget render (preset-auto): every width stays within budget", async () => {
+  const { pi, emit } = createMockPi();
+  statuslineExtension(pi);
+  const ctx = createMockCtx({
+    model: makeModel("anthropic", "deepseek-v4-flash-very-long-model-name"),
+    cwd: "/some/very/long/nested/project/path/that/pushes/the/statusline/past/118/columns",
+  });
+  await emit("session_start", {}, ctx);
+
+  const widget = ctx.ui._uiCalls.find(([c]) => c === "setWidget");
+  const component = widget[2]({ requestRender() {}, terminal: { rows: 30 } }, makeTheme());
+  for (const width of [20, 40, 60, 80, 118, 200]) {
+    const lines = component.render(width);
+    assert.ok(visibleWidth(lines[0]) <= width, `width ${width} must hold`);
+  }
+});
+
 test("footer render: shows mcp server count and provider/model", async () => {
   const { pi, emit } = createMockPi();
   statuslineExtension(pi);

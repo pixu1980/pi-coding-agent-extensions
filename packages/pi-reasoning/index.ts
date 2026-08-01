@@ -49,7 +49,7 @@ interface ModelMapEntry {
 // Maps model ID substrings to thinking levels. Entries are checked in
 // order; the FIRST match wins. More specific patterns first.
 
-const DEFAULT_MODEL_MAP: ModelMapEntry[] = [
+export const DEFAULT_MODEL_MAP: ModelMapEntry[] = [
   // ── Max reasoning ──────────────────────────────────────────
   { pattern: "claude-opus-4", level: "max" },
   { pattern: "claude-opus-3", level: "max" },
@@ -484,7 +484,7 @@ export default function (pi: ExtensionAPI): void {
 
   // ── Shared auto handler ─────────────────────────────────────
 
-  function handleAuto(ctx: { model?: typeof currentModel; ui: { notify: (msg: string, type: string) => void } }): void {
+  function handleAuto(ctx: { model?: typeof currentModel; ui: { notify: (msg: string, type?: "error" | "info" | "warning") => void } }): void {
     const model = ctx.model;
     if (!model) {
       ctx.ui.notify("No model currently selected", "warning");

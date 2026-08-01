@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.4](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.3...@pixu1980/pi-mcp@0.1.4) (2026-08-01)
+
+### Bug Fixes
+
+* **pi-mcp:** skip load-time init when extension runtime is not bound ([e0d6137](https://github.com/pixu1980/pi-coding-agent-extensions/commit/e0d61378b68b35476b50aa26c51f180063d49c55))
 ## [0.1.3](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.2...@pixu1980/pi-mcp@0.1.3) (2026-08-01)
 
 ### Features

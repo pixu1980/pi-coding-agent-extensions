@@ -5,4 +5,5 @@
  * factory from `lib/`.
  */
 
+export { default } from "./lib/index.ts";
 export * from "./lib/index.ts";

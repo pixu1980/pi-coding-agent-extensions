@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "Scrape any webpage into clean, context-ready Markdown for pi.dev — fetch URLs, get readable Markdown with title/source metadata, and pull extra slices on demand",
   "type": "module",

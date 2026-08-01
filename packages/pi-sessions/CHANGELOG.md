@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.4](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.3...@pixu1980/pi-sessions@0.1.4) (2026-08-01)
+
+
+### Features
+
+* **pi-mcp:** add MCP adapter extension ([eb1e2ed](https://github.com/pixu1980/pi-coding-agent-extensions/commit/eb1e2ed5dc7cdc3326816115402f33acf578474b))
+* **pi-reasoning:** add model-aware argument autocomplete to /reasoning command ([50faea8](https://github.com/pixu1980/pi-coding-agent-extensions/commit/50faea8184a689f5742d868d67746be0e1da52a1))
+* **pi-reasoning:** update reasoning menu based on real available reasoning levels per model ([29beea7](https://github.com/pixu1980/pi-coding-agent-extensions/commit/29beea7b3a71c8efddbd9b305e3107df6f899a21))
+* **pi-statusline:** add statusline extension ([ab895ec](https://github.com/pixu1980/pi-coding-agent-extensions/commit/ab895ec95df9554b916352e1e9c75bd0736a5460))
+* remove pi-sessions package ([98def63](https://github.com/pixu1980/pi-coding-agent-extensions/commit/98def63a513f89220a1fc29c0083efa9e79d9126))
+
+
+### Bug Fixes
+
+* **pi-path-picker:** delega al provider nativo fuori apici + /reasoning autocomplete ([4dc418f](https://github.com/pixu1980/pi-coding-agent-extensions/commit/4dc418f6d7d937b6770bea40bb5288898b2647db))
+* **pi-path-picker:** isolate tab completion ([2412c56](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2412c5693aa200547856df8f7ca1c2533a98062b))
+* **pi-reasoning:** unify model-aware menus ([ed5fa62](https://github.com/pixu1980/pi-coding-agent-extensions/commit/ed5fa62972a2f1390787d5387c42f30912ccd8b2))
+* **release:** preserve first package version ([d3b6c81](https://github.com/pixu1980/pi-coding-agent-extensions/commit/d3b6c81661867e1d9ada1272a30644f9a814f005))
+* **release:** use local standard-version ([1934fff](https://github.com/pixu1980/pi-coding-agent-extensions/commit/1934fff0a2973c4f441304be4d28f9f633d64db5))
+
 ### [0.1.3](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.2...@pixu1980/pi-sessions@0.1.3) (2026-07-11)
 
 

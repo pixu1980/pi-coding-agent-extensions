@@ -1,0 +1,9 @@
+{
+  "name": "@pixu1980/pi-statusline",
+  "version": "1.0.0",
+  "description": "Statusline extension for pi-coding-agent — replicates /statusline from Claude Code with customizable templates, git status, model info, and context usage with gradient colors.",
+  "license": "MIT",
+  "pi": {
+    "extensions": ["./index.ts"]
+  }
+}

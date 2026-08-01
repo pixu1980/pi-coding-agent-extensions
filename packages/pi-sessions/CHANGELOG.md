@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.5](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.4...@pixu1980/pi-sessions@0.1.5) (2026-08-01)
+
 ### [0.1.4](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.3...@pixu1980/pi-sessions@0.1.4) (2026-08-01)
 
 

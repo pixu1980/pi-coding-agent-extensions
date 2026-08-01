@@ -6,9 +6,13 @@ Monorepo of extensions, themes, skills, and prompts for [pi.dev](https://pi.dev)
 
 ```
 packages/
-├── pi-path-picker/        # Interactive file path autocomplete
-├── pi-sessions/           # Session history overlay with auto-naming
-└── ...                    # More packages
+├── pi-mcp/               # MCP adapter with tool advisory threshold
+├── pi-path-picker/       # Interactive file path autocomplete
+├── pi-reasoning/         # Reasoning/effort controls
+├── pi-sessions/          # Session history overlay with auto-naming
+├── pi-statusline/        # Custom status line
+├── pi-web/               # URL → Markdown scraper (inspired by pi-web-access)
+└── ...                   # More packages
 ```
 
 ## Publishing

@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.14](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.13...@pixu1980/pi-path-picker@0.1.14) (2026-08-01)
+
 ### [0.1.13](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.12...@pixu1980/pi-path-picker@0.1.13) (2026-08-01)
 
 

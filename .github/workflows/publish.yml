@@ -1,0 +1,59 @@
+name: Publish package
+
+on:
+  push:
+    tags:
+      - '@pixu1980/**'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish, for example @pixu1980/pi-ask@0.1.6'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Resolve package from tag
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_name="${RELEASE_TAG%@*}"
+          version="${RELEASE_TAG##*@}"
+          package_dir="packages/${package_name#@pixu1980/}"
+
+          test -f "$package_dir/package.json"
+          node --input-type=module - "$package_dir/package.json" "$package_name" "$version" <<'NODE'
+          import { readFileSync } from 'node:fs';
+
+          const [packagePath, expectedName, expectedVersion] = process.argv.slice(2);
+          const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+
+          if (packageJson.name !== expectedName || packageJson.version !== expectedVersion) {
+            throw new Error(`Tag ${expectedName}@${expectedVersion} does not match ${packagePath}`);
+          }
+          NODE
+
+          echo "directory=$package_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Publish with npm trusted publishing
+        working-directory: ${{ steps.package.outputs.directory }}
+        run: npm publish --access public

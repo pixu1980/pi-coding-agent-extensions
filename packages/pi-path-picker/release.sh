@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Release script for @pixu1980/pi-path-picker
-# Bumps semver based on conventional commits, tags, and publishes to npm
+# The repository release script pushes the tag; GitHub Actions publishes it.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -14,7 +14,7 @@ if [ "${1:-}" = "--dry-run" ] || [ "${1:-}" = "-n" ]; then
   echo "[dry-run] mode - no changes will be made"
   npx standard-version --dry-run
   echo ""
-  echo "[dry-run] would run: npm publish"
+  echo "[dry-run] publication is delegated to GitHub Actions"
   exit 0
 fi
 
@@ -32,10 +32,5 @@ echo ""
 echo "=== Pushing tags ==="
 git push --follow-tags origin main
 
-# Publish to npm
 echo ""
-echo "=== Publishing to npm ==="
-npm publish
-
-echo ""
-echo "✓ Released $(node -e "console.log(require('./package.json').version)")"
+echo "✓ Tag pushed; GitHub Actions will publish with npm trusted publishing."

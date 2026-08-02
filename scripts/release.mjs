@@ -10,7 +10,7 @@
  * Per ogni package modificato:
  *   1. commit-and-tag-version locale --no-verify --tag-prefix "<name>@"
  *      → bump semver, CHANGELOG, commit + tag
- *   2. npm publish
+ *   2. push del tag → GitHub Actions pubblica con npm trusted publishing
  *
  * Uso:
  *   node scripts/release.mjs
@@ -90,7 +90,7 @@ const packages = readdirSync(PACKAGES_DIR, { withFileTypes: true })
   .filter(d => d.isDirectory())
   .map(d => d.name);
 
-let released = 0;
+let queued = 0;
 let skipped = 0;
 
 for (const pkg of packages) {
@@ -143,7 +143,7 @@ for (const pkg of packages) {
   if (isDryRun) {
     console.log(`   [dry-run] commit-and-tag-version --tag-prefix "${name}@"`);
     execIn(pkgPath, standardVersionCommand(ROOT, name, true, isFirstRelease), { stdio: 'inherit' });
-    console.log(`   [dry-run] pnpm publish (saltato)`);
+    console.log(`   [dry-run] pubblicazione delegata a GitHub Actions (saltata)`);
   } else {
     try {
       // Bump + tag
@@ -153,12 +153,9 @@ for (const pkg of packages) {
       console.log(`   → push tag...`);
       execIn(pkgPath, `git push --follow-tags origin main`, { stdio: 'inherit' });
 
-      // Pubblica
-      console.log(`   → pnpm publish...`);
-      execIn(pkgPath, `pnpm publish`, { stdio: 'inherit' });
-
-      released++;
-      console.log(`   ✅ ${name} pubblicato!`);
+      // La pubblicazione avviene su GitHub Actions tramite npm trusted publishing.
+      queued++;
+      console.log(`   ✅ ${name}: tag inviato, pubblicazione delegata a GitHub Actions`);
     } catch (err) {
       console.error(`   ❌ Errore durante il rilascio di ${name}:`, err.message);
       process.exit(1);
@@ -168,7 +165,7 @@ for (const pkg of packages) {
 
 console.log('\n═══════════════════════════════════════════');
 console.log(`  Riepilogo:`);
-console.log(`  • rilasciati:   ${released}`);
+console.log(`  • accodati:      ${queued}`);
 console.log(`  • saltati:      ${skipped}`);
 console.log(`  • totale pkg:   ${packages.length}`);
 console.log('═══════════════════════════════════════════\n');

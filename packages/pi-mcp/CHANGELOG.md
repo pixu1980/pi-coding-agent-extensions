@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.10](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.9...@pixu1980/pi-mcp@0.1.10) (2026-08-02)
+
+### Features
+
+* **pi-mcp:** display instant help for MCP prompt commands ([09e55e1](https://github.com/pixu1980/pi-coding-agent-extensions/commit/09e55e1d8f292a6ba1a235715f9018075affc2a9))
 ## [0.1.9](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.8...@pixu1980/pi-mcp@0.1.9) (2026-08-02)
 
 ### Bug Fixes

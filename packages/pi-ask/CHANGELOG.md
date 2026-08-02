@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.10](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-ask@0.1.9...@pixu1980/pi-ask@0.1.10) (2026-08-02)
+
+### Bug Fixes
+
+* **release:** prompt for npm login ([f7ee4b1](https://github.com/pixu1980/pi-coding-agent-extensions/commit/f7ee4b10c89df35158fb2c3e9bfbbf57a5340efe))
 ## [0.1.9](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-ask@0.1.8...@pixu1980/pi-ask@0.1.9) (2026-08-02)
 
 ### Bug Fixes

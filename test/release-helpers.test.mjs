@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -28,23 +28,13 @@ test('keeps the configured version for an untagged first release', () => {
   );
 });
 
-test('does not publish from the local release process', () => {
+test('publishes packages locally from the release process', () => {
   const source = readFileSync(`${ROOT}/scripts/release.mjs`, 'utf8');
 
-  assert.doesNotMatch(source, /execIn\(pkgPath, `(?:pnpm|npm) publish/);
-  assert.match(source, /GitHub Actions/);
+  assert.match(source, /execIn\(pkgPath, `npm publish --access public`/);
+  assert.doesNotMatch(source, /GitHub Actions/);
 });
 
-test('publishes through npm trusted publishing without token configuration', () => {
-  const source = readFileSync(`${ROOT}/.github/workflows/publish.yml`, 'utf8');
-
-  assert.match(source, /id-token:\s*write/);
-  assert.match(source, /npm publish\b/);
-  const forbiddenAuthNames = [
-    ['_', 'auth', 'Token'].join(''),
-    ['NPM', '_', 'TOKEN'].join(''),
-    ['NPM', '_', 'TOKEM'].join(''),
-    ['NODE', '_', 'AUTH', '_', 'TOKEN'].join(''),
-  ];
-  assert.doesNotMatch(source, new RegExp(forbiddenAuthNames.join('|')));
+test('does not depend on a GitHub Actions publishing workflow', () => {
+  assert.equal(existsSync(`${ROOT}/.github/workflows/publish.yml`), false);
 });

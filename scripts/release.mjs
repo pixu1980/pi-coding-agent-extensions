@@ -23,7 +23,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { standardVersionCommand } from './release-helpers.mjs';
+import { ensureNpmAuthentication, standardVersionCommand } from './release-helpers.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -57,7 +57,7 @@ function packageHasChangesSinceTag(tag, pkgDir) {
     exec(`git diff --quiet "${tag}" -- "${pkgDir}"`, { stdio: 'pipe' });
     return false; // nessuna modifica
   } catch {
-    return true;  // ci sono modifiche
+    return true; // ci sono modifiche
   }
 }
 
@@ -87,9 +87,25 @@ if (!isWorkingTreeClean()) {
   }
 }
 
+if (!isDryRun) {
+  try {
+    ensureNpmAuthentication({
+      whoami: () => exec('npm whoami'),
+      login: () =>
+        execIn(ROOT, 'npm login', {
+          stdio: 'inherit',
+        }),
+      log: console.log,
+    });
+  } catch (err) {
+    console.error(`✗ ${err.message}`);
+    process.exit(1);
+  }
+}
+
 const packages = readdirSync(PACKAGES_DIR, { withFileTypes: true })
-  .filter(d => d.isDirectory())
-  .map(d => d.name);
+  .filter((d) => d.isDirectory())
+  .map((d) => d.name);
 
 let released = 0;
 let skipped = 0;

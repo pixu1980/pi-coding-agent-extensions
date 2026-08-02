@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.2](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.1...@pixu1980/pi-web@0.1.2) (2026-08-02)
+
+### Features
+
+* **pi-ask:** merge grill into ask/interview with natural-language keywords ([505ceea](https://github.com/pixu1980/pi-coding-agent-extensions/commit/505ceea505b0197cbdcb10bf4820623536de8c4c))
+* **pi-ask:** rename questionnaire to interview with sequential waves, grill mode and guardrails ([6163152](https://github.com/pixu1980/pi-coding-agent-extensions/commit/61631523a549cc639600dcdbe02c62e5dc7efa87))
 ## [0.1.1](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.0...@pixu1980/pi-web@0.1.1) (2026-08-01)
 
 ### Features

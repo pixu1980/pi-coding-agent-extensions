@@ -2,6 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.18](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.17...@pixu1980/pi-path-picker@0.1.18) (2026-08-02)
 ## [0.1.17](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.16...@pixu1980/pi-path-picker@0.1.17) (2026-08-02)
 
 ### Features

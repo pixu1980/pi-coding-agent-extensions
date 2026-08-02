@@ -25,6 +25,7 @@ import { formatSchema, findToolByName } from "../lib/_tool-metadata.ts";
 import { createJsonSchemaValidator } from "../lib/_json-schema-validator.ts";
 import { McpUiError, ServerError, ConsentError } from "../lib/_errors.ts";
 import { formatToolName, formatPromptCommandName } from "../lib/_types.ts";
+import { isInstantHelpResult } from "../lib/_prompts.ts";
 
 // ── abort.ts ──────────────────────────────────────────────────────
 
@@ -239,6 +240,24 @@ test("error subclasses keep their type and code", () => {
 // ── _types.ts: comandi slash nudi (toolPrefix "none") ────────────────
 // Richiesta: /pix-frontend-vanilla-reactive, /pix-process-code-review,
 // /pix-data-indexed-db — niente prefisso server, trattini al posto degli underscore.
+
+test("isInstantHelpResult detects single assistant usage messages", () => {
+  const usage = "Usage: /pix-frontend <request>\n\nFrontend work following pix styleguides.";
+  const text = (t) => ({ role: "assistant", content: { type: "text", text: t } });
+  assert.equal(isInstantHelpResult({ messages: [text(usage)] }), usage, "single assistant usage text is instant help");
+  assert.equal(
+    isInstantHelpResult({ messages: [{ role: "user", content: { type: "text", text: usage } }] }),
+    null,
+    "user role is not instant help",
+  );
+  assert.equal(isInstantHelpResult({ messages: [text("hello world")] }), null, "must start with Usage: /");
+  assert.equal(isInstantHelpResult({ messages: [text(usage), text("extra")] }), null, "single message only");
+  assert.equal(
+    isInstantHelpResult({ messages: [{ role: "assistant", content: { type: "image", data: "", mimeType: "image/png" } }] }),
+    null,
+    "text content only",
+  );
+});
 
 test("formatToolName with \"none\": bare dash-separated tool command", () => {
   assert.equal(formatToolName("pix_frontend_vanilla_reactive", "pix-galaxy-mcp", "none"), "pix-frontend-vanilla-reactive");

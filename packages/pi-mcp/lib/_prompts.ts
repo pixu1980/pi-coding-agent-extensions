@@ -196,6 +196,22 @@ export function formatPromptResult(result: GetPromptResult): string {
   return lines.join("\n\n").trim();
 }
 
+/**
+ * Detect a prompt result that is already a complete, ready-to-display answer
+ * (the pix-* MCP servers return `/pix-* help` this way): a single assistant
+ * text message starting with `Usage: /`. Returns the text to display, or null
+ * when the result should be sent to the model instead.
+ */
+export function isInstantHelpResult(result: GetPromptResult): string | null {
+  if (result.messages.length !== 1) return null;
+  const message = result.messages[0];
+  if (message.role !== "assistant") return null;
+  const content = message.content;
+  if (!content || typeof content !== "object" || content.type !== "text") return null;
+  const text = content.text ?? "";
+  return text.startsWith("Usage: /") ? text : null;
+}
+
 function extractMessageText(message: PromptMessage): string {
   const content = message.content;
   if (!content || typeof content !== "object") return "";
@@ -315,6 +331,20 @@ export function createPromptCommand(
       if (!text) {
         if (ctx.hasUI) {
           ctx.ui.notify(`MCP prompt "${live.originalName}" returned no text content.`, "warning");
+        }
+        return;
+      }
+
+      // Instant help: a single assistant message that is already the final
+      // answer (pix-* servers return `/pix-* help` this way). Display it
+      // directly instead of sending it to the model as a prompt, so the user
+      // sees the usage immediately with no reasoning / token spend.
+      const instantHelp = isInstantHelpResult(result);
+      if (instantHelp !== null) {
+        if (ctx.hasUI) {
+          ctx.ui.notify(instantHelp, "info");
+        } else {
+          pi.sendUserMessage(instantHelp);
         }
         return;
       }

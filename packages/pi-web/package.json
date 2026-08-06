@@ -27,11 +27,13 @@
     "fetch",
     "turndown"
   ],
+  "contentPolicy": "dual-use",
   "files": [
     "index.ts",
     "lib/**",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "DISCLOSURE"
   ],
   "publishConfig": {
     "access": "public"

@@ -19,7 +19,7 @@
  *   node scripts/release.mjs --force / -f         (forza release anche senza modifiche)
  */
 
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -126,6 +126,21 @@ for (const pkg of packages) {
     console.log(`⏭  ${pkgJson.name}: private, saltato`);
     skipped++;
     continue;
+  }
+
+  // ── Validazione dual-use (npm contentPolicy) ──
+  if (pkgJson.contentPolicy === 'dual-use') {
+    const disclosurePath = join(pkgPath, 'DISCLOSURE');
+    if (!existsSync(disclosurePath)) {
+      console.error(`✗ ${pkgJson.name}: contentPolicy=dual-use ma DISCLOSURE non trovato.`);
+      console.error(`  Crea il file packages/${pkg}/DISCLOSURE e riprova.`);
+      process.exit(1);
+    }
+    console.log(`   🔒 dual-use: DISCLOSURE presente ✓`);
+    if (!isDryRun) {
+      console.log(`   ⚠  Pubblicazione dual-use richiede autenticazione npm con 2FA.`);
+      console.log(`   Assicurati che l'account npm abbia 2FA abilitato.`);
+    }
   }
 
   const name = pkgJson.name;

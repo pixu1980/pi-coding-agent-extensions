@@ -1,0 +1,53 @@
+# DISCLOSURE — pi-mcp (@pixu1980/pi-mcp)
+
+## Purpose
+
+pi-mcp is a Model Context Protocol (MCP) adapter for the pi coding agent.
+It enables the LLM to discover, connect to, and invoke tools on MCP-compatible
+servers — both locally spawned processes and remote HTTP/SSE endpoints.
+
+## Dual-Use Capabilities
+
+1. **Arbitrary process spawning**: pi-mcp can spawn child processes as MCP
+   servers (e.g., via npx, uvx, or direct binary paths). These processes
+   inherit the agent's environment and permissions.
+
+2. **Arbitrary network connections**: pi-mcp establishes connections to
+   remote MCP servers over HTTP and SSE transports, including user-specified
+   URLs that may point to internal or external hosts.
+
+3. **OAuth 2.0 authorization flow**: pi-mcp runs a local HTTP callback server
+   to complete OAuth authorization code grants with MCP servers. It stores
+   and refreshes access tokens.
+
+4. **System keyring access**: pi-mcp reads and writes OAuth tokens to the
+   operating system's credential store via @napi-rs/keyring.
+
+5. **Browser/URL opening**: pi-mcp can open URLs in the system's default
+   browser for OAuth authorization flows.
+
+6. **MCP tool execution**: pi-mcp relays tool call requests from the LLM to
+   connected MCP servers and returns results. The LLM may invoke arbitrary
+   tools exposed by any connected server.
+
+## Legitimate Intended Use
+
+- Connecting to well-known MCP servers (e.g., filesystem, databases, APIs)
+  to extend the coding agent's capabilities.
+- Authenticating with OAuth-protected MCP services using standard flows.
+- Managing MCP server lifecycles (start, stop, restart) within the agent
+  session.
+- Providing structured tool discovery and invocation for LLM agents.
+
+## Mitigations
+
+- **User consent required**: Before connecting to a new MCP server, the user
+  must explicitly approve the connection through the consent manager UI.
+- **Configurable tool advisory threshold**: Tools with high impact can trigger
+  additional confirmation prompts before invocation.
+- **OAuth PKCE flow**: Authorization uses PKCE (Proof Key for Code Exchange)
+  to prevent authorization code interception.
+- **Token storage in system keyring**: OAuth tokens are stored in the OS
+  credential store, not in plaintext configuration files.
+- **Server isolation**: Each MCP server runs as an independent child process
+  with its own stdin/stdout transport.

@@ -1,0 +1,34 @@
+# DISCLOSURE — pi-web (@pixu1980/pi-web)
+
+## Purpose
+
+pi-web is a web scraping and content extraction tool for the pi coding agent.
+It fetches URLs, converts HTML pages into clean, context-ready Markdown, and
+returns the result to the LLM for further processing.
+
+## Dual-Use Capabilities
+
+1. **Arbitrary URL fetching**: pi-web accepts a URL from the LLM/user and
+   performs an HTTP GET request to fetch the page content. This capability can
+   be used to access both public and (misconfigured) internal resources.
+
+2. **Configurable SSRF allowlist**: The built-in SSRF guard blocks private,
+   loopback, link-local, and reserved IP ranges by default. However, the
+   allowlist is configurable (e.g., to permit local development servers),
+   which could be exploited if misconfigured.
+
+## Legitimate Intended Use
+
+- Fetching public documentation, API references, and web pages for the LLM
+  to read and reason about.
+- Converting web content to Markdown for inclusion in the agent's context.
+- Accessing local development servers (e.g., `localhost:3000`) during
+  development with explicit user configuration.
+
+## Mitigations
+
+- **SSRF guard enabled by default**: Blocks all private/reserved IP ranges.
+- **Per-hop redirect validation**: Each redirect target is re-validated.
+- **Configurable timeout and byte cap**: Prevents resource exhaustion.
+- **User-controlled allowlist**: Only the user can whitelist IP ranges via
+  explicit configuration; no programmatic bypass exists.

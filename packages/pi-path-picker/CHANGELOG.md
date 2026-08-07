@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.21](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.20...@pixu1980/pi-path-picker@0.1.21) (2026-08-07)
+
+### Features
+
+* **pi-mcp:** display instant help for MCP prompt commands ([1bde004](https://github.com/pixu1980/pi-coding-agent-extensions/commit/1bde004c862be9224f7b10968e0752c54adb034b))
 ## [0.1.20](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.19...@pixu1980/pi-path-picker@0.1.20) (2026-08-02)
 ## [0.1.19](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.18...@pixu1980/pi-path-picker@0.1.19) (2026-08-02)
 

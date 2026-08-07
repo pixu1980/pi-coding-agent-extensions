@@ -1,5 +1,5 @@
 /**
- * pi-ask — `ask` tool interactive UI tests
+ * pi-ask - `ask` tool interactive UI tests
  *
  * Drives the `ctx.ui.custom` component with a fake TUI: renders the
  * component, simulates key presses, and asserts the tool's final result.
@@ -120,7 +120,7 @@ test("note: n arms a note, then the selection submits with it", async () => {
 	text = driver.render();
 	assert.match(text, /note: needs review/);
 
-	// Now select — one key, done
+	// Now select - one key, done
 	driver.key("1");
 
 	const result = await execPromise;
@@ -132,7 +132,7 @@ test("note: n arms a note, then the selection submits with it", async () => {
 		index: 1,
 		note: "needs review",
 	});
-	assert.equal(result.content[0].text, "User answered: 1. Rust — note: needs review");
+	assert.equal(result.content[0].text, "User answered: 1. Rust - note: needs review");
 });
 
 test("custom answer: Type something auto-enters write mode when highlighted, one Enter submits", async () => {

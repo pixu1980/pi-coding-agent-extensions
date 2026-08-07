@@ -1,5 +1,5 @@
 /**
- * pi-sessions — internal types (private module)
+ * pi-sessions - internal types (private module)
  */
 
 export interface SessionSummary {

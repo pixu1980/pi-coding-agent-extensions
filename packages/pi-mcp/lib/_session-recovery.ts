@@ -82,11 +82,11 @@ export interface SessionRecoveryDeps {
  * Runs `fn` against the current connection for `serverName`. If it fails
  * with a terminated Streamable HTTP session (see `isTerminatedSession`),
  * reconnects exactly once via `McpServerManager.reconnect` (single-flight,
- * identity-guarded — see server-manager.ts) and retries `fn` exactly once
+ * identity-guarded - see server-manager.ts) and retries `fn` exactly once
  * against the fresh connection.
  *
- * Any other failure — including a second failure after reconnecting, or the
- * server having been removed from config in the meantime — propagates
+ * Any other failure - including a second failure after reconnecting, or the
+ * server having been removed from config in the meantime - propagates
  * unchanged through the caller's existing error handling.
  */
 export async function withSessionRecovery<T>(

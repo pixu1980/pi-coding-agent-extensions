@@ -1,5 +1,5 @@
 /**
- * pi-web — extension entry (factory)
+ * pi-web - extension entry (factory)
  *
  * Registers the pi_web_fetch / pi_web_read tools and restores the page cache
  * from the session branch on reload.

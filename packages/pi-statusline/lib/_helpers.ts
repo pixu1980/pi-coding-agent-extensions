@@ -1,5 +1,5 @@
 /**
- * pi-statusline — internal helpers (private module)
+ * pi-statusline - internal helpers (private module)
  *
  * Pure helpers for the status line: effort labels/emojis, display width
  * estimation and project path resolution.

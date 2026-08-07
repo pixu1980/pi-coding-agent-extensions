@@ -1,5 +1,5 @@
 /**
- * pi-reasoning — /reasoning autocomplete provider wrapper (private module)
+ * pi-reasoning - /reasoning autocomplete provider wrapper (private module)
  *
  * Intercepts ONLY "/reasoning " (with trailing space). Everything else is
  * delegated to the wrapped provider unchanged.
@@ -12,8 +12,8 @@ import type { ReasoningModelCapabilities } from "./_constants.ts";
 export type ReasoningModelRef = ReasoningModelCapabilities & { provider?: string; id?: string };
 
 const TYPED_ONLY_COMMANDS = [
-  { value: "map", label: "map  — Show active model→level mappings" },
-  { value: "reset", label: "reset  — Restore default model mappings" },
+  { value: "map", label: "map  - Show active model→level mappings" },
+  { value: "reset", label: "reset  - Restore default model mappings" },
 ];
 
 export function createReasoningAutocompleteProvider(

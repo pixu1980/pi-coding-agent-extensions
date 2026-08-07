@@ -1,5 +1,5 @@
 /**
- * pi-reasoning — extension entry (factory)
+ * pi-reasoning - extension entry (factory)
  *
  * Automatic reasoning level management for pi.dev: sets the thinking level
  * based on the selected model, exposes the /reasoning command, a status
@@ -38,7 +38,7 @@ export default function (pi: ExtensionAPI): void {
     currentModel = model;
     const modelLabel = model ? `${model.provider}/${model.id}` : "no model";
     ctx.ui.setStatus(STATUS_KEY, `${emoji} ${currentLevel}`);
-    ctx.ui.notify(`🧠 pi-reasoning loaded — ${emoji} ${currentLevel} (${modelLabel})`, "info");
+    ctx.ui.notify(`🧠 pi-reasoning loaded - ${emoji} ${currentLevel} (${modelLabel})`, "info");
   });
 
   // Register after every extension has handled session_start. This keeps
@@ -114,11 +114,11 @@ export default function (pi: ExtensionAPI): void {
   // ── /reasoning Command ──────────────────────────────────────
   //
   // Usage:
-  //   /reasoning                              — interactive menu
-  //   /reasoning off|minimal|low|medium|high|xhigh|max — set manually
-  //   /reasoning auto                         — re-apply auto-reasoning
-  //   /reasoning reset                        — restore default map
-  //   /reasoning map                          — show active mappings
+  //   /reasoning                              - interactive menu
+  //   /reasoning off|minimal|low|medium|high|xhigh|max - set manually
+  //   /reasoning auto                         - re-apply auto-reasoning
+  //   /reasoning reset                        - restore default map
+  //   /reasoning map                          - show active mappings
 
   pi.registerCommand("reasoning", {
     description:
@@ -128,8 +128,8 @@ export default function (pi: ExtensionAPI): void {
       const normalizedPrefix = prefix.trim().toLowerCase();
       const menuOptions = buildReasoningMenuOptions(currentModel);
       const typedOnlyCommands = [
-        { value: "map", label: "map  — Show active model→level mappings" },
-        { value: "reset", label: "reset  — Restore default model mappings" },
+        { value: "map", label: "map  - Show active model→level mappings" },
+        { value: "reset", label: "reset  - Restore default model mappings" },
       ];
       const options = normalizedPrefix
         ? [...menuOptions, ...typedOnlyCommands].filter((option) =>
@@ -147,7 +147,7 @@ export default function (pi: ExtensionAPI): void {
         const modelLabel = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "no model";
 
         const choice = await ctx.ui.select(
-          `🧠  Reasoning level — ${modelLabel}`,
+          `🧠  Reasoning level - ${modelLabel}`,
           options.map((option) => option.label),
         );
         if (!choice) return;

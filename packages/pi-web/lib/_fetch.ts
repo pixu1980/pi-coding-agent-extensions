@@ -143,7 +143,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
       return errPage(id, currentUrl, "Unsupported protocol: only http(s) URLs can be fetched", fetchedAt);
     }
 
-    // Node's URL.hostname keeps IPv6 brackets ([::1]) — strip them before validation.
+    // Node's URL.hostname keeps IPv6 brackets ([::1]) - strip them before validation.
     const hostname = parsed.hostname.replace(/^\[(.*)\]$/, "$1");
     const validation = await validateTargetHost(hostname, allowRanges);
     if (validation.blocked) {

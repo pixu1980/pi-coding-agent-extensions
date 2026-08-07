@@ -447,14 +447,14 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       const argumentMatch = normalized.match(/^(\S+)\s+(.*)$/);
       if (!argumentMatch) {
         const subcommands = [
-          { value: "reconnect", label: "reconnect — Reconnect servers" },
-          { value: "tools", label: "tools — List all tools" },
-          { value: "prompts", label: "prompts — List all MCP prompts" },
-          { value: "setup", label: "setup — Configure MCP servers" },
-          { value: "logout", label: "logout — Clear server credentials" },
-          { value: "disable", label: "disable — Disable a server" },
-          { value: "enable", label: "enable — Enable a server" },
-          { value: "status", label: "status — Show server status" },
+          { value: "reconnect", label: "reconnect - Reconnect servers" },
+          { value: "tools", label: "tools - List all tools" },
+          { value: "prompts", label: "prompts - List all MCP prompts" },
+          { value: "setup", label: "setup - Configure MCP servers" },
+          { value: "logout", label: "logout - Clear server credentials" },
+          { value: "disable", label: "disable - Disable a server" },
+          { value: "enable", label: "enable - Enable a server" },
+          { value: "status", label: "status - Show server status" },
         ].filter(({ value }) => value.startsWith(normalized));
         return subcommands.length > 0 ? subcommands : null;
       }
@@ -554,7 +554,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
           commandOwner?.throwIfInactive();
           const result = writeProjectServerDisabledOverride(earlyConfigPath, commandCtx.cwd, serverName, subcommand === "disable");
           if (result.changed) {
-            commandCtx.ui?.notify(`${subcommand === "disable" ? "Disabled" : "Enabled"} server "${serverName}" in ${result.path} — run /reload to apply`, "info");
+            commandCtx.ui?.notify(`${subcommand === "disable" ? "Disabled" : "Enabled"} server "${serverName}" in ${result.path} - run /reload to apply`, "info");
           } else {
             commandCtx.ui?.notify(`Server "${serverName}" is already ${subcommand === "disable" ? "disabled" : "enabled"}`, "info");
           }

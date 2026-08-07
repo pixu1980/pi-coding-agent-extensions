@@ -1,5 +1,5 @@
 /**
- * pi-statusline — Settings UI
+ * pi-statusline - Settings UI
  *
  * Interactive settings panel using SettingsList.
  * Opened via `/statusline settings` command.

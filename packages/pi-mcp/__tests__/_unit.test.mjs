@@ -1,5 +1,5 @@
 /**
- * pi-mcp — unit tests for helper modules
+ * pi-mcp - unit tests for helper modules
  *
  * Run: node --import tsx --test unit.test.mjs
  */
@@ -239,7 +239,7 @@ test("error subclasses keep their type and code", () => {
 
 // ── _types.ts: comandi slash nudi (toolPrefix "none") ────────────────
 // Richiesta: /pix-frontend-vanilla-reactive, /pix-process-code-review,
-// /pix-data-indexed-db — niente prefisso server, trattini al posto degli underscore.
+// /pix-data-indexed-db - niente prefisso server, trattini al posto degli underscore.
 
 test("isInstantHelpResult detects single assistant usage messages", () => {
   const usage = "Usage: /pix-frontend <request>\n\nFrontend work following pix styleguides.";

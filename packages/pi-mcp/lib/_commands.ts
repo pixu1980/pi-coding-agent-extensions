@@ -49,7 +49,7 @@ export async function showStatus(state: McpExtensionState, ctx: ExtensionContext
       statusIcon = "⚠";
     } else if (failedAgo !== null) {
       const reason = sanitizeTerminalText(getFailureMessage(state, name) ?? "");
-      status = reason ? `failed ${failedAgo}s ago — ${reason}` : `failed ${failedAgo}s ago`;
+      status = reason ? `failed ${failedAgo}s ago - ${reason}` : `failed ${failedAgo}s ago`;
       statusIcon = "✗";
       failed = true;
     } else if (metadata !== undefined) {

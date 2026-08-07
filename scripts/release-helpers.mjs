@@ -12,14 +12,14 @@ export function ensureNpmAuthentication({ whoami, login, log = () => {} }) {
 
     return;
   } catch {
-    log('⚠  npm non autenticato. Avvio npm login...');
+    log('⚠  npm not authenticated. Starting npm login...');
   }
 
   try {
     login();
     whoami();
   } catch (error) {
-    throw new Error('npm login non riuscito.', { cause: error });
+    throw new Error('npm login failed.', { cause: error });
   }
 }
 

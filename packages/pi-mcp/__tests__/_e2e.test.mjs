@@ -1,5 +1,5 @@
 /**
- * pi-mcp — e2e test suite (extension factory level)
+ * pi-mcp - e2e test suite (extension factory level)
  *
  * Run: node --import tsx --test e2e.test.mjs
  *

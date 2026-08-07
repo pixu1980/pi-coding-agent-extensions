@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * test-all.mjs — run every package's test suite and aggregate results.
+ * test-all.mjs - run every package's test suite and aggregate results.
  *
  *   node scripts/test-all.mjs            # run `test` in each package
  *   node scripts/test-all.mjs --coverage # run `test:coverage` instead

@@ -1,5 +1,5 @@
 /**
- * pi-ask — `interview` tool interactive UI tests
+ * pi-ask - `interview` tool interactive UI tests
  *
  * Drives the custom component with a fake TUI (same driver pattern as the
  * `ask` tests) and asserts the multi-question interview flow, including
@@ -9,7 +9,7 @@
  *
  * Digits answer and advance to the next tab; Enter on a question tab
  * records the highlighted option (or current multi-selects) and advances
- * to the next question — on the last question it lands on the review tab,
+ * to the next question - on the last question it lands on the review tab,
  * where Enter submits the current questionnaire and moves on to the next.
  */
 
@@ -115,12 +115,12 @@ test("interview: answering a question advances immediately", async () => {
 	assert.match(text, /□ Q1/);
 	assert.match(text, /□ Q2/);
 
-	// Answer Q1 (Frontend) — a single digit key records and advances
+	// Answer Q1 (Frontend) - a single digit key records and advances
 	driver.key("1");
 	text = driver.render();
 	assert.match(text, /How urgent\?/); // now on Q2
 
-	// Answer Q2 (High) — advances to review
+	// Answer Q2 (High) - advances to review
 	driver.key("2");
 	text = driver.render();
 	assert.match(text, /Ready to submit/);
@@ -193,7 +193,7 @@ test("interview: note armed with n travels with the next answer", async () => {
 	// Q2 + submit
 	driver.key("1");
 	text = driver.render();
-	assert.match(text, /Q1: 1\. Frontend — note: needs sign-off/);
+	assert.match(text, /Q1: 1\. Frontend - note: needs sign-off/);
 	driver.key(KEY.enter);
 
 	const result = await execPromise;
@@ -333,14 +333,14 @@ test("interview: multi-wave interview runs each wave as a sequential questionnai
 			title: "Financial education",
 			waves: [
 				{
-					label: "Wave 1 — Baseline",
+					label: "Wave 1 - Baseline",
 					questions: [
 						{ id: "w1q1", prompt: "How old are you?", options: [{ value: "18", label: "18-24" }, { value: "25", label: "25-34" }] },
 						{ id: "w1q2", prompt: "Any concerns?", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] },
 					],
 				},
 				{
-					label: "Wave 2 — Follow-up",
+					label: "Wave 2 - Follow-up",
 					questions: [{ id: "w2q1", prompt: "Any concerns now?", options: [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }] }],
 				},
 			],
@@ -350,11 +350,11 @@ test("interview: multi-wave interview runs each wave as a sequential questionnai
 		ctx,
 	);
 
-	// Questionnaire 1: Wave 1 — Baseline (2 questions), shown on its own
+	// Questionnaire 1: Wave 1 - Baseline (2 questions), shown on its own
 	await driver.waitForComponent(0);
 	let text = driver.render(0);
 	assert.match(text, /Financial education/);
-	assert.match(text, /Wave 1 — Baseline/);
+	assert.match(text, /Wave 1 - Baseline/);
 	assert.match(text, /Questionnaire 1\/2/);
 	assert.match(text, /How old are you\?/);
 	assert.doesNotMatch(text, /Any concerns now\?/); // wave 2 not visible yet
@@ -366,10 +366,10 @@ test("interview: multi-wave interview runs each wave as a sequential questionnai
 	assert.match(text, /next questionnaire/); // confirms there is a part 2
 	driver.key(KEY.enter, 0); // submit questionnaire 1
 
-	// Questionnaire 2: Wave 2 — Follow-up (1 question) starts only after submit
+	// Questionnaire 2: Wave 2 - Follow-up (1 question) starts only after submit
 	await driver.waitForComponent(1);
 	text = driver.render(1);
-	assert.match(text, /Wave 2 — Follow-up/);
+	assert.match(text, /Wave 2 - Follow-up/);
 	assert.match(text, /Questionnaire 2\/2/);
 	assert.match(text, /Any concerns now\?/);
 	driver.key("1", 1);
@@ -381,10 +381,10 @@ test("interview: multi-wave interview runs each wave as a sequential questionnai
 	const result = await execPromise;
 	assert.equal(result.details.cancelled, false);
 	assert.equal(result.details.answers.length, 3);
-	assert.equal(result.details.answers[0].waveLabel, "Wave 1 — Baseline");
-	assert.equal(result.details.answers[2].waveLabel, "Wave 2 — Follow-up");
-	assert.match(result.content[0].text, /Wave 1 — Baseline · Q1: 1\. 18-24/);
-	assert.match(result.content[0].text, /Wave 2 — Follow-up · Q1: 1\. Yes/);
+	assert.equal(result.details.answers[0].waveLabel, "Wave 1 - Baseline");
+	assert.equal(result.details.answers[2].waveLabel, "Wave 2 - Follow-up");
+	assert.match(result.content[0].text, /Wave 1 - Baseline · Q1: 1\. 18-24/);
+	assert.match(result.content[0].text, /Wave 2 - Follow-up · Q1: 1\. Yes/);
 });
 
 test("interview: a wave beyond 10 questions is respected in full (no split)", async () => {
@@ -401,7 +401,7 @@ test("interview: a wave beyond 10 questions is respected in full (no split)", as
 		"q-big-wave",
 		{
 			title: "Long survey",
-			waves: [{ label: "Wave 1 — Full", questions: bigWave }],
+			waves: [{ label: "Wave 1 - Full", questions: bigWave }],
 		},
 		undefined,
 		undefined,
@@ -422,7 +422,7 @@ test("interview: a wave beyond 10 questions is respected in full (no split)", as
 	const result = await execPromise;
 	assert.equal(result.details.cancelled, false);
 	assert.equal(result.details.answers.length, 14);
-	assert.equal(result.details.answers[0].waveLabel, "Wave 1 — Full");
+	assert.equal(result.details.answers[0].waveLabel, "Wave 1 - Full");
 	assert.match(result.content[0].text, /Q14: 1\. A/);
 });
 

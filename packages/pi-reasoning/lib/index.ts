@@ -1,5 +1,5 @@
 /**
- * pi-reasoning — public barrel (lib)
+ * pi-reasoning - public barrel (lib)
  *
  * Exposes the extension entry only; level/autocomplete helpers stay private.
  */

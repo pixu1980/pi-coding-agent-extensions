@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="./lib/banner.svg" alt="pi-path-picker — filesystem path autocomplete" width="1100">
+  <img src="./lib/banner.svg" alt="pi-path-picker - filesystem path autocomplete" width="1100">
 </p>
 
-# pi-path-picker — pi.dev extension
+# pi-path-picker - pi.dev extension
 
 Interactive file path autocomplete inside the TUI prompt.  
-Tab-complete `~`, `/`, `./`, `../` paths with fuzzy filtering — only inside quotes (`"`, `'`, `` ` ``).
+Tab-complete `~`, `/`, `./`, `../` paths with fuzzy filtering - only inside quotes (`"`, `'`, `` ` ``).
 
 No `/pick` command. No external tool. Pure inline completion.
 
@@ -25,7 +25,7 @@ The extension adds no trigger characters of its own. When no quoted context is p
 
 An incomplete quote context (opening or closing delimiter missing) is intentionally not delegated: it returns no suggestions so any open path menu closes immediately.
 
-### 1. `~` / `~/` — Home directory expansion
+### 1. `~` / `~/` - Home directory expansion
 
 Type `~/` inside quotes and press Tab → file list from `$HOME`.
 
@@ -34,7 +34,7 @@ Type `~/` inside quotes and press Tab → file list from `$HOME`.
 "~/.ssh/|" + Tab   →  suppressed (sensitive directory guard)
 ```
 
-### 2. `/` — Absolute path browsing
+### 2. `/` - Absolute path browsing
 
 Type `/` inside quotes and press Tab → list filesystem root contents.
 
@@ -43,7 +43,7 @@ Type `/` inside quotes and press Tab → list filesystem root contents.
 "/etc/ssh/|" + Tab →  suppressed (sensitive directory guard)
 ```
 
-### 3. `./` and `../` — Relative path browsing
+### 3. `./` and `../` - Relative path browsing
 
 Type `./` or `../` inside quotes and press Tab → navigate from project root or parent directories.
 
@@ -52,7 +52,7 @@ Type `./` or `../` inside quotes and press Tab → navigate from project root or
 "../../|" + Tab    →  contents two levels above
 ```
 
-### 4. Tab key — Force trigger
+### 4. Tab key - Force trigger
 
 Tab is the **only** path-picker trigger. It opens the menu only when:
 
@@ -85,7 +85,7 @@ These directories are blocked from listing to prevent accidental exposure:
 | `~/.kube` |
 | `/etc/ssh` |
 
-Users can still navigate into them via other means — only the autocomplete list is suppressed.
+Users can still navigate into them via other means - only the autocomplete list is suppressed.
 
 ## How it works
 
@@ -96,11 +96,11 @@ It wraps pi's native provider and adds path-aware completion.
 
 The provider follows one ownership rule:
 
-1. **No custom trigger characters** — the wrapper passes through the native provider's trigger list unchanged.
-2. **Inside a closed quote pair + Tab + token containing `/`** — `pi-path-picker` owns suggestions and completion.
-3. **Inside a closed quote pair without Tab or without `/`** — returns no path suggestions, closing any stale menu.
-4. **Broken quote pair** — returns no suggestions and forces a refresh, so deleting either delimiter closes the menu like Escape.
-5. **No quoted context** — delegates `getSuggestions`, `shouldTriggerFileCompletion`, and `applyCompletion` to the wrapped native provider without altering arguments or results.
+1. **No custom trigger characters** - the wrapper passes through the native provider's trigger list unchanged.
+2. **Inside a closed quote pair + Tab + token containing `/`** - `pi-path-picker` owns suggestions and completion.
+3. **Inside a closed quote pair without Tab or without `/`** - returns no path suggestions, closing any stale menu.
+4. **Broken quote pair** - returns no suggestions and forces a refresh, so deleting either delimiter closes the menu like Escape.
+5. **No quoted context** - delegates `getSuggestions`, `shouldTriggerFileCompletion`, and `applyCompletion` to the wrapped native provider without altering arguments or results.
 
 This delegation is required because `addAutocompleteProvider()` creates a wrapper chain: returning `null` outside the owned context would stop native slash-command completion.
 
@@ -119,8 +119,8 @@ node index.test.cjs   # Run tests
 
 | File | Role |
 |------|------|
-| `index.ts` | Extension entry — registers autocomplete provider via `session_start` |
-| `pick-path.ts` | Standalone helper — interactive TUI browser (`--quick` for glob), used by the extension internally |
+| `index.ts` | Extension entry - registers autocomplete provider via `session_start` |
+| `pick-path.ts` | Standalone helper - interactive TUI browser (`--quick` for glob), used by the extension internally |
 
 ## Pick-path CLI (`pick-path.ts`)
 

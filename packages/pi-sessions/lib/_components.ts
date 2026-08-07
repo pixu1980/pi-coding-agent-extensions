@@ -1,5 +1,5 @@
 /**
- * pi-sessions — sidebar UI components (private module)
+ * pi-sessions - sidebar UI components (private module)
  *
  * Session and folder overlays with keyboard navigation and live filtering.
  */

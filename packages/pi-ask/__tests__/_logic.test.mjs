@@ -1,5 +1,5 @@
 /**
- * pi-ask — logic tests
+ * pi-ask - logic tests
  *
  * Pure answer-building helpers from lib/_logic.ts.
  */

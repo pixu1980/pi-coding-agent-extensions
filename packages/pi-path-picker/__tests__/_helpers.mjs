@@ -1,5 +1,5 @@
 /**
- * pi-path-picker — shared test helpers (private, underscore prefix)
+ * pi-path-picker - shared test helpers (private, underscore prefix)
  */
 
 import assert from "node:assert/strict";

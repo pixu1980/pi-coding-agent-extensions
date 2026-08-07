@@ -1,5 +1,5 @@
 /**
- * Shared test harness — mock ExtensionAPI (pi) + ExtensionContext (ctx)
+ * Shared test harness - mock ExtensionAPI (pi) + ExtensionContext (ctx)
  *
  * Used by e2e tests across all packages. Plain ESM (no TS) so it can be
  * imported by any package test without extra tooling.

@@ -1,23 +1,23 @@
 <p align="center">
-  <img src="./lib/banner.svg" alt="pi-reasoning — automatic reasoning levels" width="1100">
+  <img src="./lib/banner.svg" alt="pi-reasoning - automatic reasoning levels" width="1100">
 </p>
 
-# pi-reasoning — pi.dev extension
+# pi-reasoning - pi.dev extension
 
 Automatic reasoning level management for [pi.dev](https://pi.dev). Sets the
 thinking/reasoning level based on the selected model with sensible defaults
 for all major models.
 
-No more manually adjusting reasoning every time you switch models —
+No more manually adjusting reasoning every time you switch models -
 `pi-reasoning` does it for you.
 
 ## Features
 
-- **🧠 Auto-reasoning** — Model change → optimal thinking level applied instantly
-- **📋 Sensible defaults** — Covers Claude, GPT, Gemini, DeepSeek, Llama, Mistral, Kimi, o-series
-- **⚙️ `/reasoning` command** — Manual override, auto re-apply, or check current level
-- **📊 Status bar indicator** — Colored dot + level always visible
-- **🔌 Zero config** — Install and go
+- **🧠 Auto-reasoning** - Model change → optimal thinking level applied instantly
+- **📋 Sensible defaults** - Covers Claude, GPT, Gemini, DeepSeek, Llama, Mistral, Kimi, o-series
+- **⚙️ `/reasoning` command** - Manual override, auto re-apply, or check current level
+- **📊 Status bar indicator** - Colored dot + level always visible
+- **🔌 Zero config** - Install and go
 
 ## Install
 
@@ -64,14 +64,14 @@ by pi.dev. This means:
   models that explicitly declare them in their `thinkingLevelMap` (e.g.
   `claude-opus-4-7`, `claude-fable-5`).
 - **Missing `thinkingLevelMap`**: when a model doesn't declare one, only
-  standard levels through `high` are offered — `xhigh`/`max` are hidden.
+  standard levels through `high` are offered - `xhigh`/`max` are hidden.
 - **Auto-apply clamping**: if the extension's recommended level isn't
   supported by the model, it automatically falls back to the highest
   available level.
 
 ## Usage
 
-### `/reasoning` — Show or set reasoning level
+### `/reasoning` - Show or set reasoning level
 
 ```
 /reasoning                    Show current level
@@ -133,7 +133,7 @@ Edit `modelMap` in `index.ts` to add your own patterns, or use the
 ### Pattern matching rules
 
 - Patterns are matched as **case-insensitive substrings** against the model ID
-- Entries are checked **in order** — first match wins
+- Entries are checked **in order** - first match wins
 - Put more specific patterns before broader ones
 - Optionally filter by **provider** (e.g. `providers: ["anthropic"]`)
 
@@ -159,7 +159,7 @@ pi -e .                  # Test locally
 
 | File | Role |
 |------|------|
-| `index.ts` | Extension entry — model map, event handlers, /reasoning command |
+| `index.ts` | Extension entry - model map, event handlers, /reasoning command |
 | `package.json` | Package metadata, peer deps |
 | `README.md` | This file |
 
@@ -167,9 +167,9 @@ pi -e .                  # Test locally
 
 The extension uses two pi.dev lifecycle hooks:
 
-1. **`model_select`** — Fired when the model changes. We look up the new model
+1. **`model_select`** - Fired when the model changes. We look up the new model
    in our mapping and apply the corresponding thinking level.
-2. **`thinking_level_select`** — Fired when the thinking level changes (from
+2. **`thinking_level_select`** - Fired when the thinking level changes (from
    any source). We keep the status bar in sync.
 
 The `pi.setThinkingLevel()` API handles clamping to model capabilities, so a

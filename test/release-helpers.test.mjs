@@ -57,7 +57,7 @@ test('asks the user to log in when npm authentication is missing', () => {
   });
 
   assert.deepEqual(calls, ['whoami', 'login', 'whoami']);
-  assert.deepEqual(messages, ['⚠  npm non autenticato. Avvio npm login...']);
+  assert.deepEqual(messages, ['⚠  npm not authenticated. Starting npm login...']);
 });
 
 test('fails when npm login does not authenticate the user', () => {
@@ -69,7 +69,7 @@ test('fails when npm login does not authenticate the user', () => {
         },
         login: () => {},
       }),
-    /npm login non riuscito/
+    /npm login failed/
   );
 });
 

@@ -3,20 +3,20 @@
 /**
  * release.mjs
  *
- * Rilascia TUTTE le estensioni (package non-privati in packages/) MA solo
- * quelle che hanno modifiche dall'ultimo tag git (identificato come
+ * Releases ALL extensions (non-private packages in packages/) but ONLY
+ * those that have changes since their last git tag (identified as
  * <package-name>@<current-version>).
  *
- * Per ogni package modificato:
- *   1. commit-and-tag-version locale --no-verify --tag-prefix "<name>@"
+ * For each changed package:
+ *   1. Local commit-and-tag-version --no-verify --tag-prefix "<name>@"
  *      → bump semver, CHANGELOG, commit + tag
- *   2. push del tag
- *   3. npm publish locale con le credenziali npm dell'utente
+ *   2. Push the tag
+ *   3. npm publish locally with the user's npm credentials
  *
- * Uso:
+ * Usage:
  *   node scripts/release.mjs
- *   node scripts/release.mjs --dry-run            (solo simulazione)
- *   node scripts/release.mjs --force / -f         (forza release anche senza modifiche)
+ *   node scripts/release.mjs --dry-run            (simulation only)
+ *   node scripts/release.mjs --force / -f         (force release even without changes)
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -32,7 +32,7 @@ const PACKAGES_DIR = join(ROOT, 'packages');
 const isDryRun = process.argv.includes('--dry-run') || process.argv.includes('-n');
 const isForced = process.argv.includes('--force') || process.argv.includes('-f');
 
-// ── Helper: esegue comando e ritorna stdout, oppure lancia errore ──────
+// ── Helper: runs a command and returns stdout, or throws ──────────────
 function exec(cmd, opts = {}) {
   return execSync(cmd, { cwd: ROOT, stdio: 'pipe', encoding: 'utf-8', ...opts });
 }
@@ -41,7 +41,7 @@ function execIn(pkgDir, cmd, opts = {}) {
   return execSync(cmd, { cwd: pkgDir, stdio: 'inherit', encoding: 'utf-8', ...opts });
 }
 
-// ── Helper: git tag esiste? ──────────────────────────────────────────────
+// ── Helper: does the git tag exist? ────────────────────────────────────
 function tagExists(tag) {
   try {
     exec(`git rev-parse "${tag}"`, { stdio: 'pipe' });
@@ -51,17 +51,17 @@ function tagExists(tag) {
   }
 }
 
-// ── Helper: ci sono modifiche nel package da quando è stato taggato? ────
+// ── Helper: has the package changed since it was tagged? ──────────────
 function packageHasChangesSinceTag(tag, pkgDir) {
   try {
     exec(`git diff --quiet "${tag}" -- "${pkgDir}"`, { stdio: 'pipe' });
-    return false; // nessuna modifica
+    return false; // no changes
   } catch {
-    return true; // ci sono modifiche
+    return true; // has changes
   }
 }
 
-// ── Helper: working tree pulito? ─────────────────────────────────────────
+// ── Helper: is the working tree clean? ─────────────────────────────────
 function isWorkingTreeClean() {
   try {
     const status = exec(`git status --porcelain`, { stdio: 'pipe' }).trim();
@@ -73,16 +73,16 @@ function isWorkingTreeClean() {
 
 // ── Main ──────────────────────────────────────────────────────────────
 console.log('═══════════════════════════════════════════');
-console.log('  release — rilascio estensioni');
+console.log('  release — extension publishing');
 console.log(`  dry-run: ${isDryRun ? '✓' : '✗'}`);
 console.log(`  force:   ${isForced ? '✓' : '✗'}`);
 console.log('═══════════════════════════════════════════\n');
 
 if (!isWorkingTreeClean()) {
   if (isDryRun) {
-    console.log('⚠  Working tree sporco — dry-run prosegue lo stesso (nessuna modifica reale).\n');
+    console.log('⚠  Working tree is dirty — dry-run proceeds anyway (no real changes).\n');
   } else {
-    console.error('✗ Working tree non pulito. Committa o stash prima di rilasciare.');
+    console.error('✗ Working tree is not clean. Commit or stash before releasing.');
     process.exit(1);
   }
 }
@@ -118,28 +118,28 @@ for (const pkg of packages) {
   try {
     pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf-8'));
   } catch {
-    console.log(`⚠  ${pkg}: package.json non valido, saltato`);
+    console.log(`⚠  ${pkg}: invalid package.json, skipped`);
     continue;
   }
 
   if (pkgJson.private) {
-    console.log(`⏭  ${pkgJson.name}: private, saltato`);
+    console.log(`⏭  ${pkgJson.name}: private, skipped`);
     skipped++;
     continue;
   }
 
-  // ── Validazione dual-use (npm contentPolicy) ──
+  // ── Dual-use validation (npm contentPolicy) ──
   if (pkgJson.contentPolicy === 'dual-use') {
     const disclosurePath = join(pkgPath, 'DISCLOSURE');
     if (!existsSync(disclosurePath)) {
-      console.error(`✗ ${pkgJson.name}: contentPolicy=dual-use ma DISCLOSURE non trovato.`);
-      console.error(`  Crea il file packages/${pkg}/DISCLOSURE e riprova.`);
+      console.error(`✗ ${pkgJson.name}: contentPolicy=dual-use but DISCLOSURE not found.`);
+      console.error(`  Create packages/${pkg}/DISCLOSURE and try again.`);
       process.exit(1);
     }
-    console.log(`   🔒 dual-use: DISCLOSURE presente ✓`);
+    console.log(`   🔒 dual-use: DISCLOSURE present ✓`);
     if (!isDryRun) {
-      console.log(`   ⚠  Pubblicazione dual-use richiede autenticazione npm con 2FA.`);
-      console.log(`   Assicurati che l'account npm abbia 2FA abilitato.`);
+      console.log(`   ⚠  Dual-use publishing requires npm authentication with 2FA.`);
+      console.log(`   Make sure the npm account has 2FA enabled.`);
     }
   }
 
@@ -148,59 +148,59 @@ for (const pkg of packages) {
   const tag = `${name}@${version}`;
 
   console.log(`\n── ${name} ────────────────────────────────`);
-  console.log(`   versione corrente: ${version}`);
+  console.log(`   current version: ${version}`);
 
-  // Un tag mancante indica un rilascio iniziale per questa versione.
+  // A missing tag indicates a first release for this version.
   const isFirstRelease = !tagExists(tag);
 
-  // Controlla se il tag esiste già
+  // Check whether the tag already exists
   if (!isFirstRelease) {
-    console.log(`   tag trovato: ${tag}`);
+    console.log(`   tag found: ${tag}`);
 
     if (!packageHasChangesSinceTag(tag, `packages/${pkg}`)) {
       if (isForced) {
-        console.log(`   ⚑ nessuna modifica ma --force presente, procedo comunque`);
+        console.log(`   ⚑ no changes but --force present, proceeding anyway`);
       } else {
-        console.log(`   ✓ nessuna modifica, saltato`);
+        console.log(`   ✓ no changes, skipped`);
         skipped++;
         continue;
       }
     }
-    console.log(`   ↻ modifiche rilevate, procedo con rilascio`);
+    console.log(`   ↻ changes detected, proceeding with release`);
   } else {
-    console.log(`   ⚑ nessun tag trovato, rilascio iniziale`);
+    console.log(`   ⚑ no tag found, initial release`);
   }
 
-  // ── Rilascio ──
+  // ── Release ──
   if (isDryRun) {
     console.log(`   [dry-run] commit-and-tag-version --tag-prefix "${name}@"`);
     execIn(pkgPath, standardVersionCommand(ROOT, name, true, isFirstRelease), { stdio: 'inherit' });
-    console.log(`   [dry-run] npm publish --access public (saltato)`);
+    console.log(`   [dry-run] npm publish --access public (skipped)`);
   } else {
     try {
       // Bump + tag
       execIn(pkgPath, standardVersionCommand(ROOT, name, false, isFirstRelease), { stdio: 'inherit' });
 
       // Push tag
-      console.log(`   → push tag...`);
+      console.log(`   → pushing tag...`);
       execIn(pkgPath, `git push --follow-tags origin main`, { stdio: 'inherit' });
 
-      // Pubblica localmente usando l'autenticazione npm dell'utente.
-      console.log(`   → pubblicazione npm...`);
+      // Publish locally using the user's npm credentials.
+      console.log(`   → npm publish...`);
       execIn(pkgPath, `npm publish --access public`, { stdio: 'inherit' });
 
       released++;
-      console.log(`   ✅ ${name}: pubblicato e tag inviato`);
+      console.log(`   ✅ ${name}: published and tag pushed`);
     } catch (err) {
-      console.error(`   ❌ Errore durante il rilascio di ${name}:`, err.message);
+      console.error(`   ❌ Error during release of ${name}:`, err.message);
       process.exit(1);
     }
   }
 }
 
 console.log('\n═══════════════════════════════════════════');
-console.log(`  Riepilogo:`);
-console.log(`  • rilasciati:     ${released}`);
-console.log(`  • saltati:      ${skipped}`);
-console.log(`  • totale pkg:   ${packages.length}`);
+console.log(`  Summary:`);
+console.log(`  • released:     ${released}`);
+console.log(`  • skipped:      ${skipped}`);
+console.log(`  • total pkgs:   ${packages.length}`);
 console.log('═══════════════════════════════════════════\n');

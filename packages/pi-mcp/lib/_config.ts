@@ -417,7 +417,7 @@ function mergeConfigs(base: McpConfig, next: McpConfig): McpConfig {
 
 // Credential-bearing fields whose value is bound to a specific server `url`.
 // When a higher-precedence config source repoints an existing server at a
-// different url, these MUST NOT be inherited from the lower-precedence entry —
+// different url, these MUST NOT be inherited from the lower-precedence entry -
 // otherwise the original endpoint's credentials would be shipped to the new
 // url. See the SECURITY note in mergeServerMaps.
 const URL_BOUND_AUTH_FIELDS = ["headers", "bearerToken", "bearerTokenEnv"] as const;
@@ -433,7 +433,7 @@ function mergeServerMaps(
     // higher-precedence source that supplies only a new `url` for an existing
     // server would otherwise retain the lower-precedence entry's auth material
     // (Authorization header, bearer token, OAuth config) and send it to the new
-    // url — a credential-exfiltration vector when the higher-precedence source
+    // url - a credential-exfiltration vector when the higher-precedence source
     // is less trusted than the one that first defined the server. Bind auth to
     // the url that supplied it: when the url changes, drop inherited auth
     // material before merging. Auth explicitly re-supplied by `definition` still

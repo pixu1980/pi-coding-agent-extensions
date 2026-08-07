@@ -1,5 +1,5 @@
 /**
- * pi-sessions — overlay flows (private module)
+ * pi-sessions - overlay flows (private module)
  *
  * /sessions and /projects overlay logic plus session restore.
  */

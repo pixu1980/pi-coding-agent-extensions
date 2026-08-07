@@ -1,5 +1,5 @@
 /**
- * pi-reasoning — e2e test suite (extension factory level)
+ * pi-reasoning - e2e test suite (extension factory level)
  *
  * Drives the extension factory with a mock ExtensionAPI: event handling,
  * the /reasoning command and the autocomplete provider wrapper.

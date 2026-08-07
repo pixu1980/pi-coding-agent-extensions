@@ -1,5 +1,5 @@
 /**
- * pi-ask — extension factory & command tests
+ * pi-ask - extension factory & command tests
  *
  * Uses the monorepo mock harness: runs the extension factory against a mock
  * ExtensionAPI and asserts tool/command registration, the /ask and

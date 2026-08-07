@@ -1,5 +1,5 @@
 /**
- * pi-path-picker — extension entry (factory)
+ * pi-path-picker - extension entry (factory)
  *
  * Registers the path autocomplete provider on session start.
  */

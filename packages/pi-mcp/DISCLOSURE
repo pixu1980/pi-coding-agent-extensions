@@ -1,10 +1,10 @@
-# DISCLOSURE — pi-mcp (@pixu1980/pi-mcp)
+# DISCLOSURE - pi-mcp (@pixu1980/pi-mcp)
 
 ## Purpose
 
 pi-mcp is a Model Context Protocol (MCP) adapter for the pi coding agent.
 It enables the LLM to discover, connect to, and invoke tools on MCP-compatible
-servers — both locally spawned processes and remote HTTP/SSE endpoints.
+servers - both locally spawned processes and remote HTTP/SSE endpoints.
 
 ## Dual-Use Capabilities
 

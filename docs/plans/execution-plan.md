@@ -1,73 +1,74 @@
-# Execution Plan — @pixu1980/pi-ask: domande interattive stile Claude Code
+# Execution Plan - @pixu1980/pi-ask: Claude Code-style interactive questions
 
-Obiettivo (richiesta utente): extension per pi-coding-agent che replichi il sistema di domande
-a risposta multipla / risposta singola di Claude Code, con possibilità di **aggiungere note**
-o **specificare una risposta custom**, per migliorare l'esperienza quando l'agente è in
-**modalità intervista** (raccolta requisiti, preferenze, conferme).
+Goal (user request): extension for pi-coding-agent that replicates the
+multiple-choice / single-answer question system of Claude Code, with the
+ability to **add notes** or **specify a custom answer**, to improve the
+experience when the agent is in **interview mode** (gathering requirements,
+preferences, confirmations).
 
-## Ricerca preliminare (fatta)
+## Preliminary research (done)
 
-pi fornisce già gli esempi `question.ts`, `questionnaire.ts` e `qna.ts` in
-`examples/extensions/` del pacchetto pi-coding-agent:
+pi already provides the examples `question.ts`, `questionnaire.ts`, and `qna.ts` in
+`examples/extensions/` of the pi-coding-agent package:
 
-- `question.ts` — singola domanda: lista opzioni (solo frecce ↑↓) + opzione "Type something."
-  con editor inline. Niente note, niente numeri rapidi, niente multi-select.
-- `questionnaire.ts` — multi-domanda con tab bar, tab "Submit" di riepilogo, "Type something"
-  per domanda. Solo frecce, niente note, niente multi-select.
-- `qna.ts` — estrae le domande dall'ultimo messaggio dell'assistente e le carica nell'editor
-  (pattern "prompt generator").
+- `question.ts` - single question: option list (arrow keys ↑↓ only) + "Type something."
+  with inline editor. No notes, no quick number keys, no multi-select.
+- `questionnaire.ts` - multi-question with tab bar, "Submit" summary tab, "Type something"
+  per question. Arrow keys only, no notes, no multi-select.
+- `qna.ts` - extracts questions from the last assistant message and loads them into the editor
+  ("prompt generator" pattern).
 
-Nessuno di questi è un package installabile e nessuno implementa: **selezione con tasti numerici
-(1-9)**, **note allegate alla risposta**, **multi-select**, **riepilogo modificabile prima del submit**,
-**skill/command per la modalità intervista**. La nostra extension colma questo gap come package
-pubblicabile nel monorepo (convenzioni come pi-path-picker).
+None of these is an installable package and none implements: **number key selection
+(1-9)**, **notes attached to answers**, **multi-select**, **editable summary before submit**,
+**skill/command for interview mode**. Our extension fills this gap as a publishable
+package in the monorepo (following conventions like pi-path-picker).
 
-## Decisioni di design
+## Design decisions
 
-| Scelta | Valore |
+| Decision | Value |
 |---|---|
-| Nome package | `@pixu1980/pi-ask` (tool: `ask`, `questionnaire`; command: `/interview`) |
-| Tasti | 1-9 per selezione rapida + ↑↓ + Enter; `n` per nota; `Space` per multi-select; `Tab/←→` per navigazione domande; `Esc` annulla |
-| Nota | Dopo aver scelto, tasto `n` apre editor inline → la nota viaggia con la risposta nei `details` |
-| Risposta custom | Opzione "Type something." con editor inline (come negli esempi, ma riusabile) |
-| Multi-select | Flag `multiSelect` per domanda: checkbox `[x]/[ ]`, riepilogo con conteggio |
-| Review finale | Questionnaire: tab "Submit" con riepilogo di tutte le risposte, Enter conferma, Tab torna indietro a modificare |
-| Fallback non-TUI | In modalità `print`/`rpc`/`json` il tool ritorna la domanda senza risposta (come negli esempi) |
-| Skill | `skills/interview/SKILL.md`: istruisce il modello a usare `ask`/`questionnaire` quando fa domande, con linee guida (max opzioni, quando usare multiSelect, ecc.) |
-| Command | `/interview <topic>`: avvia la modalità intervista mandando un messaggio al modello che lo istruisce a fare domande una alla volta con `ask` |
+| Package name | `@pixu1980/pi-ask` (tools: `ask`, `interview`; command: `/ask-interview`) |
+| Keys | 1-9 for quick selection + ↑↓ + Enter; `n` for note; `Space` for multi-select; `Tab/←→` for question navigation; `Esc` cancel |
+| Note | After choosing, `n` key opens inline editor → note travels with the answer in `details` |
+| Custom answer | "Type something." option with inline editor (like the examples, but reusable) |
+| Multi-select | `multiSelect` flag per question: checkbox `[x]/[ ]`, summary with count |
+| Final review | Interview: "Submit" tab with summary of all answers, Enter confirms, Tab goes back to edit |
+| Non-TUI fallback | In `print`/`rpc`/`json` mode the tool returns the question without an answer (like the examples) |
+| Skill | `skills/interview/SKILL.md`: instructs the model to use `ask`/`interview` when asking questions, with guidelines (max options, when to use multiSelect, etc.) |
+| Command | `/ask-interview <topic>`: starts interview mode by sending a message to the model instructing it to ask questions one at a time via `ask` |
 
-## Phase 1 — Scaffold + fondamenti (TDD)
+## Phase 1 - Scaffold + fundamentals (TDD)
 
-- [x] 1. Scaffold `packages/pi-ask/` (package.json con manifest `pi`, peer deps, keywords `pi-package`; index.ts barrel; lib/; __tests__/; README.md; skills/)
-- [x] 2. `lib/_types.ts`: schemi TypeBox (`Option`, `Question`, `AskParams`, `QuestionnaireParams`) + tipi TS + helper puri (`normalizeQuestions`, `buildAskOptions`, `formatAnswerSummary`)
-- [x] 3. Test `__tests__/_types.test.mjs`: validazione schemi + helper puri (prima falliscono, poi passano)
+- [x] 1. Scaffold `packages/pi-ask/` (package.json with `pi` manifest, peer deps, `pi-package` keyword; index.ts barrel; lib/; __tests__/; README.md; skills/)
+- [x] 2. `lib/_types.ts`: TypeBox schemas (`Option`, `Question`, `AskParams`, `InterviewParams`) + TS types + pure helpers (`normalizeQuestions`, `buildAskOptions`, `formatAnswerSummary`)
+- [x] 3. Test `__tests__/_types.test.mjs`: schema validation + pure helpers (first fail, then pass)
 
-## Phase 2 — Tool `ask` (domanda singola)
+## Phase 2 - `ask` tool (single question)
 
-- [x] 4. `lib/_ask.ts`: componente `ctx.ui.custom` — opzioni numerate (1-9 + frecce), nota con `n`, "Type something", multi-select opzionale, fallback non-TUI
-- [x] 5. Registrazione tool in `index.ts` con `renderCall`/`renderResult` compatti
-- [x] 6. Test: logica selezione/nota/custom/multi (separata dalla UI in `_logic.ts` per testabilità) + test UI con driver fake TUI (harness del monorepo)
+- [x] 4. `lib/_ask.ts`: `ctx.ui.custom` component - numbered options (1-9 + arrows), note with `n`, "Type something", optional multi-select, non-TUI fallback
+- [x] 5. Tool registration in `index.ts` with compact `renderCall`/`renderResult`
+- [x] 6. Test: selection/note/custom/multi logic (separated from UI in `_logic.ts` for testability) + UI test with fake TUI driver (monorepo harness)
 
-## Phase 3 — Tool `questionnaire` (multi-domanda)
+## Phase 3 - `interview` tool (multi-question)
 
-- [x] 7. `lib/_questionnaire.ts`: tab bar (domande + Submit), nota per domanda, custom per domanda, multi-select per domanda, riepilogo modificabile
-- [x] 8. Registrazione tool + `renderCall`/`renderResult`
-- [x] 9. Test: navigazione, mappa risposte, submit/cancel (driver fake TUI, 8 test)
+- [x] 7. `lib/_interview.ts`: tab bar (questions + Submit), per-question note, per-question custom, per-question multi-select, editable summary
+- [x] 8. Tool registration + `renderCall`/`renderResult`
+- [x] 9. Test: navigation, answer map, submit/cancel (fake TUI driver, 8 tests)
 
-## Phase 4 — Modalità intervista
+## Phase 4 - Interview mode
 
-- [x] 10. `skills/interview/SKILL.md` (guidelines per il modello: quando usare `ask` vs `questionnaire`, come formulare opzioni)
-- [x] 11. Command `/interview <topic>`: messaggio al modello che lo istruisce a porre domande una alla volta via `ask`
-- [x] 12. Test: skill esiste, command registrato, prompt inviato come followUp (harness del monorepo)
+- [x] 10. `skills/interview/SKILL.md` (guidelines for the model: when to use `ask` vs `interview`, how to formulate options)
+- [x] 11. Command `/ask-interview <topic>`: message to the model instructing it to ask questions one at a time via `ask`
+- [x] 12. Test: skill exists, command registered, prompt sent as followUp (monorepo harness)
 
-## Phase 5 — Polish + docs + release
+## Phase 5 - Polish + docs + release
 
-- [x] 13. README completo (install, usage, tasti, banner SVG in stile monorepo)
-- [x] 14. `test:all` del monorepo verde (7/7 package, 245 test) + smoke test con `pi -e .` reale
-- [ ] 15. Bump versione + CHANGELOG + tag + publish npm (`node scripts/release.mjs`) — **in attesa di ok utente**
+- [x] 13. Complete README (install, usage, keys, monorepo-style SVG banner)
+- [x] 14. Monorepo `test:all` green (7/7 packages, 245 tests) + smoke test with real `pi -e .`
+- [ ] 15. Bump version + CHANGELOG + tag + publish npm (`node scripts/release.mjs`) - **awaiting user OK**
 
-## Fuori scope (candidati futuri)
+## Out of scope (future candidates)
 
-- Overlay flottante (pattern `overlay-qa-tests.ts`) per rispondere senza perdere il contesto
-- Estrazione automatica domande dall'ultimo messaggio (`qna.ts`) come command `/qna`
-- Preferenze utente persistenti (risposta "always" / "remember")
+- Floating overlay (`overlay-qa-tests.ts` pattern) to answer without losing context
+- Automatic question extraction from last message (`qna.ts`) as `/qna` command
+- Persistent user preferences ("always" / "remember" answers)

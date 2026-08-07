@@ -227,7 +227,7 @@ function extractMessageText(message: PromptMessage): string {
       return `[resource ${resource.uri}]`;
     }
     case "resource_link":
-      return `[resource_link ${content.uri ?? ""}${content.name ? ` — ${content.name}` : ""}]`;
+      return `[resource_link ${content.uri ?? ""}${content.name ? ` - ${content.name}` : ""}]`;
     case "image":
       return `[image ${content.mimeType ?? "unknown"}${content.data ? " (embedded)" : ""}]`;
     case "audio":

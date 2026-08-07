@@ -1,5 +1,5 @@
 /**
- * pi-ask — `ask` tool tests
+ * pi-ask - `ask` tool tests
  *
  * Exercises the parts of the tool that run without a terminal: metadata,
  * the non-TUI fallback, and the empty-options guard. The interactive

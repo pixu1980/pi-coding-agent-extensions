@@ -1,5 +1,5 @@
 /**
- * pi-path-picker — autocomplete provider wrapper
+ * pi-path-picker - autocomplete provider wrapper
  *
  * Wraps the native provider and adds ~ expansion and path-aware completion
  * inside quoted strings. Private module (underscore prefix).
@@ -33,7 +33,7 @@ export function createPathAutocompleteProvider(
       const textBeforeCursor = currentLine.slice(0, cursorCol);
       const delimiterContext = getDelimiterContext(currentLine, cursorCol);
 
-      // Senza quote relative al cursore il wrapper è trasparente.
+      // Without cursor-relative quotes the wrapper is transparent.
       if (delimiterContext === "outside") {
         return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
@@ -43,7 +43,7 @@ export function createPathAutocompleteProvider(
         return null;
       }
 
-      // Dentro la coppia, solo Tab (`force`) può attivare il path picker.
+      // Inside the pair, only Tab (`force`) can activate the path picker.
       if (!options.force || options.signal.aborted) {
         return null;
       }
@@ -108,7 +108,7 @@ export function createPathAutocompleteProvider(
       const textAfterCursor = currentLine.slice(cursorCol);
       const token = getDelimiterContext(currentLine, cursorCol) === "inside" ? extractPathToken(textBeforeCursor) : null;
 
-      // Se i suggerimenti provengono da un provider che non è il path picker
+      // If suggestions come from a provider that is not the path picker
       // (comandi slash nativi, @file, argomenti comandi, ecc.),
       // deleghiamo al provider sottostante.
       if (!token || token.path !== prefix) {
@@ -141,7 +141,7 @@ export function createPathAutocompleteProvider(
       }
 
       // Dentro una coppia valida o rotta richiama getSuggestions:
-      // solo un risultato null può chiudere immediatamente un menu stale.
+      // only a null result can immediately close a stale menu.
       return true;
     },
   };

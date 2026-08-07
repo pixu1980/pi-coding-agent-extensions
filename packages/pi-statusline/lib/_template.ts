@@ -1,5 +1,5 @@
 /**
- * pi-statusline — Template parser & compiler
+ * pi-statusline - Template parser & compiler
  *
  * Known tokens (13):
  *   {project} {branch} {git_status} {git_ahead} {git_behind} {git_dirty}

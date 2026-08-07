@@ -1,5 +1,5 @@
 /**
- * pi-statusline — Types & Constants
+ * pi-statusline - Types & Constants
  */
 
 // ── Statusline Data ────────────────────────────────────────────

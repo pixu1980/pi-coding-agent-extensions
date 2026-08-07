@@ -1,5 +1,5 @@
 /**
- * pi-reasoning — thinking level resolution helpers (private module)
+ * pi-reasoning - thinking level resolution helpers (private module)
  */
 
 import {

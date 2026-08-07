@@ -1,5 +1,5 @@
 /**
- * pi-statusline — extension entry (factory)
+ * pi-statusline - extension entry (factory)
  *
  * Dual-line status display: a template-based widget below the editor
  * (project, git, model, effort, context) and a footer with MCP server

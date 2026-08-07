@@ -1,11 +1,11 @@
 /**
- * pi-statusline — unit + e2e test suite
+ * pi-statusline - unit + e2e test suite
  *
  * Run: node --import tsx --test index.test.mjs
  *
  * - Unit: colors (fmtTokens/gradient), template (validate/resolve/compile/render),
  *   git status detection (temp repo), settings persistence
- * - E2E: extension factory with mock ExtensionAPI — widget + footer registration,
+ * - E2E: extension factory with mock ExtensionAPI - widget + footer registration,
  *   /statusline command (default / settings / template / reload)
  *
  * All filesystem side effects are isolated under PI_CODING_AGENT_DIR (temp dir).
@@ -319,7 +319,7 @@ test("renderResponsive: custom short project name already stays put", () => {
   assert.ok(strip(l2).includes("P: my-app"));
 });
 
-// ── Unit: git detection (uses process.cwd — temp repo) ────────────
+// ── Unit: git detection (uses process.cwd - temp repo) ────────────
 
 function withTempGitRepo(fn) {
   const originalCwd = process.cwd();

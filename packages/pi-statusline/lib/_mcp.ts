@@ -1,5 +1,5 @@
 /**
- * pi-statusline — MCP server info (private module)
+ * pi-statusline - MCP server info (private module)
  *
  * Reads the number of configured/connected MCP servers from the agent dir,
  * with a short TTL cache.

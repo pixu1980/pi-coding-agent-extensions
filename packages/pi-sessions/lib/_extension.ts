@@ -1,5 +1,5 @@
 /**
- * pi-sessions — extension entry (factory)
+ * pi-sessions - extension entry (factory)
  *
  * Registers /sessions and /projects overlays and auto-names sessions from
  * the first user message.

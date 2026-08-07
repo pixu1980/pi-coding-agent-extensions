@@ -84,7 +84,7 @@ export function guardedMcpDetails(guarded: GuardedMcpOutput): Record<string, unk
 
 /**
  * Bound model-facing MCP output. Text output is capped at maxBytes/maxLines and
- * spilled to a temp file when oversized. Image blocks pass through untouched —
+ * spilled to a temp file when oversized. Image blocks pass through untouched -
  * they are delivered to the provider as native image content, not text context.
  */
 export async function guardMcpOutput(
@@ -251,7 +251,7 @@ function formatTruncationNotice(
 ): string {
   const base = `[MCP text output truncated: original ${stats.lines.toLocaleString()} lines / ${formatSize(stats.bytes)}.`;
   if (fullOutputPath) {
-    return `${base} Full text saved to: ${fullOutputPath} — use read with offset/limit or grep to inspect.]`;
+    return `${base} Full text saved to: ${fullOutputPath} - use read with offset/limit or grep to inspect.]`;
   }
   return `${base} Full output could not be saved: ${writeError ?? "unknown error"}]`;
 }

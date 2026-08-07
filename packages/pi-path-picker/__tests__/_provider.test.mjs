@@ -1,5 +1,5 @@
 /**
- * pi-path-picker — e2e test suite (autocomplete provider)
+ * pi-path-picker - e2e test suite (autocomplete provider)
  *
  * Run: node --import tsx --test index.test.mjs
  *

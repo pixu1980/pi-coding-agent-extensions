@@ -1,10 +1,10 @@
 /**
- * pi-reasoning — internal constants and types (private module)
+ * pi-reasoning - internal constants and types (private module)
  */
 
 /**
  * Thinking levels as defined by pi.dev.
- * This is the canonical order — matches what pi.dev exposes via
+ * This is the canonical order - matches what pi.dev exposes via
  * model.thinkingLevelMap and SHIFT+TAB native autocomplete.
  */
 export type ThinkingLevel =

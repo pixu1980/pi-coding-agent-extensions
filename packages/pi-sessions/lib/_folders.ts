@@ -1,5 +1,5 @@
 /**
- * pi-sessions — folder grouping (private module)
+ * pi-sessions - folder grouping (private module)
  */
 
 import type { SessionSummary, FolderSummary } from "./_types.ts";

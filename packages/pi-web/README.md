@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="./lib/banner.svg" alt="pi-web — clean web pages for context" width="1100">
+  <img src="./lib/banner.svg" alt="pi-web - clean web pages for context" width="1100">
 </p>
 
 # pi-web
 
-Scrape any webpage into clean, context-ready **Markdown** for [pi.dev](https://pi.dev). Fetch one or more URLs, get readable Markdown with title/source metadata, and pull the rest of a long page in bounded slices — everything you need to drop web content straight into the conversation context.
+Scrape any webpage into clean, context-ready **Markdown** for [pi.dev](https://pi.dev). Fetch one or more URLs, get readable Markdown with title/source metadata, and pull the rest of a long page in bounded slices - everything you need to drop web content straight into the conversation context.
 
 > **Inspiration:** this package is inspired by [pi-web-access](https://github.com/nicobailon/pi-web-access) by Nicolás Bailon and uses the same extraction stack it popularized (`@mozilla/readability` + `turndown` + `linkedom`). pi-web focuses on the **fetch → Markdown** part only and intentionally drops the search-result "curator" browser UI: a scraper is synchronous and deterministic (ask for a page, get the page), so an interactive curation layer adds friction instead of value. Web search stays covered by pi-web-access / the built-in search tools.
 
@@ -16,7 +16,7 @@ pi install npm:@pixu1980/pi-web
 
 ## Tools
 
-### `pi_web_fetch` — URL(s) → Markdown
+### `pi_web_fetch` - URL(s) → Markdown
 
 Fetches one or more URLs, extracts the readable content with Readability, and converts it to Markdown with Turndown. The output is a Markdown document ready to drop into context:
 
@@ -36,11 +36,11 @@ Parameters:
 | Param | Description |
 |-------|-------------|
 | `url` / `urls` | Single URL or array of URLs (fetched in parallel, concurrency-capped) |
-| `raw` | Skip Readability and convert the whole page body — keeps tables and code blocks. Useful for docs/API pages. |
+| `raw` | Skip Readability and convert the whole page body - keeps tables and code blocks. Useful for docs/API pages. |
 | `maxChars` | Max chars of Markdown returned inline (default 12000) |
 | `timeoutMs` | Per-request timeout (default 30000) |
 
-### `pi_web_read` — bounded slices
+### `pi_web_read` - bounded slices
 
 Pages are cached in memory (and restored from the session on reload). Pass the `id` from a `pi_web_fetch` result plus an `offset` to read the next chunk:
 
@@ -70,7 +70,7 @@ Create `~/.pi/pi-web.json`:
 }
 ```
 
-`allowRanges` is the SSRF allowlist — add private/loopback ranges (CIDR or literal IPs) to permit local development servers.
+`allowRanges` is the SSRF allowlist - add private/loopback ranges (CIDR or literal IPs) to permit local development servers.
 
 ## Security
 

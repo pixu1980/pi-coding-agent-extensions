@@ -1,5 +1,5 @@
 /**
- * pi-web — e2e test suite (extension factory level)
+ * pi-web - e2e test suite (extension factory level)
  *
  * Run: node --import tsx --test index.e2e.test.mjs
  *

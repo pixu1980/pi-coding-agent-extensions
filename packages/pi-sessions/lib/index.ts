@@ -1,5 +1,5 @@
 /**
- * pi-sessions — public barrel (lib)
+ * pi-sessions - public barrel (lib)
  *
  * Exposes the extension entry only; parsing/components/overlays stay private.
  */

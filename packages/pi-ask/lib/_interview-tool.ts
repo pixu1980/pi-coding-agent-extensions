@@ -1,5 +1,5 @@
 /**
- * pi-ask — `interview` tool (multi-question, sequential questionnaires)
+ * pi-ask - `interview` tool (multi-question, sequential questionnaires)
  *
  * Renders one questionnaire at a time with a tab bar, a review/Submit tab,
  * per-question notes (`n`), custom answers ("Type something.") and
@@ -8,17 +8,17 @@
  * The caller controls the structure: pass `waves` with a label and any
  * number of questions per wave (decided by hierarchical/structural
  * criteria, e.g. sections, difficulty, phases). Each wave runs as its own
- * sequential questionnaire, respected in full — never split, even beyond
+ * sequential questionnaire, respected in full - never split, even beyond
  * 10 questions. The next questionnaire only starts after the user confirms
  * the previous one, so a two-wave study becomes two questionnaires with a
  * confirmation step in between. Answers are aggregated across waves in the
  * final result. A flat `questions` list is a single unlabelled wave.
  *
- * Inside a questionnaire: left/right arrows (or Tab) switch tabs freely —
+ * Inside a questionnaire: left/right arrows (or Tab) switch tabs freely -
  * the user can hop between questions at will, answering each one with
  * digits (record + advance) or by highlighting an option with ↑/↓. Enter
  * on a question tab records the highlighted option (or the current
- * multi-selects) and advances to the next question — on the last question
+ * multi-selects) and advances to the next question - on the last question
  * it lands on the review tab, where Enter submits the questionnaire and
  * moves on to the next one. A note is armed with `n` before selecting and
  * travels with the next answer.
@@ -81,7 +81,7 @@ interface WaveChunk {
 }
 
 /**
- * Each wave becomes one sequential questionnaire, respected in full — no
+ * Each wave becomes one sequential questionnaire, respected in full - no
  * splitting, whatever the question count. A flat list is a single wave.
  */
 function buildChunks(waves: NormalizedWave[]): WaveChunk[] {
@@ -106,7 +106,7 @@ export function createInterviewTool(): ToolDefinition<typeof InterviewParams, In
 		name: "interview",
 		label: "Interview",
 		description:
-			"Ask the user a structured set of questions (interview). The caller controls the structure via `waves`: each wave is a labelled group of questions with any length (hierarchical/structural criteria decide the grouping), executed as a sequential questionnaire — respected in full, never split. Each question supports options, custom answers and notes; a review tab shows all answers before submission. Use for questionnaires, requirements gathering, or multi-wave studies.",
+			"Ask the user a structured set of questions (interview). The caller controls the structure via `waves`: each wave is a labelled group of questions with any length (hierarchical/structural criteria decide the grouping), executed as a sequential questionnaire - respected in full, never split. Each question supports options, custom answers and notes; a review tab shows all answers before submission. Use for questionnaires, requirements gathering, or multi-wave studies.",
 		parameters: InterviewParams,
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
@@ -228,7 +228,7 @@ export function createInterviewTool(): ToolDefinition<typeof InterviewParams, In
 					}
 
 					/**
-					 * Record the answers and move to the next tab — on the last
+					 * Record the answers and move to the next tab - on the last
 					 * question this lands on the review tab (digit and Enter flow).
 					 */
 					function recordAndAdvance(s: QuestionSession, answers: SelectAnswer[]) {
@@ -426,7 +426,7 @@ export function createInterviewTool(): ToolDefinition<typeof InterviewParams, In
 						if (chunk.waveLabel) headerBits.push(theme.fg("accent", theme.bold(chunk.waveLabel)));
 						if (chunk.total > 1) headerBits.push(theme.fg("muted", `Questionnaire ${chunk.position}/${chunk.total}`));
 						if (headerBits.length > 0) {
-							addWrappedWithPrefix(" ", headerBits.join(" — "));
+							addWrappedWithPrefix(" ", headerBits.join(" - "));
 							lines.push("");
 						}
 						const tabs: string[] = ["← "];

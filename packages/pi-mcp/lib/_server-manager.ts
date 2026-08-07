@@ -242,8 +242,8 @@ export class McpServerManager {
 
   /**
    * Reconnect a server whose connection was proven stale (e.g. by a 404
-   * "session no longer exists" response). Single-flight per server name —
-   * concurrent callers that raced to the same failure share one reconnect —
+   * "session no longer exists" response). Single-flight per server name -
+   * concurrent callers that raced to the same failure share one reconnect -
    * and identity-guarded: `staleConnection` is only torn down if it is
    * still the manager's current connection for `name`. If a concurrent
    * reconnect (or an unrelated connect()) already replaced it with a fresh
@@ -387,7 +387,7 @@ export class McpServerManager {
       // connection from before a session-recovery reconnect) can never
       // clobber a fresh connection that has since taken its place in
       // `this.connections`. This intentionally uses `client.onclose`
-      // (Protocol's public hook), not `transport.onclose` — the SDK's
+      // (Protocol's public hook), not `transport.onclose` - the SDK's
       // Protocol takes ownership of that one internally for pending-request
       // rejection, and overwriting it would break that. `client.onerror` is
       // avoided too: it can fire on benign events (e.g. the optional GET
@@ -449,7 +449,7 @@ export class McpServerManager {
         const lines = stderrText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
         if (lines.length > 0) {
           const baseMessage = reportedError instanceof Error ? reportedError.message : String(reportedError);
-          const detail = lines.slice(-MAX_CAPTURED_STDERR_LINES).join(" — ");
+          const detail = lines.slice(-MAX_CAPTURED_STDERR_LINES).join(" - ");
           throw new Error(`${baseMessage} (${detail})`, { cause: reportedError });
         }
       }

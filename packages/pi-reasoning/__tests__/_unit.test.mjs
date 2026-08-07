@@ -1,5 +1,5 @@
 /**
- * pi-reasoning — unit + e2e test suite
+ * pi-reasoning - unit + e2e test suite
  *
  * Run: node --import tsx --test index.test.mjs
  *

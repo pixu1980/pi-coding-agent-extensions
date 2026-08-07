@@ -1,5 +1,5 @@
 /**
- * pi-statusline — Git status detection
+ * pi-statusline - Git status detection
  *
  * Uses execSync for synchronous git queries with a lightweight TTL cache
  * to avoid running git commands on every TUI render.
@@ -99,7 +99,7 @@ export function getGitStatus(cwd: string, force = false): { status: GitStatus | 
 }
 
 /**
- * Invalidate git cache — call when branch changes.
+ * Invalidate git cache - call when branch changes.
  */
 export function invalidateGitCache(): void {
   cache = null;

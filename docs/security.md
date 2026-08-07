@@ -1,80 +1,80 @@
 # npm Supply-Chain Security Checklist
 
-Basato su _[The secure way to release an npm package in 2026](https://evilmartians.com/chronicles/the-secure-way-to-release-an-npm-package-in-2026)_ di Evil Martians.
+Based on _[The secure way to release an npm package in 2026](https://evilmartians.com/chronicles/the-secure-way-to-release-an-npm-package-in-2026)_ by Evil Martians.
 
-## Cosa è già attivo
+## Already active
 
-- **Dependency cooldown**: `.npmrc` ha `minimumReleaseAge=4320` (3 giorni) — richiede pnpm ≥ 11.
-- **CI di test**: `.github/workflows/ci.yaml` esegue test su ogni push a `main` e PR.
-- **CI workflow linting**: `.github/workflows/check-workflows.yaml` esegue zizmor su tutti i workflow.
-- **Action pinnate via SHA commit**: tutte le action nei workflow usano hash SHA, non tag.
-- **`persist-credentials: false`**: ogni step di checkout disabilita la persistenza del token Git.
-- **`--ignore-scripts`**: gli script `postinstall` delle dipendenze non vengono eseguiti in CI.
-- **pnpm 11**: i `postinstall` scripts sono disabilitati di default.
+- **Dependency cooldown**: `.npmrc` has `minimumReleaseAge=4320` (3 days) — requires pnpm ≥ 11.
+- **Test CI**: `.github/workflows/ci.yaml` runs tests on every push to `main` and PRs.
+- **CI workflow linting**: `.github/workflows/check-workflows.yaml` runs zizmor on all workflows.
+- **Actions pinned by SHA commit**: all actions in workflows use SHA hashes, not tags.
+- **`persist-credentials: false`**: every checkout step disables Git token persistence.
+- **`--ignore-scripts`**: dependency `postinstall` scripts are not executed in CI.
+- **pnpm 11**: `postinstall` scripts are disabled by default.
 
-## ⚠️ Azioni manuali rimanenti (da fare tu)
+## ⚠️ Remaining manual actions (for you to do)
 
-Queste operazioni richiedono i permessi owner/admin e vanno fatte **manualmente**
-una volta sola. L'ordine è quello consigliato.
+These operations require owner/admin permissions and must be done **manually**
+once. The order is the recommended one.
 
 ---
 
-### 1. GitHub: proteggere la creazione dei tag
+### 1. GitHub: protect tag creation
 
 → <https://github.com/pixu1980/pi-coding-agent-extensions/settings/rules>
 
-Premi **New ruleset** → **New tag ruleset** e imposta:
+Click **New ruleset** → **New tag ruleset** and set:
 
-| Campo | Valore |
+| Field | Value |
 |---|---|
 | Ruleset Name | `Tags only by admins` |
 | Enforcement status | `Active` |
 | Bypass list | `Repository admins` |
 | Target tags | `Include all tags` |
 
-Poi attiva l'unica regola:
+Then enable the only rule:
 
 - ☑ **Restrict creations**
 
-Questo impedisce a chiunque tranne gli admin di creare tag. Dato che la release
-parte proprio da un `git tag` (vedi `scripts/release.mjs`), bloccare i tag
-blocca il vettore d'attacco.
+This prevents anyone except admins from creating tags. Since the release
+starts from a `git tag` (see `scripts/release.mjs`), blocking tags
+blocks the attack vector.
 
 ---
 
-### 2. GitHub: abilitare Immutable Releases
+### 2. GitHub: enable Immutable Releases
 
 → <https://github.com/pixu1980/pi-coding-agent-extensions/settings>
 
-Scorri fino alla sezione **Releases** e attiva:
+Scroll to the **Releases** section and enable:
 
 - ☑ **Immutable Releases**
 
-Impedisce che un release già pubblicato venga modificato o cancellato.
+Prevents an already-published release from being modified or deleted.
 
 ---
 
-### 3. GitHub Organization: richiedere 2FA per tutti
+### 3. GitHub Organization: require 2FA for everyone
 
 → <https://github.com/organizations/pixu1980/settings/security>
 
-Nella sezione **Authentication security**:
+Under **Authentication security**:
 
 - ☑ **Require two-factor authentication for everyone in the organization**
 
-Se l'organizzazione `pixu1980` non esiste ancora (repo personale), questo passo
-si applica al singolo account GitHub: verifica che la 2FA sia attiva su
+If the `pixu1980` organization doesn't exist yet (personal repo), this step
+applies to the individual GitHub account: verify 2FA is active at
 <https://github.com/settings/security>.
 
 ---
 
-### 4. npm: richiedere 2FA su ogni pacchetto pubblico
+### 4. npm: require 2FA on every public package
 
-Apri in successione queste pagine e per ognuna attiva il flag:
+Open these pages in order and enable the flag on each:
 
 - ☑ **Require two-factor authentication or automation tokens**
 
-| Pacchetto | Link impostazioni |
+| Package | Settings link |
 |---|---|
 | `@pixu1980/pi-web` | <https://www.npmjs.com/package/@pixu1980/pi-web/access> |
 | `@pixu1980/pi-mcp` | <https://www.npmjs.com/package/@pixu1980/pi-mcp/access> |
@@ -86,71 +86,71 @@ Apri in successione queste pagine e per ognuna attiva il flag:
 
 ---
 
-### 5. npm account: attivare 2FA personale
+### 5. npm account: enable personal 2FA
 
 → <https://www.npmjs.com/settings/pixu1980/tfa>
 
-Attiva la **Two-Factor Authentication** sul tuo account npm personale.
-Preferisci una **hardware key** (YubiKey) se disponibile, altrimenti
-un'app TOTP. La 2FA è obbligatoria per pubblicare pacchetti dual-use.
+Enable **Two-Factor Authentication** on your personal npm account.
+Prefer a **hardware key** (YubiKey) if available, otherwise a
+TOTP app. 2FA is required to publish dual-use packages.
 
-> ℹ️ **NON disabilitare i token** ("disallow tokens" nelle impostazioni
-di publishing access). Questa repo pubblica da locale con `npm login` +
-`npm publish` — il token è necessario. Disabilitarlo bloccherebbe le release.
+> ℹ️ **Do NOT disable tokens** ("disallow tokens" in publishing access
+settings). This repo publishes locally via `npm login` +
+`npm publish` — the token is needed. Disabling it would break releases.
 
 ---
 
-### 6. Verifica finale
+### 6. Final check
 
-Dopo aver completato i 5 passi sopra, verifica:
+After completing the 5 steps above, verify:
 
 ```bash
-# Controlla che la 2FA npm sia attiva
+# Check that npm 2FA is active
 npm whoami
-# Deve restituire il tuo username senza errori (vuol dire che hai fatto login con 2FA)
+# Should return your username without errors (means you logged in with 2FA)
 
-# Simula una release per verificare che tutto funzioni
+# Simulate a release to verify everything works
 node scripts/release.mjs --dry-run
 ```
 
 ## Dual-Use Content Policy
 
-I pacchetti con capacità security-relevant devono dichiararlo tramite il campo `contentPolicy` in `package.json` e includere un file `DISCLOSURE`.
+Packages with security-relevant capabilities must declare them via the `contentPolicy` field in `package.json` and include a `DISCLOSURE` file.
 
-| Pacchetto | Dual-Use | Motivazione |
+| Package | Dual-Use | Reason |
 |---|---|---|
-| `@pixu1980/pi-web` | ✅ | Fetch arbitrario di URL, bypass SSRF configurabile |
-| `@pixu1980/pi-mcp` | ✅ | Process spawning, OAuth, connessioni di rete, keyring |
-| `@pixu1980/pi-ask` | ❌ | Solo UI interattiva |
-| `@pixu1980/pi-path-picker` | ❌ | Solo UI interattiva |
-| `@pixu1980/pi-reasoning` | ❌ | Solo config management |
-| `@pixu1980/pi-sessions` | ❌ | Solo UI overlay |
-| `@pixu1980/pi-statusline` | ❌ | Solo UI display |
+| `@pixu1980/pi-web` | ✅ | Arbitrary URL fetching, configurable SSRF bypass |
+| `@pixu1980/pi-mcp` | ✅ | Process spawning, OAuth, network connections, keyring |
+| `@pixu1980/pi-ask` | ❌ | Interactive UI only |
+| `@pixu1980/pi-path-picker` | ❌ | Interactive UI only |
+| `@pixu1980/pi-reasoning` | ❌ | Config management only |
+| `@pixu1980/pi-sessions` | ❌ | UI overlay only |
+| `@pixu1980/pi-statusline` | ❌ | UI display only |
 
-### Requisiti per pacchetti dual-use
+### Requirements for dual-use packages
 
-- **`contentPolicy: "dual-use"`** in `package.json` — obbligatorio, persistente (non rimuovibile nelle versioni future)
-- **File `DISCLOSURE`** nella root del package — descrive le capability dual-use e il loro uso legittimo
-- **Pubblicazione con 2FA obbligatoria** — il nostro `npm login` + `npm publish` interattivo soddisfa questo requisito (richiede 2FA sull'account npm)
+- **`contentPolicy: "dual-use"`** in `package.json` — required, persistent (cannot be removed in future versions)
+- **`DISCLOSURE` file** in the package root — describes the dual-use capabilities and their legitimate use
+- **2FA-enforced publishing** — our `npm login` + `npm publish` interactive flow satisfies this requirement (requires 2FA on the npm account)
 
-Lo script `scripts/release.mjs` valida automaticamente la presenza del file DISCLOSURE per i pacchetti dual-use.
+The `scripts/release.mjs` script automatically validates the DISCLOSURE file presence for dual-use packages.
 
-## Perché non usiamo Trusted Publishing / Staged Publishing
+## Why we don't use Trusted Publishing / Staged Publishing
 
-Trusted Publishing e `npm stage publish` richiedono che la pubblicazione avvenga da CI con `id-token: write`. Questo richiederebbe di:
+Trusted Publishing and `npm stage publish` require publishing from CI with `id-token: write`. This would require:
 
-- Spostare tutto il processo di release in CI
-- Configurare Trusted Publishing su npm per ogni package
-- Disabilitare i token di autenticazione
+- Moving the entire release process to CI
+- Configuring Trusted Publishing on npm for each package
+- Disabling authentication tokens
 
-Al momento preferiamo mantenere il rilascio locale (`scripts/release.mjs`) perché:
-- Maggior controllo sul processo di versioning e changelog
-- Il maintainer ha una YubiKey/npm 2FA per l'autenticazione
-- Meno superficie d'attacco: nessun workflow CI con permessi di pubblicazione
+We currently prefer to keep local releases (`scripts/release.mjs`) because:
+- More control over the versioning and changelog process
+- The maintainer has a YubiKey/npm 2FA for authentication
+- Smaller attack surface: no CI workflow with publish permissions
 
-## Aggiornare le action
+## Updating actions
 
-Ogni tanto esegui per aggiornare gli SHA delle action ai commit più recenti:
+Run periodically to update action SHAs to the latest commits:
 
 ```bash
 npx actions-up

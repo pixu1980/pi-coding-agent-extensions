@@ -1,5 +1,5 @@
 /**
- * pi-statusline — e2e test suite (extension factory level)
+ * pi-statusline - e2e test suite (extension factory level)
  */
 
 import test from "node:test";

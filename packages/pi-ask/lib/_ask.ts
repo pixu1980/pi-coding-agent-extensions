@@ -1,5 +1,5 @@
 /**
- * pi-ask — `ask` tool (single question)
+ * pi-ask - `ask` tool (single question)
  *
  * Full custom UI: highlighted option + Enter confirms; "Type something."
  * enters write mode as soon as it is highlighted (cleared when it loses

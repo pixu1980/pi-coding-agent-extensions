@@ -15,7 +15,7 @@ interface IpRange {
 
 /** Always blocked unless explicitly allowlisted. */
 const DEFAULT_BLOCKED: string[] = [
-  // IPv4 — private, loopback, link-local, CGNAT, documentation, multicast, reserved
+  // IPv4 - private, loopback, link-local, CGNAT, documentation, multicast, reserved
   "0.0.0.0/8",
   "10.0.0.0/8",
   "100.64.0.0/10",
@@ -30,7 +30,7 @@ const DEFAULT_BLOCKED: string[] = [
   "203.0.113.0/24",
   "224.0.0.0/4",
   "240.0.0.0/4",
-  // IPv6 — unspecified, loopback, ULA, link-local, multicast, v4-mapped
+  // IPv6 - unspecified, loopback, ULA, link-local, multicast, v4-mapped
   "::/128",
   "::1/128",
   "fc00::/7",

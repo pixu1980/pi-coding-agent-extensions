@@ -24,7 +24,7 @@ export function htmlToMarkdown(html: string, raw: boolean): HtmlToMarkdownResult
   const documentTitle = document.title?.trim() ?? "";
 
   if (raw) {
-    // Keep everything: tables, code blocks, nav — whole <body>.
+    // Keep everything: tables, code blocks, nav - whole <body>.
     const body = document.body;
     const markdown = body ? turndown.turndown(body.innerHTML) : "";
     return { title: documentTitle, markdown, lowQuality: true };
@@ -34,7 +34,7 @@ export function htmlToMarkdown(html: string, raw: boolean): HtmlToMarkdownResult
   const article = reader.parse();
 
   if (!article || typeof article.content !== "string" || article.content.length === 0) {
-    // No article found (SPA shell, bare text, exotic markup) — fall back to
+    // No article found (SPA shell, bare text, exotic markup) - fall back to
     // the whole body so we never return nothing, but flag the low quality.
     const body = document.body;
     const fallback = body ? turndown.turndown(body.innerHTML) : "";

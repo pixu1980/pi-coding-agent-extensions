@@ -1,5 +1,5 @@
 /**
- * pi-ask — extension factory
+ * pi-ask - extension factory
  *
  * Registers the interactive Q&A tools:
  *   - `ask`           single question: options, custom answer, note (also

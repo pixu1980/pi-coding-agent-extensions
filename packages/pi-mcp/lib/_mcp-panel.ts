@@ -345,7 +345,7 @@ class McpPanel {
       return;
     }
 
-    // Global shortcuts — always work, even during desc search
+    // Global shortcuts - always work, even during desc search
     if (matchesKey(data, "ctrl+c")) {
       this.cleanup();
       this.done({ cancelled: true, changes: new Map() });
@@ -435,7 +435,7 @@ class McpPanel {
         const tool = server.tools[item.toolIndex];
         tool.isDirect = !tool.isDirect;
         if (tool.isDirect && server.source === "import") {
-          this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} — will copy to user config on save`;
+          this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} - will copy to user config on save`;
         }
         this.updateDirty();
       }
@@ -577,14 +577,14 @@ class McpPanel {
     if (item.type === "server") {
       const newState = !server.tools.every((t) => t.isDirect);
       if (server.source === "import" && newState) {
-        this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} — will copy to user config on save`;
+        this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} - will copy to user config on save`;
       }
       for (const t of server.tools) t.isDirect = newState;
     } else if (item.toolIndex !== undefined) {
       const tool = server.tools[item.toolIndex];
       tool.isDirect = !tool.isDirect;
       if (tool.isDirect && server.source === "import") {
-        this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} — will copy to user config on save`;
+        this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} - will copy to user config on save`;
       }
     }
     this.updateDirty();
@@ -934,7 +934,7 @@ class McpPanel {
     const maxDescLen = Math.max(0, innerW - prefixLen - 8);
     const descStr =
       maxDescLen > 5 && description
-        ? fg(t.description, "— " + truncateToWidth(description, maxDescLen, "…"))
+        ? fg(t.description, "- " + truncateToWidth(description, maxDescLen, "…"))
         : "";
 
     return `  ${cursor} ${toggleIcon} ${nameStr} ${descStr}`;

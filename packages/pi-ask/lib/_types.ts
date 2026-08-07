@@ -1,5 +1,5 @@
 /**
- * pi-ask — schemas, types and pure helpers
+ * pi-ask - schemas, types and pure helpers
  *
  * TypeBox schemas for the `ask` and `interview` tool parameters, the TS
  * types consumed by the UI components, and the pure normalization /
@@ -38,7 +38,7 @@ export const QuestionSchema = Type.Object({
 });
 
 export const WaveSchema = Type.Object({
-	label: Type.Optional(Type.String({ description: "Optional wave label (e.g. 'Wave 1 — Baseline')" })),
+	label: Type.Optional(Type.String({ description: "Optional wave label (e.g. 'Wave 1 - Baseline')" })),
 	questions: Type.Array(QuestionSchema, { description: "Questions in this wave", minItems: 1 }),
 });
 
@@ -83,7 +83,7 @@ export interface NormalizedQuestion {
 	waveLabel?: string;
 }
 
-/** A labelled group of questions (e.g. "Wave 1 — Baseline"). */
+/** A labelled group of questions (e.g. "Wave 1 - Baseline"). */
 export interface NormalizedWave {
 	label?: string;
 	questions: NormalizedQuestion[];
@@ -219,11 +219,11 @@ export function buildDisplayOptions(q: NormalizedQuestion): DisplayOption[] {
 /**
  * Render a single answer for the model-facing content text.
  * Picked option: "2. Frontend"; custom: "(wrote) ASAP";
- * an attached note is appended: "2. Frontend — note: ...".
+ * an attached note is appended: "2. Frontend - note: ...".
  */
 export function formatSelectionAnswer(a: SelectAnswer): string {
 	const base = a.wasCustom ? `(wrote) ${a.label}` : `${a.index ?? "?"}. ${a.label}`;
-	return a.note ? `${base} — note: ${a.note}` : base;
+	return a.note ? `${base} - note: ${a.note}` : base;
 }
 
 /** Join multiple answers with ", ". */
@@ -231,7 +231,7 @@ export function summarizeAnswers(answers: SelectAnswer[]): string {
 	return answers.map(formatSelectionAnswer).join(", ");
 }
 
-/** "Scope: 2. Frontend — note: ..." — one line of an interview result. */
+/** "Scope: 2. Frontend - note: ..." - one line of an interview result. */
 export function formatInterviewLine(questionLabel: string, answers: SelectAnswer[]): string {
 	return `${questionLabel}: ${summarizeAnswers(answers)}`;
 }

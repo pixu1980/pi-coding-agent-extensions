@@ -1,5 +1,5 @@
 /**
- * pi-ask — types & pure helpers tests
+ * pi-ask - types & pure helpers tests
  *
  * Covers the schema definitions and the pure normalization/formatting
  * helpers from lib/_types.ts. UI components are not exercised here.
@@ -124,18 +124,18 @@ test("normalizeInterview keeps labelled waves and stamps each question", () => {
 	const out = normalizeInterview({
 		waves: [
 			{
-				label: "Wave 1 — Baseline",
+				label: "Wave 1 - Baseline",
 				questions: [{ id: "a", prompt: "A?", options: [{ label: "x" }] }],
 			},
 			{
-				label: "Wave 2 — Follow-up",
+				label: "Wave 2 - Follow-up",
 				questions: [{ id: "b", prompt: "B?", options: [{ label: "y" }] }],
 			},
 		],
 	});
 	assert.equal(out.waves.length, 2);
-	assert.equal(out.waves[0].label, "Wave 1 — Baseline");
-	assert.equal(out.waves[1].questions[0].waveLabel, "Wave 2 — Follow-up");
+	assert.equal(out.waves[0].label, "Wave 1 - Baseline");
+	assert.equal(out.waves[1].questions[0].waveLabel, "Wave 2 - Follow-up");
 });
 
 test("normalizeInterview defaults question labels per wave", () => {
@@ -185,7 +185,7 @@ test("formatSelectionAnswer renders (wrote) for a custom answer", () => {
 test("formatSelectionAnswer appends the note when present", () => {
 	assert.equal(
 		formatSelectionAnswer({ value: "fe", label: "Frontend", index: 2, note: "needs auth" }),
-		"2. Frontend — note: needs auth",
+		"2. Frontend - note: needs auth",
 	);
 });
 
@@ -203,5 +203,5 @@ test("formatInterviewLine prefixes the question label", () => {
 	const out = formatInterviewLine("Scope", [
 		{ value: "fe", label: "Frontend", index: 2, note: "team prefers it" },
 	]);
-	assert.equal(out, "Scope: 2. Frontend — note: team prefers it");
+	assert.equal(out, "Scope: 2. Frontend - note: team prefers it");
 });

@@ -1,5 +1,5 @@
 /**
- * pi-path-picker — internal helpers (delimiters, tilde/path resolution, listing)
+ * pi-path-picker - internal helpers (delimiters, tilde/path resolution, listing)
  *
  * Private module: imported by the extension entry only, never by consumers.
  */
@@ -58,7 +58,7 @@ const STRING_DELIMITERS = ['"', "'", "`"] as const;
 
 export type DelimiterContext = "inside" | "broken" | "outside";
 
-/** Un carattere è escaped solo con un numero dispari di backslash consecutivi. */
+/** A character is escaped only when preceded by an odd number of consecutive backslashes. */
 function isEscapedAt(text: string, index: number): boolean {
   let backslashes = 0;
   for (let i = index - 1; i >= 0 && text[i] === "\\"; i--) {

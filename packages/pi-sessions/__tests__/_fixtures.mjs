@@ -1,12 +1,12 @@
 /**
- * pi-sessions — unit + e2e test suite
+ * pi-sessions - unit + e2e test suite
  *
  * Run: node --import tsx --test index.test.mjs
  *
  * - Unit: session naming, JSONL parsing, date formatting, folder grouping,
  *   file listing (isolated under PI_CODING_AGENT_DIR temp dir)
  * - Component: keyboard navigation + rendering of Session/Folder sidebars
- * - E2E: extension factory — /sessions & /projects commands, auto-naming on
+ * - E2E: extension factory - /sessions & /projects commands, auto-naming on
  *   session_start, restore flow via ctx.switchSession
  */
 

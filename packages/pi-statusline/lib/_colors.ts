@@ -1,5 +1,5 @@
 /**
- * pi-statusline — Color gradient utilities
+ * pi-statusline - Color gradient utilities
  *
  * Generates ANSI True Color codes interpolating from green (0%) through
  * yellow (50%) to red (100%) using HSL hue rotation.

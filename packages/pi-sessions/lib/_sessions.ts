@@ -1,5 +1,5 @@
 /**
- * pi-sessions — session file discovery and parsing (private module)
+ * pi-sessions - session file discovery and parsing (private module)
  */
 
 import { createReadStream, readFileSync, readdirSync, statSync, existsSync } from "node:fs";

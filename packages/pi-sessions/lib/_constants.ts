@@ -1,5 +1,5 @@
 /**
- * pi-sessions — internal constants (private module)
+ * pi-sessions - internal constants (private module)
  */
 
 export const SESSION_DIR_NAME = "sessions";

@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-sessions",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": false,
   "description": "Session history overlay for pi.dev - browse, search, and restore past sessions with auto-naming based on chat content",
   "type": "module",

@@ -9,13 +9,19 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createProvider } from "./_helpers.mjs";
 
 const SIG = { signal: new AbortController().signal };
+
+function seedFiles(cwd, count) {
+  for (let i = 1; i <= count; i++) {
+    writeFileSync(join(cwd, `f${String(i).padStart(2, "0")}.txt`), "");
+  }
+}
 
 // ── Outside delimiters: transparent native delegation ───────────────
 
@@ -162,4 +168,78 @@ test("applyCompletion inside → path replacement works", async () => {
   const applied = provider.applyCompletion(['"./"'], 0, 3, suggestions.items.find((item) => item.value === "./alpha.txt"), suggestions.prefix);
   assert.deepEqual(applied, { lines: ['"./alpha.txt"'], cursorLine: 0, cursorCol: 12 });
   assert.equal(calls.filter(([name]) => name === "applyCompletion").length, 0, "path apply must not delegate");
+});
+
+// ── Detailed mode (Tab twice): list every file and directory ─────────────
+
+test("first Tab caps suggestions at the autocomplete limit", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "path-picker-cwd-"));
+  seedFiles(cwd, 40);
+  const { provider } = await createProvider(cwd);
+
+  const line = '"./"';
+  const first = await provider.getSuggestions([line], 0, 3, { ...SIG, force: true });
+
+  assert.equal(first.items.length, 30, "first Tab must cap at the autocomplete limit");
+  assert.equal(first.items.some((item) => item.value === "./f40.txt"), false, "items beyond the cap must be hidden");
+});
+
+test("second Tab on the same token lists every file and directory (detailed mode)", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "path-picker-cwd-"));
+  seedFiles(cwd, 40);
+  writeFileSync(join(cwd, ".env"), "");
+  mkdirSync(join(cwd, "subdir"));
+  const { provider } = await createProvider(cwd);
+
+  const line = '"./"';
+  const first = await provider.getSuggestions([line], 0, 3, { ...SIG, force: true });
+  assert.equal(first.items.length, 30, "precondition: first Tab is capped");
+
+  const second = await provider.getSuggestions([line], 0, 3, { ...SIG, force: true });
+  assert.equal(second.items.length, 42, "second Tab must list all 40 files + .env + subdir");
+  assert.equal(second.items.some((item) => item.value === "./f40.txt"), true);
+  assert.equal(second.items.some((item) => item.value === "./.env"), true, "detailed mode must include hidden files");
+  assert.equal(second.items.some((item) => item.value === "./subdir/"), true);
+});
+
+test("detailed mode ignores the partial-name prefix and lists the whole directory", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "path-picker-cwd-"));
+  seedFiles(cwd, 40);
+  writeFileSync(join(cwd, "other.txt"), "");
+  const { provider } = await createProvider(cwd);
+
+  const line = '"./f"';
+  const first = await provider.getSuggestions([line], 0, 4, { ...SIG, force: true });
+  assert.equal(first.items.every((item) => item.value.startsWith("./f")), true, "first Tab filters by the typed prefix");
+
+  const second = await provider.getSuggestions([line], 0, 4, { ...SIG, force: true });
+  assert.equal(second.items.length, 41, "detailed mode must list files outside the prefix too");
+  assert.equal(second.items.some((item) => item.value === "./other.txt"), true);
+});
+
+test("typing after detailed mode resets back to the capped autocomplete", async () => {
+  const cwd = mkdtempSync(join(tmpdir(), "path-picker-cwd-"));
+  seedFiles(cwd, 40);
+  writeFileSync(join(cwd, "other.txt"), "");
+  const { provider } = await createProvider(cwd);
+
+  const open = await provider.getSuggestions(['"./"'], 0, 3, { ...SIG, force: true });
+  assert.equal(open.items.length, 30);
+  const detailed = await provider.getSuggestions(['"./"'], 0, 3, { ...SIG, force: true });
+  assert.equal(detailed.items.length, 41, "precondition: detailed mode lists everything");
+
+  // Typing narrows the token: the new snapshot starts a fresh autocomplete.
+  const typed = await provider.getSuggestions(['"./f"'], 0, 4, { ...SIG, force: true });
+  assert.equal(typed.items.length, 30, "a changed token must reset to the capped list");
+  assert.equal(typed.items.every((item) => item.value.startsWith("./f")), true);
+});
+
+test("detailed mode still refuses sensitive directories", async () => {
+  const { provider } = await createProvider();
+
+  const line = '"~/.ssh/"';
+  const first = await provider.getSuggestions([line], 0, 8, { ...SIG, force: true });
+  assert.equal(first, null);
+  const second = await provider.getSuggestions([line], 0, 8, { ...SIG, force: true });
+  assert.equal(second, null, "detailed mode must keep the sensitive-directory guard");
 });

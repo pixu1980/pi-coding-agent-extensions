@@ -107,8 +107,16 @@ export function getDelimiterContext(line: string, col: number): DelimiterContext
 /**
  * List files/directories in a directory, filtering by a prefix.
  * Returns items sorted: directories first, then alphabetically.
+ *
+ * Options:
+ * - `includeHidden`: also list dotfiles/dot-directories (used by the
+ *   detailed mode). Hidden entries are skipped otherwise.
  */
-export function listPathItems(dirPath: string, prefix: string): Array<{ name: string; isDir: boolean; fullPath: string }> {
+export function listPathItems(
+  dirPath: string,
+  prefix: string,
+  options?: { includeHidden?: boolean },
+): Array<{ name: string; isDir: boolean; fullPath: string }> {
   // Refuse to list contents of sensitive directories
   if (isSensitiveDir(dirPath)) return [];
 
@@ -121,10 +129,11 @@ export function listPathItems(dirPath: string, prefix: string): Array<{ name: st
 
   const items: Array<{ name: string; isDir: boolean; fullPath: string }> = [];
   const lowerPrefix = prefix.toLowerCase();
+  const includeHidden = options?.includeHidden === true;
 
   for (const entry of entries) {
-    if (entry.startsWith(".") && !prefix.startsWith(".")) continue; // skip hidden unless query starts with .
-    if (lowerPrefix && !entry.toLowerCase().startsWith(lowerPrefix)) continue;
+    if (entry.startsWith(".") && !includeHidden && !prefix.startsWith(".")) continue; // skip hidden unless query starts with .
+    if (lowerPrefix && !includeHidden && !entry.toLowerCase().startsWith(lowerPrefix)) continue;
 
     const fullPath = join(dirPath, entry);
     let isDir = false;

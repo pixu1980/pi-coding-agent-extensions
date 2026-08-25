@@ -10,6 +10,13 @@ import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } 
 import { getDelimiterContext, extractPathToken, resolvePath, listPathItems } from "./_helpers.ts";
 
 /**
+ * Number of items shown by the first Tab (autocomplete mode). A second Tab
+ * on the same token switches to detailed mode and lists every file and
+ * directory in the target folder.
+ */
+const AUTOCOMPLETE_LIMIT = 30;
+
+/**
  * Create an autocomplete provider for file paths.
  * Wraps the built-in provider and adds ~ expansion and path-aware completion.
  */
@@ -17,6 +24,14 @@ export function createPathAutocompleteProvider(
   current: AutocompleteProvider,
   cwd: string,
 ): AutocompleteProvider {
+  // Detailed mode: a second Tab on the same token (same line, cursor and
+  // path) lists EVERY file and directory in the target folder - hidden files
+  // included, no prefix filter, no cap - instead of the capped fuzzy list.
+  // Any change to the token (typing, moving the cursor) resets to the
+  // regular autocomplete mode on the next Tab.
+  let lastSnapshot: string | null = null;
+  let detailedMode = false;
+
   return {
     // Non aggiunge trigger characters: preserva esclusivamente quelli nativi.
     // Il path picker viene attivato solo da Tab, dentro una coppia valida,
@@ -53,6 +68,17 @@ export function createPathAutocompleteProvider(
         return null;
       }
 
+      // Track Tab presses on the same token: the first Tab opens the capped
+      // autocomplete list, a second Tab on the same snapshot switches to
+      // detailed mode (every file and directory).
+      const snapshot = `${cursorLine}:${cursorCol}:${token.path}`;
+      if (lastSnapshot !== snapshot) {
+        lastSnapshot = snapshot;
+        detailedMode = false;
+      } else {
+        detailedMode = true;
+      }
+
       const { path } = token;
 
       try {
@@ -72,7 +98,9 @@ export function createPathAutocompleteProvider(
           dirPath = resolvedParent;
         }
 
-        const items = listPathItems(dirPath, filePrefix);
+        const items = listPathItems(dirPath, detailedMode ? "" : filePrefix, {
+          includeHidden: detailedMode,
+        });
         if (items.length === 0 || options.signal.aborted) {
           return null;
         }
@@ -88,7 +116,8 @@ export function createPathAutocompleteProvider(
         });
 
         return {
-          items: autocompleteItems.slice(0, 30),
+          // Detailed mode (second Tab) lists everything; the first Tab caps.
+          items: detailedMode ? autocompleteItems : autocompleteItems.slice(0, AUTOCOMPLETE_LIMIT),
           prefix: path,
         };
       } catch {

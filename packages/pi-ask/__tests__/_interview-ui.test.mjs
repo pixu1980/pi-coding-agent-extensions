@@ -3,20 +3,20 @@
  *
  * Drives the custom component with a fake TUI (same driver pattern as the
  * `ask` tests) and asserts the multi-question interview flow, including
- * sequential multi-questionnaire interviews (waves are rendered one
- * questionnaire at a time; the next starts only after confirming the
- * previous one).
+ * sequential waves (each wave renders as its own interview chunk; the next
+ * starts only after confirming the previous one).
  *
  * Digits answer and advance to the next tab; Enter on a question tab
  * records the highlighted option (or current multi-selects) and advances
  * to the next question - on the last question it lands on the review tab,
- * where Enter submits the current questionnaire and moves on to the next.
+ * where Enter submits the current chunk and moves on to the next.
  */
 
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createInterviewTool } from "../lib/_interview-tool.ts";
+import { resetChatLanguageForTests, trackChatLanguage } from "../lib/_lang.ts";
 import { makeTheme } from "../../../test/harness.mjs";
 
 const tool = createInterviewTool();
@@ -44,7 +44,7 @@ function installDriver(ctx) {
 
 /**
  * Driver for sequential interviews: `ui.custom` is called once per
- * questionnaire chunk, so this accumulates every component and lets the
+ * interview chunk, so this accumulates every component and lets the
  * test drive each one in turn.
  */
 function installSequentialDriver(ctx) {
@@ -323,7 +323,8 @@ test("interview: registers with the right name and schema", () => {
 	assert.equal(tool.parameters.properties?.questions?.type, "array");
 });
 
-test("interview: multi-wave interview runs each wave as a sequential questionnaire", async () => {
+test("interview: multi-wave interview runs each wave as a sequential chunk", async () => {
+	resetChatLanguageForTests();
 	const ctx = makeCtx();
 	const driver = installSequentialDriver(ctx);
 
@@ -350,12 +351,12 @@ test("interview: multi-wave interview runs each wave as a sequential questionnai
 		ctx,
 	);
 
-	// Questionnaire 1: Wave 1 - Baseline (2 questions), shown on its own
+	// Interview 1: Wave 1 - Baseline (2 questions), shown on its own
 	await driver.waitForComponent(0);
 	let text = driver.render(0);
 	assert.match(text, /Financial education/);
 	assert.match(text, /Wave 1 - Baseline/);
-	assert.match(text, /Questionnaire 1\/2/);
+	assert.match(text, /Interview 1\/2/);
 	assert.match(text, /How old are you\?/);
 	assert.doesNotMatch(text, /Any concerns now\?/); // wave 2 not visible yet
 
@@ -363,19 +364,19 @@ test("interview: multi-wave interview runs each wave as a sequential questionnai
 	driver.key("1", 0); // w1q2 → Yes
 	text = driver.render(0);
 	assert.match(text, /Ready to submit/);
-	assert.match(text, /next questionnaire/); // confirms there is a part 2
-	driver.key(KEY.enter, 0); // submit questionnaire 1
+	assert.match(text, /next interview/); // confirms there is a part 2
+	driver.key(KEY.enter, 0); // submit interview 1
 
-	// Questionnaire 2: Wave 2 - Follow-up (1 question) starts only after submit
+	// Interview 2: Wave 2 - Follow-up (1 question) starts only after submit
 	await driver.waitForComponent(1);
 	text = driver.render(1);
 	assert.match(text, /Wave 2 - Follow-up/);
-	assert.match(text, /Questionnaire 2\/2/);
+	assert.match(text, /Interview 2\/2/);
 	assert.match(text, /Any concerns now\?/);
 	driver.key("1", 1);
 	text = driver.render(1);
 	assert.match(text, /Ready to submit/);
-	assert.doesNotMatch(text, /next questionnaire/); // last one: plain submit
+	assert.doesNotMatch(text, /next interview/); // last one: plain submit
 	driver.key(KEY.enter, 1);
 
 	const result = await execPromise;
@@ -388,6 +389,7 @@ test("interview: multi-wave interview runs each wave as a sequential questionnai
 });
 
 test("interview: a wave beyond 10 questions is respected in full (no split)", async () => {
+	resetChatLanguageForTests();
 	const ctx = makeCtx();
 	const driver = installDriver(ctx);
 
@@ -408,15 +410,15 @@ test("interview: a wave beyond 10 questions is respected in full (no split)", as
 		ctx,
 	);
 
-	// All 14 questions live in a single questionnaire: no split header, no "1/2"
+	// All 14 questions live in a single interview chunk: no split header, no "1/2"
 	let text = driver.render();
 	assert.match(text, /Question 1\?/);
-	assert.doesNotMatch(text, /Questionnaire 1\/2/);
+	assert.doesNotMatch(text, /Interview 1\/2/);
 
 	for (let i = 0; i < 14; i++) driver.key("1");
 	text = driver.render();
 	assert.match(text, /Ready to submit/);
-	assert.doesNotMatch(text, /next questionnaire/);
+	assert.doesNotMatch(text, /next interview/);
 	driver.key(KEY.enter);
 
 	const result = await execPromise;
@@ -427,6 +429,7 @@ test("interview: a wave beyond 10 questions is respected in full (no split)", as
 });
 
 test("interview: flat questions are treated as a single unlabelled wave", async () => {
+	resetChatLanguageForTests();
 	const ctx = makeCtx();
 	const driver = installDriver(ctx);
 
@@ -447,7 +450,7 @@ test("interview: flat questions are treated as a single unlabelled wave", async 
 	let text = driver.render();
 	assert.match(text, /Pick a stack/);
 	assert.doesNotMatch(text, /Wave 1 ·/); // no wave prefix for a single wave
-	assert.doesNotMatch(text, /Questionnaire 1\/1/); // no progress header for a single questionnaire
+	assert.doesNotMatch(text, /Interview 1\/1/); // no progress header for a single chunk
 
 	driver.key("1");
 	driver.key("1");
@@ -459,4 +462,55 @@ test("interview: flat questions are treated as a single unlabelled wave", async 
 	assert.equal(result.details.waves.length, 1);
 	assert.equal(result.details.answers[0].waveLabel, undefined);
 	assert.doesNotMatch(result.content[0].text, /· Q1/); // no wave prefix in output
+});
+
+test("interview: progress header and next-chunk hint localize to the chat language", async () => {
+	resetChatLanguageForTests();
+	trackChatLanguage(["vorrei un'intervista sul progetto, fammi qualche domanda per favore"]);
+	const ctx = makeCtx();
+	const driver = installSequentialDriver(ctx);
+
+	const execPromise = tool.execute(
+		"q-it",
+		{
+			title: "Impostazione progetto",
+			waves: [
+				{
+					label: "Wave 1 - Stato attuale",
+					questions: [
+						{ id: "itq1", prompt: "Quale stack?", options: [{ value: "ts", label: "TypeScript" }, { value: "rs", label: "Rust" }] },
+						{ id: "itq2", prompt: "Priorità?", options: [{ value: "low", label: "Bassa" }, { value: "high", label: "Alta" }] },
+					],
+				},
+				{ label: "Wave 2 - Follow-up", questions: [{ id: "itq3", prompt: "Altre domande?", options: [{ value: "yes", label: "Sì" }, { value: "no", label: "No" }] }] },
+			],
+		},
+		undefined,
+		undefined,
+		ctx,
+	);
+
+	await driver.waitForComponent(0);
+	let text = driver.render(0);
+	assert.match(text, /Intervista 1\/2/);
+	assert.match(text, /Wave 1 - Stato attuale/);
+
+	driver.key("1", 0); // itq1 → TypeScript
+	driver.key("1", 0); // itq2 → Alta
+	text = driver.render(0);
+	assert.match(text, /Ready to submit/);
+	assert.match(text, /prossima intervista/);
+	driver.key(KEY.enter, 0);
+
+	await driver.waitForComponent(1);
+	text = driver.render(1);
+	assert.match(text, /Intervista 2\/2/);
+	driver.key("1", 1); // itq3 → Sì
+	driver.key(KEY.enter, 1); // submit interview 2
+
+	const result = await execPromise;
+	assert.equal(result.details.cancelled, false);
+	assert.equal(result.details.answers.length, 3);
+	assert.match(result.content[0].text, /Wave 1 - Stato attuale · Q1: 1\. TypeScript/);
+	resetChatLanguageForTests();
 });

@@ -1,27 +1,27 @@
 /**
- * pi-ask - `interview` tool (multi-question, sequential questionnaires)
+ * pi-ask - `interview` tool (multi-question, sequential waves)
  *
- * Renders one questionnaire at a time with a tab bar, a review/Submit tab,
+ * Renders one wave at a time with a tab bar, a review/Submit tab,
  * per-question notes (`n`), custom answers ("Type something.") and
  * multi-select.
  *
  * The caller controls the structure: pass `waves` with a label and any
  * number of questions per wave (decided by hierarchical/structural
  * criteria, e.g. sections, difficulty, phases). Each wave runs as its own
- * sequential questionnaire, respected in full - never split, even beyond
- * 10 questions. The next questionnaire only starts after the user confirms
- * the previous one, so a two-wave study becomes two questionnaires with a
+ * sequential interview chunk, respected in full - never split, even beyond
+ * 10 questions. The next chunk only starts after the user confirms the
+ * previous one, so a two-wave study becomes two sequential chunks with a
  * confirmation step in between. Answers are aggregated across waves in the
  * final result. A flat `questions` list is a single unlabelled wave.
  *
- * Inside a questionnaire: left/right arrows (or Tab) switch tabs freely -
- * the user can hop between questions at will, answering each one with
- * digits (record + advance) or by highlighting an option with ↑/↓. Enter
- * on a question tab records the highlighted option (or the current
+ * Inside a chunk: left/right arrows (or Tab) switch tabs freely - the user
+ * can hop between questions at will, answering each one with digits
+ * (record + advance) or by highlighting an option with ↑/↓. Enter on a
+ * question tab records the highlighted option (or the current
  * multi-selects) and advances to the next question - on the last question
- * it lands on the review tab, where Enter submits the questionnaire and
- * moves on to the next one. A note is armed with `n` before selecting and
- * travels with the next answer.
+ * it lands on the review tab, where Enter submits the chunk and moves on
+ * to the next one. A note is armed with `n` before selecting and travels
+ * with the next answer.
  */
 
 import type { ThemeColor, ToolDefinition } from "@earendil-works/pi-coding-agent";
@@ -39,6 +39,7 @@ import {
 	type NormalizedWave,
 	type SelectAnswer,
 } from "./_types.ts";
+import { chatInterviewLabel, chatInterviewNextSuffix } from "./_lang.ts";
 import { parseDigitKey, selectionFromCustom, selectionFromIndex, toggleIndex, withNote } from "./_logic.ts";
 
 interface QuestionSession {
@@ -70,18 +71,18 @@ function buildSession(q: NormalizedQuestion): QuestionSession {
 	};
 }
 
-/** A single sequential questionnaire: one wave of questions, respected in full. */
+/** A single sequential interview chunk: one wave of questions, respected in full. */
 interface WaveChunk {
 	waveLabel?: string;
 	questions: NormalizedQuestion[];
-	/** 1-based position of this questionnaire in the whole interview */
+	/** 1-based position of this chunk in the whole interview */
 	position: number;
-	/** Total number of questionnaires in the whole interview */
+	/** Total number of chunks in the whole interview */
 	total: number;
 }
 
 /**
- * Each wave becomes one sequential questionnaire, respected in full - no
+ * Each wave becomes one sequential chunk, respected in full - no
  * splitting, whatever the question count. A flat list is a single wave.
  */
 function buildChunks(waves: NormalizedWave[]): WaveChunk[] {
@@ -106,7 +107,7 @@ export function createInterviewTool(): ToolDefinition<typeof InterviewParams, In
 		name: "interview",
 		label: "Interview",
 		description:
-			"Ask the user a structured set of questions (interview). The caller controls the structure via `waves`: each wave is a labelled group of questions with any length (hierarchical/structural criteria decide the grouping), executed as a sequential questionnaire - respected in full, never split. Each question supports options, custom answers and notes; a review tab shows all answers before submission. Use for questionnaires, requirements gathering, or multi-wave studies.",
+			"Ask the user a structured set of questions (interview). The caller controls the structure via `waves`: each wave is a labelled group of questions with any length (hierarchical/structural criteria decide the grouping), executed one wave at a time - respected in full, never split. Each question supports options, custom answers and notes; a review tab shows all answers before submission. Use for interviews, requirements gathering, or multi-wave studies.",
 		parameters: InterviewParams,
 
 		async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
@@ -130,7 +131,7 @@ export function createInterviewTool(): ToolDefinition<typeof InterviewParams, In
 			const allAnswers: RecordedAnswer[] = [];
 			let cancelled = false;
 
-			// Run each questionnaire sequentially: the next chunk starts only
+			// Run each wave chunk sequentially: the next chunk starts only
 			// after the user confirms the previous one.
 			for (const chunk of chunks) {
 				const result = await ctx.ui.custom<ChunkUIResult>((tui, theme, _kb, done) => {
@@ -420,11 +421,11 @@ export function createInterviewTool(): ToolDefinition<typeof InterviewParams, In
 
 						lines.push(theme.fg("accent", "─".repeat(renderWidth)));
 
-						// Header: title + wave + questionnaire progress + tab bar
+						// Header: title + wave + interview progress + tab bar
 						const headerBits: string[] = [];
 						if (title) headerBits.push(title);
 						if (chunk.waveLabel) headerBits.push(theme.fg("accent", theme.bold(chunk.waveLabel)));
-						if (chunk.total > 1) headerBits.push(theme.fg("muted", `Questionnaire ${chunk.position}/${chunk.total}`));
+						if (chunk.total > 1) headerBits.push(theme.fg("muted", `${chatInterviewLabel()} ${chunk.position}/${chunk.total}`));
 						if (headerBits.length > 0) {
 							addWrappedWithPrefix(" ", headerBits.join(" - "));
 							lines.push("");
@@ -465,7 +466,7 @@ export function createInterviewTool(): ToolDefinition<typeof InterviewParams, In
 							}
 							lines.push("");
 							if (canSubmit) {
-								const nextLabel = chunk.position < chunk.total ? " next questionnaire" : "";
+								const nextLabel = chunk.position < chunk.total ? ` ${chatInterviewNextSuffix()}` : "";
 								addWrappedWithPrefix(" ", theme.fg("success", `Press Enter to submit${nextLabel}`));
 							} else {
 								const missing = flat.filter((q) => !isAnswered(sessions.get(q.id)!)).map((q) => q.label).join(", ");

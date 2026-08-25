@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.5...@pixu1980/pi-web@0.1.6) (2026-08-25)
+
+### Features
+
+* **pi-ask:** localize interview progress labels to the chat language ([b320cbd](https://github.com/pixu1980/pi-coding-agent-extensions/commit/b320cbd8d6f1b6f2e5569453131a7356ae57ab89))
+* **pi-path-picker:** detailed mode lists every file and directory on second Tab ([26eb0a6](https://github.com/pixu1980/pi-coding-agent-extensions/commit/26eb0a66a9efd9a1fd1962cb26c837d6fb902524))
 ## [0.1.5](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.4...@pixu1980/pi-web@0.1.5) (2026-08-07)
 
 ### Features

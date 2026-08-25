@@ -8,12 +8,13 @@ preferences, confirmations).
 
 ## Preliminary research (done)
 
-pi already provides the examples `question.ts`, `questionnaire.ts`, and `qna.ts` in
-`examples/extensions/` of the pi-coding-agent package:
+pi already provides the examples `question.ts` and `qna.ts` (plus a
+multi-question variant with a tab bar) in `examples/extensions/` of the
+pi-coding-agent package:
 
 - `question.ts` - single question: option list (arrow keys ↑↓ only) + "Type something."
   with inline editor. No notes, no quick number keys, no multi-select.
-- `questionnaire.ts` - multi-question with tab bar, "Submit" summary tab, "Type something"
+- multi-question variant - tab bar, "Submit" summary tab, "Type something"
   per question. Arrow keys only, no notes, no multi-select.
 - `qna.ts` - extracts questions from the last assistant message and loads them into the editor
   ("prompt generator" pattern).

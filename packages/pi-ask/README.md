@@ -24,9 +24,9 @@ Requires **Node.js ≥ 22** (uses `--experimental-strip-types`).
 | Resource | What it does |
 |---|---|
 | `ask` tool | One question: options + custom answer + optional note + optional multi-select - also covers sharp plan interviews (recommended answers, codebase exploration) |
-| `interview` tool | A batch of questions as **sequential questionnaires** with tab navigation, a review tab before submit, and **caller-controlled waves** of any length (respected in full); the "con dominio" variant adds domain-aware interviews (CONTEXT.md / ADR) |
+| `interview` tool | A batch of questions as **sequential interview waves** with tab navigation, a review tab before submit, and **caller-controlled waves** of any length (respected in full); the "con dominio" variant adds domain-aware interviews (CONTEXT.md / ADR) |
 | `/ask <topic>` | Command that tells the model to ask you a single question (or run a sharp plan interview) |
-| `/ask-interview <topic>` | Command that tells the model to run a structured interview / questionnaire; append "con dominio" or `--docs` for a domain-aware interview |
+| `/ask-interview <topic>` | Command that tells the model to run a structured interview; append "con dominio" or `--docs` for a domain-aware interview |
 | Auto-trigger | Phrases like "fammi una domanda", "fammi un questionario", "sfida il piano", or "intervistami col dominio" route into the matching mode automatically |
 
 The tools are callable by the model automatically (no setup). The slash
@@ -93,23 +93,24 @@ back.
 
 ### Waves (caller-controlled structure)
 
-Long interviews are broken into **sequential questionnaires**: each wave
-renders on its own with a header (`Questionnaire 1/2`, `Questionnaire 2/2`)
-and its own review + Submit step - the next questionnaire only starts after
-you confirm the previous one.
+Long interviews are broken into **sequential waves**: each wave
+renders on its own with a header (`Interview 1/2`, `Interview 2/2` -
+localized, e.g. `Intervista 1/2` in Italian chats) and its own review +
+Submit step - the next wave only starts after you confirm the previous
+one.
 
 The caller controls the grouping: pass `waves` with a label and **any number
 of questions per wave** (decided by hierarchical or structural criteria -
 sections, difficulty, phases). Each wave is respected in full, never split,
-so a 20-question baseline stays one questionnaire if that is how you
+so a 20-question baseline stays one interview chunk if that is how you
 structured it.
 
 ### Waves
 
-Pass `waves` to the `interview` tool when the questionnaire spans phases
+Pass `waves` to the `interview` tool when the interview spans phases
 measured at different points in time (e.g. a baseline and a follow-up). Each wave is a labelled group of questions with any
 length - the caller decides the grouping by hierarchical/structural criteria;
-waves are rendered one after the other as sequential questionnaires:
+waves are rendered one after the other as sequential interview chunks:
 
 ```json
 {
@@ -121,7 +122,7 @@ waves are rendered one after the other as sequential questionnaires:
 }
 ```
 
-Each wave renders as its own questionnaire: a header shows the wave label
+Each wave renders as its own chunk: a header shows the wave label
 (e.g. "Wave 1 - Baseline"), and answers carry the wave label in the final
 result so the two waves can be compared. A flat `questions` list is treated
 as a single unlabelled wave.
@@ -131,8 +132,8 @@ as a single unlabelled wave.
 - `/ask <topic>` - single-question mode about a topic. Also handles sharp plan interviews:
   when you ask to sharpen a plan, the model asks one question at a time with
   recommended answers and codebase exploration.
-- `/ask-interview <topic>` - structured interview (multi-question, sequential
-  questionnaires, optional waves) about a topic. Append "con dominio" or
+- `/ask-interview <topic>` - structured interview (multi-question, optional
+  sequential waves) about a topic. Append "con dominio" or
   `--docs` for a domain-aware interview against CONTEXT.md glossary, ADRs and
   the code.
 

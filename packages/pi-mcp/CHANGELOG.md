@@ -19,12 +19,12 @@ All notable changes to this project will be documented in this file. See [commit
 ### Features
 
 * **pi-ask:** merge grill into ask/interview with natural-language keywords ([505ceea](https://github.com/pixu1980/pi-coding-agent-extensions/commit/505ceea505b0197cbdcb10bf4820623536de8c4c))
-* **pi-ask:** rename questionnaire to interview with sequential waves, grill mode and guardrails ([6163152](https://github.com/pixu1980/pi-coding-agent-extensions/commit/61631523a549cc639600dcdbe02c62e5dc7efa87))
+* **pi-ask:** rename ask flow to interview with sequential waves, grill mode and guardrails ([6163152](https://github.com/pixu1980/pi-coding-agent-extensions/commit/61631523a549cc639600dcdbe02c62e5dc7efa87))
 ## [0.1.7](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.6...@pixu1980/pi-mcp@0.1.7) (2026-08-01)
 
 ### Features
 
-* **pi-ask:** add interactive ask and questionnaire tools ([8988b1e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/8988b1e4ff2de0bb313165049f50f730873df02d))
+* **pi-ask:** add interactive ask and interview tools ([8988b1e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/8988b1e4ff2de0bb313165049f50f730873df02d))
 ## [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-mcp@0.1.5...@pixu1980/pi-mcp@0.1.6) (2026-08-01)
 
 ### Features

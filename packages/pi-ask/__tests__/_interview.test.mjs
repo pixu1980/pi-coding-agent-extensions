@@ -93,12 +93,12 @@ test("auto-trigger: an interactive message with interview keywords routes to int
 	const { pi, emit, calls } = createMockPi();
 	piAskExtension(pi);
 
-	await emit("input", { text: "fammi un questionario sul progetto", source: "interactive" }, createMockCtx());
+	await emit("input", { text: "fammi un'intervista sul progetto", source: "interactive" }, createMockCtx());
 
 	assert.equal(calls.sendUserMessage.length, 1);
 	const [content] = calls.sendUserMessage[0];
 	assert.match(content, /Interview mode/);
-	assert.match(content, /questionario/);
+	assert.match(content, /progetto/);
 });
 
 test("auto-trigger: an interactive message with ask keywords routes to single-question mode", async () => {
@@ -118,7 +118,7 @@ test("auto-trigger: non-interactive or command input is left untouched", async (
 	piAskExtension(pi);
 
 	// RPC source: keyword ignored
-	await emit("input", { text: "fammi un questionario", source: "rpc" }, createMockCtx());
+	await emit("input", { text: "fammi un'intervista", source: "rpc" }, createMockCtx());
 	// Slash command text: keyword ignored
 	await emit("input", { text: "/ask-interview foo", source: "interactive" }, createMockCtx());
 	// Plain text without keywords: untouched

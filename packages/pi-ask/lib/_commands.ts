@@ -146,18 +146,14 @@ const ASK_KEYWORDS = [
 ];
 
 /**
- * Phrases that signal the user wants a structured interview / questionnaire,
+ * Phrases that signal the user wants a structured interview,
  * including the domain-aware variant (CONTEXT.md / ADR).
  */
 const INTERVIEW_KEYWORDS = [
-	// plain interview / questionnaire
+	// plain interview
 	"intervistami",
 	"fammi un'intervista",
 	"fammi una intervista",
-	"fammi un questionario",
-	"fammi il questionario",
-	"questionario",
-	"questionari",
 	"intervista",
 	"serie di domande",
 	"set di domande",
@@ -172,8 +168,6 @@ const INTERVIEW_KEYWORDS = [
 	"n wave",
 	"due ondate",
 	"interview me",
-	"questionnaire",
-	"questionnaires",
 	"a survey",
 	"series of questions",
 	"set of questions",
@@ -224,7 +218,7 @@ export function registerAskCommands(pi: ExtensionAPI) {
 	});
 
 	pi.registerCommand("ask-interview", {
-		description: "Run a structured interview / questionnaire (multiple questions, optional waves); append 'con dominio' or --docs for a domain-aware interview (CONTEXT.md / ADR)",
+		description: "Run a structured interview (multiple questions, optional waves); append 'con dominio' or --docs for a domain-aware interview (CONTEXT.md / ADR)",
 		handler: async (args, ctx) => {
 			if (ctx.mode !== "tui") {
 				ctx.ui.notify("ask-interview requires interactive mode", "error");
@@ -270,13 +264,13 @@ export function registerAskAutoTrigger(pi: ExtensionAPI) {
  * signals a structured interview. Lives in the system prompt, so the model
  * cannot "forget" to use the tool.
  */
-const INTERVIEW_GUARDRAIL = `\n\n## MANDATORY INSTRUCTION (pi-ask guardrail)\nThe user's message requests a structured interview/questionnaire. You MUST call the \`interview\` tool before writing any other text - do not reply with plain-text questions. Split the questions into labelled waves when the topic spans phases (e.g. "Wave 1 - Baseline" and "Wave 2 - Follow-up"); group by hierarchical or structural criteria and let each wave carry any number of questions. Provide 3-5 clear options per question; use multiSelect only when several choices can coexist. If the user cancels, rephrase or continue with what you have - never loop.`;
+const INTERVIEW_GUARDRAIL = `\n\n## MANDATORY INSTRUCTION (pi-ask guardrail)\nThe user's message requests a structured interview. You MUST call the \`interview\` tool before writing any other text - do not reply with plain-text questions. Split the questions into labelled waves when the topic spans phases (e.g. "Wave 1 - Baseline" and "Wave 2 - Follow-up"); group by hierarchical or structural criteria and let each wave carry any number of questions. Provide 3-5 clear options per question; use multiSelect only when several choices can coexist. If the user cancels, rephrase or continue with what you have - never loop.`;
 
 /**
  * Domain-aware variant: appended when the interview prompt signals a
  * sharp interview session against the domain model (CONTEXT.md / ADR).
  */
-const INTERVIEW_DOCS_GUARDRAIL = `\n\n## MANDATORY INSTRUCTION (pi-ask guardrail - domain-aware)\nThe user's message requests a domain-aware interview. You MUST drive it through the \`interview\` tool, one wave/questionnaire at a time - do not reply with plain-text questions. Challenge the plan against CONTEXT.md glossary and ADRs, explore the codebase to answer questions yourself, sharpen fuzzy terminology, and update CONTEXT.md / ADRs inline as decisions crystallise.`;
+const INTERVIEW_DOCS_GUARDRAIL = `\n\n## MANDATORY INSTRUCTION (pi-ask guardrail - domain-aware)\nThe user's message requests a domain-aware interview. You MUST drive it through the \`interview\` tool, one wave at a time - do not reply with plain-text questions. Challenge the plan against CONTEXT.md glossary and ADRs, explore the codebase to answer questions yourself, sharpen fuzzy terminology, and update CONTEXT.md / ADRs inline as decisions crystallise.`;
 
 /**
  * Imperative directive appended to the system prompt when the user's prompt

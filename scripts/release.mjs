@@ -7,6 +7,11 @@
  * those that have changes since their last git tag (identified as
  * <package-name>@<current-version>).
  *
+ * "Changes" means release-worthy files under packages/<pkg> — anything
+ * except the auto-generated CHANGELOG.md, which is regenerated per release
+ * and contains cross-package entries, so non-functional changelog rewrites
+ * do NOT trigger a release.
+ *
  * For each changed package:
  *   1. Local commit-and-tag-version --no-verify --tag-prefix "<name>@"
  *      → bump semver, CHANGELOG, commit + tag
@@ -23,7 +28,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ensureNpmAuthentication, standardVersionCommand } from './release-helpers.mjs';
+import { ensureNpmAuthentication, standardVersionCommand, changedFilesSinceTag } from './release-helpers.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -48,16 +53,6 @@ function tagExists(tag) {
     return true;
   } catch {
     return false;
-  }
-}
-
-// ── Helper: has the package changed since it was tagged? ──────────────
-function packageHasChangesSinceTag(tag, pkgDir) {
-  try {
-    exec(`git diff --quiet "${tag}" -- "${pkgDir}"`, { stdio: 'pipe' });
-    return false; // no changes
-  } catch {
-    return true; // has changes
   }
 }
 
@@ -157,16 +152,22 @@ for (const pkg of packages) {
   if (!isFirstRelease) {
     console.log(`   tag found: ${tag}`);
 
-    if (!packageHasChangesSinceTag(tag, `packages/${pkg}`)) {
+    const changedFiles = changedFilesSinceTag(tag, `packages/${pkg}`, exec);
+    const hasChanges = changedFiles !== null && changedFiles.length > 0;
+
+    if (!hasChanges) {
       if (isForced) {
-        console.log(`   ⚑ no changes but --force present, proceeding anyway`);
+        console.log(`   ⚑ no release-worthy changes but --force present, proceeding anyway`);
       } else {
-        console.log(`   ✓ no changes, skipped`);
+        console.log(`   ✓ no release-worthy changes, skipped`);
         skipped++;
         continue;
       }
     }
-    console.log(`   ↻ changes detected, proceeding with release`);
+    console.log(`   ↻ release-worthy changes detected (${changedFiles.length}):`);
+    for (const changedFile of changedFiles) {
+      console.log(`       ${changedFile}`);
+    }
   } else {
     console.log(`   ⚑ no tag found, initial release`);
   }

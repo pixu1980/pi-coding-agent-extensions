@@ -5,7 +5,8 @@
 # pi-path-picker - pi.dev extension
 
 Interactive file path autocomplete inside the TUI prompt.  
-Tab-complete `~`, `/`, `./`, `../` paths with fuzzy filtering - only inside quotes (`"`, `'`, `` ` ``).
+Tab-complete `~`, `/`, `./`, `../` paths with fuzzy filtering - only inside quotes (`"`, `'`, `` ` ``).  
+**Tab twice** to switch to a detailed mode that lists **every** file and directory in the folder you are typing.
 
 No `/pick` command. No external tool. Pure inline completion.
 
@@ -66,7 +67,25 @@ Typing `~`, `/`, a quote, or a backtick never opens the path menu by itself.
 As you type after a path prefix, results are filtered by **prefix match** (case-insensitive).
 Hidden files (`.`-prefixed) are hidden unless your query also starts with `.`.
 
-### 6. Paths with spaces
+### 7. Detailed mode - Tab twice to list everything
+
+The first Tab opens the **capped autocomplete list**: the top 30 matches for
+the typed prefix (directory-first, hidden files skipped). Press Tab a
+**second time** on the same token to switch to detailed mode - the menu now
+lists **every file and directory** in the folder you are typing: hidden
+files included, no prefix filter, no cap. The list is scrollable (`↑↓`), so
+the whole directory is navigable in one go.
+
+```
+"./f|"    + Tab      →  top-30 fuzzy matches for `./f…` (autocomplete)
+"./f|"    + Tab Tab  →  every file and directory in `./` (detailed)
+```
+
+Typing anything or moving the cursor resets the next Tab to the regular
+autocomplete mode. The sensitive-directory guard still applies in detailed
+mode.
+
+### 8. Paths with spaces
 
 Fully supported. The extension captures the entire text between quotes, including spaces,
 so paths like `"./My Projects/"` complete correctly.
@@ -104,7 +123,7 @@ The provider follows one ownership rule:
 
 This delegation is required because `addAutocompleteProvider()` creates a wrapper chain: returning `null` outside the owned context would stop native slash-command completion.
 
-Inside quote pairs, the extension resolves paths against `cwd` or `$HOME`, lists matching files/directories, and returns autocomplete items with `📁` / `📄` labels.
+Inside quote pairs, the extension resolves paths against `cwd` or `$HOME`, lists matching files/directories, and returns autocomplete items with `📁` / `📄` labels. The first Tab caps the list at 30 items; a second Tab on the same token re-lists the whole directory (detailed mode).
 
 ## Development
 

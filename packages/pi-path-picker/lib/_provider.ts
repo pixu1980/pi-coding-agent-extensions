@@ -3,18 +3,69 @@
  *
  * Wraps the native provider and adds ~ expansion and path-aware completion
  * inside quoted strings. Private module (underscore prefix).
+ *
+ * Ownership rule (matches the real pi TUI flow):
+ *
+ *   - Cursor outside any quote region  -> delegate to the native provider
+ *     (slash commands, @file, native Tab completion: untouched).
+ *   - Cursor inside a quote region     -> pi-path-picker owns Tab
+ *     completion. A region is the text between an opening delimiter and
+ *     its closing delimiter; it also includes the natural typing state
+ *     (opening quote still open) and the "just closed" state (cursor
+ *     immediately after the closing quote), where the path token lives
+ *     between the two delimiters.
+ *   - Inside a region, only Tab (force) opens the path menu; a non-Tab
+ *     request (e.g. the native "@" trigger) delegates, so the built-in
+ *     fuzzy attachment completion keeps working inside quotes.
+ *   - Inside a region with no path token -> no suggestions, which closes
+ *     any stale menu without involving the native provider.
+ *
+ * What the menu shows follows the token shape:
+ *   - directory token (`./`, `./src/`, `~/`) -> COMPLETE listing: every
+ *     file and folder, hidden entries included, no cap;
+ *   - partial name (`./f`, `./src/ma`) -> prefix-filtered entries
+ *     (case-insensitive; hidden entries appear when the prefix starts
+ *     with `.`).
+ * There is deliberately NO "Tab twice = detailed mode": there is nothing
+ * extra to unlock - the pi TUI applies the selected item on the second
+ * Tab instead of re-querying, so a state machine keyed on repeated Tab
+ * presses can never fire there.
  */
 
 import { dirname, basename } from "node:path";
 import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-tui";
-import { getDelimiterContext, extractPathToken, resolvePath, listPathItems } from "./_helpers.ts";
+import {
+  findQuoteRegion,
+  extractPathToken,
+  resolvePath,
+  listPathItems,
+  joinPath,
+  type QuoteRegion,
+} from "./_helpers.ts";
+
+/** Text of the quote region that touches the cursor. */
+function regionText(line: string, region: QuoteRegion, col: number): string {
+  const end = region.cursorAfterClose ? (region.closing ?? col) : col;
+  return line.slice(region.opening + 1, end);
+}
 
 /**
- * Number of items shown by the first Tab (autocomplete mode). A second Tab
- * on the same token switches to detailed mode and lists every file and
- * directory in the target folder.
+ * Resolve the absolute [start, end) range of the path token inside the
+ * quote region, or null when the cursor is not inside a region or the
+ * region contains no path token.
  */
-const AUTOCOMPLETE_LIMIT = 30;
+function tokenRange(line: string, col: number): { token: string; start: number; end: number } | null {
+  const region = findQuoteRegion(line, col);
+  if (!region) return null;
+  const text = regionText(line, region, col);
+  const token = extractPathToken(text);
+  if (!token) return null;
+  return {
+    token: token.path,
+    start: region.opening + 1 + token.startIndex,
+    end: region.cursorAfterClose ? (region.closing ?? col) : col,
+  };
+}
 
 /**
  * Create an autocomplete provider for file paths.
@@ -24,17 +75,9 @@ export function createPathAutocompleteProvider(
   current: AutocompleteProvider,
   cwd: string,
 ): AutocompleteProvider {
-  // Detailed mode: a second Tab on the same token (same line, cursor and
-  // path) lists EVERY file and directory in the target folder - hidden files
-  // included, no prefix filter, no cap - instead of the capped fuzzy list.
-  // Any change to the token (typing, moving the cursor) resets to the
-  // regular autocomplete mode on the next Tab.
-  let lastSnapshot: string | null = null;
-  let detailedMode = false;
-
   return {
     // Non aggiunge trigger characters: preserva esclusivamente quelli nativi.
-    // Il path picker viene attivato solo da Tab, dentro una coppia valida,
+    // Il path picker viene attivato solo da Tab, dentro una regione quotata,
     // quando il token contiene almeno uno slash.
     triggerCharacters: current.triggerCharacters,
 
@@ -45,62 +88,55 @@ export function createPathAutocompleteProvider(
       options: { signal: AbortSignal; force?: boolean },
     ): Promise<AutocompleteSuggestions | null> {
       const currentLine = lines[cursorLine] ?? "";
-      const textBeforeCursor = currentLine.slice(0, cursorCol);
-      const delimiterContext = getDelimiterContext(currentLine, cursorCol);
+      const region = findQuoteRegion(currentLine, cursorCol);
 
-      // Without cursor-relative quotes the wrapper is transparent.
-      if (delimiterContext === "outside") {
+      // Senza una regione quotata relativa al cursore il wrapper è trasparente.
+      if (!region) {
         return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
 
-      // Una coppia rotta deve chiudere qualsiasi menu senza delegare al nativo.
-      if (delimiterContext === "broken") {
-        return null;
+      if (options.signal.aborted) return null;
+
+      // Dentro una regione, solo Tab (force) attiva il path picker. La
+      // digitazione naturale (trigger "@" dentro le virgolette, ecc.) resta
+      // al provider nativo, così @"-fuzzy e i trigger esistenti non mutano.
+      if (!options.force) {
+        return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
 
-      // Inside the pair, only Tab (`force`) can activate the path picker.
-      if (!options.force || options.signal.aborted) {
-        return null;
-      }
-
-      const token = extractPathToken(textBeforeCursor);
+      const text = regionText(currentLine, region, cursorCol);
+      const token = extractPathToken(text);
+      // Nessun token di percorso (o "~" senza slash) chiude eventuali menu
+      // aperti, senza passare dal provider nativo.
       if (!token || !token.path.includes("/")) {
         return null;
-      }
-
-      // Track Tab presses on the same token: the first Tab opens the capped
-      // autocomplete list, a second Tab on the same snapshot switches to
-      // detailed mode (every file and directory).
-      const snapshot = `${cursorLine}:${cursorCol}:${token.path}`;
-      if (lastSnapshot !== snapshot) {
-        lastSnapshot = snapshot;
-        detailedMode = false;
-      } else {
-        detailedMode = true;
       }
 
       const { path } = token;
 
       try {
-        // Determine the directory to search and the file prefix
+        // What the menu shows depends on the token shape:
+        //   - directory token (`./`, `./src/`, `~/.../`)  -> COMPLETE
+        //     listing: every file and folder, hidden entries included,
+        //     no cap;
+        //   - partial name (`./f`, `./src/ma`)  -> filtered list: only
+        //     entries matching the typed prefix (case-insensitive);
+        //     hidden entries appear when the prefix starts with `.`.
         let dirPath: string;
         let filePrefix: string;
 
         if (path.endsWith("/") || path === "~") {
-          // User typed a directory: list its contents
+          // Directory token: complete contents of that folder
           dirPath = resolvePath(path, cwd);
           filePrefix = "";
         } else {
-          // User typed a partial name: find the parent dir and filter
-          const parentDir = dirname(path);
+          // Partial name: parent dir, filtered by the typed prefix
           filePrefix = basename(path);
-          const resolvedParent = parentDir === "." ? cwd : resolvePath(parentDir, cwd);
-          dirPath = resolvedParent;
+          const parentDir = dirname(path);
+          dirPath = parentDir === "." ? cwd : resolvePath(parentDir, cwd);
         }
 
-        const items = listPathItems(dirPath, detailedMode ? "" : filePrefix, {
-          includeHidden: detailedMode,
-        });
+        const items = listPathItems(dirPath, filePrefix, { includeHidden: filePrefix === "" });
         if (items.length === 0 || options.signal.aborted) {
           return null;
         }
@@ -108,16 +144,16 @@ export function createPathAutocompleteProvider(
         // Convert to autocomplete items
         const autocompleteItems: AutocompleteItem[] = items.map((item) => {
           const suffix = item.isDir ? "/" : "";
+          const base = path.endsWith("/") ? path : dirname(path);
           return {
-            value: path.endsWith("/") ? `${path}${item.name}${suffix}` : `${dirname(path)}/${item.name}${suffix}`,
+            value: joinPath(base, `${item.name}${suffix}`),
             label: item.isDir ? `📁 ${item.name}/` : `📄 ${item.name}`,
             description: item.isDir ? "directory" : "file",
           };
         });
 
         return {
-          // Detailed mode (second Tab) lists everything; the first Tab caps.
-          items: detailedMode ? autocompleteItems : autocompleteItems.slice(0, AUTOCOMPLETE_LIMIT),
+          items: autocompleteItems,
           prefix: path,
         };
       } catch {
@@ -133,22 +169,20 @@ export function createPathAutocompleteProvider(
       prefix: string,
     ): { lines: string[]; cursorLine: number; cursorCol: number } {
       const currentLine = lines[cursorLine] ?? "";
-      const textBeforeCursor = currentLine.slice(0, cursorCol);
-      const textAfterCursor = currentLine.slice(cursorCol);
-      const token = getDelimiterContext(currentLine, cursorCol) === "inside" ? extractPathToken(textBeforeCursor) : null;
+      const range = tokenRange(currentLine, cursorCol);
 
-      // If suggestions come from a provider that is not the path picker
-      // (comandi slash nativi, @file, argomenti comandi, ecc.),
-      // deleghiamo al provider sottostante.
-      if (!token || token.path !== prefix) {
+      // Se i suggerimenti provengono da un provider che non è il path picker
+      // (comandi slash nativi, @file, argomenti comandi, ecc.), o se il
+      // token non corrisponde al prefix dei suggerimenti, delegherai al
+      // provider sottostante esattamente con gli stessi argomenti.
+      if (!range || range.token !== prefix) {
         return current.applyCompletion(lines, cursorLine, cursorCol, item, prefix);
       }
 
-      // Use the custom completion from the picker provider
+      // Replace exactly the token range; when the pair is closed the
+      // closing quote sits at range.end and is preserved.
       const completion = item.value;
-      const tokenStart = token.startIndex;
-
-      const newLine = currentLine.slice(0, tokenStart) + completion + textAfterCursor;
+      const newLine = currentLine.slice(0, range.start) + completion + currentLine.slice(range.end);
 
       const newLines = [...lines];
       newLines[cursorLine] = newLine;
@@ -156,21 +190,22 @@ export function createPathAutocompleteProvider(
       return {
         lines: newLines,
         cursorLine,
-        cursorCol: tokenStart + completion.length,
+        cursorCol: range.start + completion.length,
       };
     },
 
     shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
       const currentLine = lines[cursorLine] ?? "";
-      const delimiterContext = getDelimiterContext(currentLine, cursorCol);
+      const region = findQuoteRegion(currentLine, cursorCol);
 
-      // Fuori dalla coppia preserva esattamente il comportamento nativo.
-      if (delimiterContext === "outside") {
+      // Fuori dalla regione preserva esattamente il comportamento nativo.
+      if (!region) {
         return current.shouldTriggerFileCompletion?.(lines, cursorLine, cursorCol) ?? true;
       }
 
-      // Dentro una coppia valida o rotta richiama getSuggestions:
-      // only a null result can immediately close a stale menu.
+      // Dentro una regione quotata (aperta, chiusa o appena chiusa) spetta
+      // al path picker decidere tramite getSuggestions: only a null result
+      // can immediately close a stale menu.
       return true;
     },
   };

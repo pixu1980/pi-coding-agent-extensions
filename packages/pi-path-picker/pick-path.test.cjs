@@ -26,7 +26,7 @@ const { createJiti } = piRequire("jiti");
  */
 function runQuickGlob(cwd, pattern) {
   const stdout = execSync(
-    `node --experimental-strip-types "${__dirname}/pick-path.ts" --quick "${pattern}"`,
+    `node --experimental-strip-types "${__dirname}/lib/_pick-path.ts" --quick "${pattern}"`,
     { cwd, timeout: 5000, encoding: "utf8" },
   );
   return stdout.trim().split("\n").filter(Boolean);

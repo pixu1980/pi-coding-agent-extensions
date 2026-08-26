@@ -5,8 +5,9 @@
 # pi-path-picker - pi.dev extension
 
 Interactive file path autocomplete inside the TUI prompt.  
-Tab-complete `~`, `/`, `./`, `../` paths with fuzzy filtering - only inside quotes (`"`, `'`, `` ` ``).  
-**Tab twice** to switch to a detailed mode that lists **every** file and directory in the folder you are typing.
+Tab-complete `~`, `/`, `./`, `../` paths - only inside quotes (`"`, `'`, `` ` ``).  
+Tab on a **folder** shows its **complete** contents; Tab on a **partial
+name** filters by prefix.
 
 No `/pick` command. No external tool. Pure inline completion.
 
@@ -20,15 +21,15 @@ Requires **Node.js ≥ 22** (uses `--experimental-strip-types`).
 
 ## Interaction modes
 
-Path autocomplete fires **only on Tab**, inside a closed pair of double quotes, single quotes, or backticks, and only when the quoted path token contains `/`.
+Path autocomplete fires **only on Tab**, inside a quoted context (a pair of double quotes, single quotes, or backticks — the pair may be **open** or **closed**), and only when the quoted path token contains `/`.
 
 The extension adds no trigger characters of its own. When no quoted context is present it delegates transparently to pi's native provider, so built-in commands (`/model`, `/settings`, `/caveman`, etc.), `@file`, command arguments, and native Tab completion behave exactly as if `pi-path-picker` were not installed.
 
-An incomplete quote context (opening or closing delimiter missing) is intentionally not delegated: it returns no suggestions so any open path menu closes immediately.
+Non-Tab typing inside quotes is also delegated: the native `@`-attachment fuzzy completion keeps working inside quotes. Tab over a quoted token without a path (or with `~` alone) returns no suggestions, closing any stale menu without involving the native provider.
 
 ### 1. `~` / `~/` - Home directory expansion
 
-Type `~/` inside quotes and press Tab → file list from `$HOME`.
+Type `~/` inside quotes and press Tab → file list from `$HOME`. The pair can be still open (the natural way of typing) or already closed with the cursor right after the closing quote.
 
 ```
 "~/|" + Tab        →  shows home-directory contents
@@ -55,37 +56,61 @@ Type `./` or `../` inside quotes and press Tab → navigate from project root or
 
 ### 4. Tab key - Force trigger
 
-Tab is the **only** path-picker trigger. It opens the menu only when:
+Tab is the **only** path-picker trigger. It opens the menu when:
 
-1. the cursor is inside a closed pair of `"`, `'`, or `` ` ``;
+1. the cursor is inside a quote region of `"`, `'`, or `` ` ``: an open pair (opening quote typed, no closing quote yet), a closed pair with the cursor between the delimiters, or a closed pair with the cursor right after the closing quote (the path token lives between the delimiters);
 2. the extracted path token contains `/` (`~/`, `/`, `./`, `../`, or a descendant path).
 
 Typing `~`, `/`, a quote, or a backtick never opens the path menu by itself.
 
-### 5. Fuzzy filter
+### 5. What Tab shows
 
-As you type after a path prefix, results are filtered by **prefix match** (case-insensitive).
-Hidden files (`.`-prefixed) are hidden unless your query also starts with `.`.
+The menu depends on the shape of the quoted token:
 
-### 7. Detailed mode - Tab twice to list everything
+- **Directory token** (`./`, `./src/`, `~/.../`) + Tab → the **complete
+  contents** of that folder: every file and directory, hidden entries
+  (`.git`, `.env`, …) included, no cap.
+- **Partial name** (`./f`, `./src/ma`) + Tab → only the entries matching
+  that prefix (case-insensitive). Hidden entries appear when your partial
+  name starts with `.` (e.g. `./.g` → `.git`).
 
-The first Tab opens the **capped autocomplete list**: the top 30 matches for
-the typed prefix (directory-first, hidden files skipped). Press Tab a
-**second time** on the same token to switch to detailed mode - the menu now
-lists **every file and directory** in the folder you are typing: hidden
-files included, no prefix filter, no cap. The list is scrollable (`↑↓`), so
-the whole directory is navigable in one go.
+The list is always scrollable (`↑↓`). There is no hidden detailed mode to
+unlock on a second Tab — what you see on the first Tab is everything.
+
+Entries whose name contains control characters (like the macOS Finder
+folder-icon artifact `Icon\r`) are skipped: they would render as empty,
+blank rows and their value would inject control codes into the prompt.
 
 ```
-"./f|"    + Tab      →  top-30 fuzzy matches for `./f…` (autocomplete)
-"./f|"    + Tab Tab  →  every file and directory in `./` (detailed)
+"./|"  + Tab   →  everything inside `./` (files, folders, dotfiles)
+"./f|" + Tab   →  only `./f*` entries
+"./.g|" + Tab  →  hidden entries starting with `.g`
 ```
 
-Typing anything or moving the cursor resets the next Tab to the regular
-autocomplete mode. The sensitive-directory guard still applies in detailed
-mode.
+### 6. Applying a completion
 
-### 8. Paths with spaces
+The list opens on the first Tab: complete contents for directory tokens,
+prefix-filtered for partial names. It is scrollable (`↑↓`).
+
+- **Tab again** (or **Enter**) applies the selected entry; a directory keeps
+  its trailing `/` so you can keep completing inside it.
+- When the pair is still open the completion extends the quoted token
+  (`"./foo` stays inside the quotes); when the pair was already closed the
+  closing quote is preserved (`"./foo"`).
+
+```
+"./|"  + Tab      →  complete contents of `./` (files, folders, dotfiles)
+"./f|" + Tab      →  filtered `./f*` entries
+"./f…  + Tab (again) →  applies the selected entry
+```
+
+Typing anything or moving the cursor re-runs the list on the next Tab
+(complete or filtered, depending on the token). The sensitive-directory
+guard still applies. There is deliberately no “Tab twice = detailed mode”:
+the pi editor applies the selection on the second Tab instead of
+re-querying, so a hidden-files mode keyed on repeated Tabs cannot work there.
+
+### 7. Paths with spaces
 
 Fully supported. The extension captures the entire text between quotes, including spaces,
 so paths like `"./My Projects/"` complete correctly.
@@ -116,14 +141,14 @@ It wraps pi's native provider and adds path-aware completion.
 The provider follows one ownership rule:
 
 1. **No custom trigger characters** - the wrapper passes through the native provider's trigger list unchanged.
-2. **Inside a closed quote pair + Tab + token containing `/`** - `pi-path-picker` owns suggestions and completion.
-3. **Inside a closed quote pair without Tab or without `/`** - returns no path suggestions, closing any stale menu.
-4. **Broken quote pair** - returns no suggestions and forces a refresh, so deleting either delimiter closes the menu like Escape.
-5. **No quoted context** - delegates `getSuggestions`, `shouldTriggerFileCompletion`, and `applyCompletion` to the wrapped native provider without altering arguments or results.
+2. **Inside a quote region + Tab + token containing `/`** - `pi-path-picker` owns suggestions and completion. A quote region is the text between an opening delimiter and its closing delimiter; it includes the two states the real editor produces: the open pair (`"./` — the natural typing position) and the closed pair with the cursor right after the closing quote (`"./"`), where the path token lives between the delimiters.
+3. **Inside a region without Tab** - delegates to the native provider, so the native `@`-attachment fuzzy completion inside quotes keeps working.
+4. **Inside a region whose token has no slash (or no token at all)** - returns no suggestions, closing any stale menu without involving the native provider.
+5. **No quote region** - delegates `getSuggestions`, `shouldTriggerFileCompletion`, and `applyCompletion` to the wrapped native provider without altering arguments or results.
 
 This delegation is required because `addAutocompleteProvider()` creates a wrapper chain: returning `null` outside the owned context would stop native slash-command completion.
 
-Inside quote pairs, the extension resolves paths against `cwd` or `$HOME`, lists matching files/directories, and returns autocomplete items with `📁` / `📄` labels. The first Tab caps the list at 30 items; a second Tab on the same token re-lists the whole directory (detailed mode).
+Inside quote regions, the extension resolves paths against `cwd` or `$HOME`, lists the target folder (complete contents when the token is a directory, prefix-filtered when it is a partial name — hidden entries included in complete listings or when the prefix starts with `.`), and returns autocomplete items with `📁` / `📄` labels. The menu has no cap. The sensitive-directory guard still applies.
 
 ## Development
 
@@ -131,7 +156,8 @@ Inside quote pairs, the extension resolves paths against `cwd` or `$HOME`, lists
 # From monorepo root
 cd packages/pi-path-picker
 pi -e .         # Test locally
-node index.test.cjs   # Run tests
+node pick-path.test.cjs        # Run standalone CLI tests
+node --import tsx --test __tests__/index.test.mjs  # Run the extension test suite
 ```
 
 ## Files
@@ -139,16 +165,16 @@ node index.test.cjs   # Run tests
 | File | Role |
 |------|------|
 | `index.ts` | Extension entry - registers autocomplete provider via `session_start` |
-| `pick-path.ts` | Standalone helper - interactive TUI browser (`--quick` for glob), used by the extension internally |
+| `lib/_pick-path.ts` | Standalone helper - interactive TUI browser (`--quick` for glob), used by the extension internally |
 
-## Pick-path CLI (`pick-path.ts`)
+## Pick-path CLI (`lib/_pick-path.ts`)
 
 The helper script can also run standalone as a terminal UI:
 
 ```bash
-node --experimental-strip-types pick-path.ts              # Interactive browser
-node --experimental-strip-types pick-path.ts --quick *    # Quick glob match (stdout)
-echo "src" | node --experimental-strip-types pick-path.ts # Pipe start directory
+node --experimental-strip-types lib/_pick-path.ts              # Interactive browser
+node --experimental-strip-types lib/_pick-path.ts --quick *    # Quick glob match (stdout)
+echo "src" | node --experimental-strip-types lib/_pick-path.ts # Pipe start directory
 ```
 
 Keys inside the interactive browser:

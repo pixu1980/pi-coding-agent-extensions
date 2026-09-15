@@ -11,6 +11,51 @@ name** filters by prefix.
 
 No `/pick` command. No external tool. Pure inline completion.
 
+## Where it works
+
+The rule is the same everywhere: `./`, `~/` or `/` **inside a quote region**
+(`"`, `'`, `` ` ``) plus **Tab**. Nothing else opens the menu.
+
+| Surface | How it gets the provider |
+| --- | --- |
+| pi's main prompt | `ctx.ui.addAutocompleteProvider()` |
+| Any extension that renders its own editor (pi-ask's `ask` / `interview` custom-answer and note fields) | borrowed over `pi.events` |
+| pi's `/model`, `@file`, slash-command arguments | untouched - those belong to pi's native provider |
+
+### Borrowing the provider (for extension authors)
+
+`ctx.ui.addAutocompleteProvider()` only reaches pi's main prompt editor. An
+extension that builds its own pi-tui `Editor` never sees it, so it cannot offer
+path completion even though its editor is exactly where a path gets typed.
+
+Such an extension can ask for the provider over the shared event bus - no
+package dependency, no source import:
+
+```typescript
+const PROVIDER_CHANNEL = "pi-path-picker:provider";
+
+let provider;
+pi.events.emit(PROVIDER_CHANNEL, {
+  cwd: ctx.cwd,
+  reply: (value) => { provider = value; },
+});
+
+if (provider) editor.setAutocompleteProvider(provider);
+```
+
+`pi.events` is a Node `EventEmitter`, so `emit` runs listeners synchronously and
+`reply` fires before `emit` returns - the provider is usable in the same tick.
+If pi-path-picker is not installed nobody answers `reply` and you keep whatever
+you had.
+
+One caveat for custom components: a component that caches its rendered lines
+must rebuild them while the editor has an open menu, because suggestions arrive
+*after* the key that asked for them:
+
+```typescript
+if (editor.isShowingAutocomplete()) cachedLines = undefined;
+```
+
 ## Install
 
 ```bash
@@ -133,8 +178,10 @@ Users can still navigate into them via other means - only the autocomplete list 
 
 ## How it works
 
-The extension registers an **autocomplete provider** via pi's `session_start` hook.
-It wraps pi's native provider and adds path-aware completion.
+The extension registers an **autocomplete provider** two ways: via pi's
+`session_start` hook for the main prompt, and via the `pi.events` channel for
+extensions that render their own editor. Both hand out the same provider, so the
+rule below holds identically on every surface.
 
 ### Autocomplete isolation contract
 
@@ -165,6 +212,8 @@ node --import tsx --test __tests__/index.test.mjs  # Run the extension test suit
 | File | Role |
 |------|------|
 | `index.ts` | Extension entry - registers autocomplete provider via `session_start` |
+| `lib/_provider.ts` | The provider: quote-region detection, path listing, completion |
+| `lib/_contract.ts` | `pi.events` channel other extensions use to borrow the provider |
 | `lib/_pick-path.ts` | Standalone helper - interactive TUI browser (`--quick` for glob), used by the extension internally |
 
 ## Pick-path CLI (`lib/_pick-path.ts`)

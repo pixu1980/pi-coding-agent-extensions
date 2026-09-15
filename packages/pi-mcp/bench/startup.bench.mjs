@@ -1,5 +1,5 @@
 /**
- * pi-mcp - startup import-graph probe (PERF-08 gate 8.4)
+ * pi-mcp - startup import-graph probe (PERF-08 gate 8.4, PERF-10 load-robustness)
  *
  * Run: `pnpm bench` (or `node --import tsx bench/startup.bench.mjs`).
  *
@@ -8,11 +8,30 @@
  * startup graph. If a panel module were statically imported by index.ts, a
  * dynamic import after the barrel would resolve from the module cache almost
  * instantly; a real, multi-ms cold load proves it was deferred.
+ *
+ * Load-robustness (PERF-10): these gates only fail toward leniency under
+ * load. A slow machine inflates every cold import further above the 50ms
+ * laziness threshold (still PASS), while a module-cache hit stays microseconds
+ * (still FAIL when eager). The machine context is printed so a red run can
+ * be attributed to code, not weather. Reference (2026-09-15, loadavg ~110,
+ * 10 cores): barrel 1742ms, _mcp-panel 1287ms lazy, _ui-server 0.2ms deferred.
  */
 
 import { fileURLToPath } from "node:url";
+import { execFile } from "node:child_process";
+import { availableParallelism, loadavg } from "node:os";
 
 const LIB = fileURLToPath(new URL("../lib/", import.meta.url));
+
+// PERF-10 machine context, printed next to every gate verdict.
+const cores = availableParallelism();
+const loadOneMinute = loadavg()[0];
+const spawnStart = performance.now();
+await new Promise((resolve) => execFile(process.execPath, ["--version"], () => resolve()));
+console.log(
+  `machine: loadavg(1m)=${loadOneMinute.toFixed(1)} cores=${cores} ` +
+    `spawn-baseline=${(performance.now() - spawnStart).toFixed(1)}ms`,
+);
 
 async function timed(label, spec) {
   const start = performance.now();

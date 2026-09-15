@@ -31,6 +31,7 @@ import { availableParallelism, loadavg } from "node:os";
 
 import { getGitStatus, getGitCacheStats, invalidateGitCache, flushGitRefreshes } from "../lib/_git.ts";
 import { getProjectPath, invalidateProjectPathCache, flushProjectPathRefreshes } from "../lib/_helpers.ts";
+import { resolveQuietArm } from "./_quiet.mjs";
 
 const FRAMES = 200;
 const P99_BUDGET_MS = 2;
@@ -39,36 +40,11 @@ const P99_BUDGET_MS = 2;
 // per cwd, single-flight, and never on the render path itself.
 const LOOP_P99_BUDGET_MS = 10;
 
-/**
- * Decide whether wall-time budgets are enforced or reported (PERF-10).
- *
- * Unset: measure the machine - enforced when loadavg(1m) < cores.
- * `PI_BENCH_QUIET=1`: force the enforced branch (a breach exits non-zero).
- * `PI_BENCH_QUIET=0`: force the reported branch (a breach only warns).
- *
- * The override exists so both arms are provable on any machine: the quiet
- * arm turns a breach into `GATE BREACH` and exit 1, and it can only be
- * validated when the host is idle - which a busy host never is.
- *
- * @param coreCount - Logical cores available to this process.
- * @returns True when wall-time budgets must be enforced.
- */
-function resolveQuiet(coreCount) {
-  const override = process.env.PI_BENCH_QUIET?.trim();
-
-  if (override === "1") {
-    return true;
-  }
-
-  if (override === "0") {
-    return false;
-  }
-
-  return loadavg()[0] < coreCount;
-}
-
 function percentile(sorted, p) {
-  if (sorted.length === 0) return 0;
+  if (sorted.length === 0) {
+    return 0;
+  }
+
   return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))];
 }
 
@@ -76,17 +52,21 @@ function summarize(name, samples) {
   const sorted = [...samples].sort((a, b) => a - b);
   const p50 = percentile(sorted, 50);
   const p99 = percentile(sorted, 99);
+
   console.log(`${name}: p50=${p50.toFixed(3)}ms p99=${p99.toFixed(3)}ms (n=${samples.length})`);
+
   return { p50, p99 };
 }
 
 function makeTempRepo() {
   const dir = mkdtempSync(join(tmpdir(), "pi-statusline-bench-"));
+
   execSync("git init -q -b main", { cwd: dir });
   execSync("git config user.email test@example.com", { cwd: dir });
   execSync("git config user.name Tester", { cwd: dir });
   writeFileSync(join(dir, "file.txt"), "hello\n");
   execSync("git add . && git commit -qm init", { cwd: dir });
+
   return dir;
 }
 
@@ -96,14 +76,16 @@ const repo = makeTempRepo();
 // machine, so record the load and a trivial-spawn baseline next to the gates.
 const cores = availableParallelism();
 const loadOneMinute = loadavg()[0];
-const quietOverride = process.env.PI_BENCH_QUIET?.trim();
-const quiet = resolveQuiet(cores);
-const quietSource = quietOverride === "1" || quietOverride === "0" ? `forced by PI_BENCH_QUIET=${quietOverride}` : "measured";
+const quietOverride = process.env.PI_BENCH_QUIET;
+const quietArm = resolveQuietArm({ coreCount: cores, loadOneMinute, override: quietOverride });
+const quiet = quietArm.quiet;
+const quietSource = quietArm.source === "forced" ? `forced by PI_BENCH_QUIET=${quietOverride?.trim()}` : "measured";
 const spawnStart = performance.now();
 
 await new Promise((resolve) => execFile(process.execPath, ["--version"], () => resolve()));
 
 const spawnBaselineMs = performance.now() - spawnStart;
+
 console.log(
   `machine: loadavg(1m)=${loadOneMinute.toFixed(1)} cores=${cores} spawn-baseline=${spawnBaselineMs.toFixed(1)}ms ` +
     (quiet
@@ -113,6 +95,7 @@ console.log(
 // 2ms sampling: with the default 20ms resolution the instrument quantizes
 // idle delays at ~20ms and every quiet run breaches the gate.
 const histogram = monitorEventLoopDelay({ resolution: 2 });
+
 histogram.enable();
 
 // Warm the caches once (explicit sync path), then measure the render path.
@@ -122,12 +105,15 @@ getProjectPath(repo, "git-relative");
 // 1 — cached serve over 200 frames (the steady-state render path).
 const statsBefore = getGitCacheStats();
 const cached = [];
+
 for (let i = 0; i < FRAMES; i++) {
   const t0 = performance.now();
+
   getGitStatus(repo);
   getProjectPath(repo, "git-relative");
   cached.push(performance.now() - t0);
 }
+
 const statsAfter = getGitCacheStats();
 const backgroundRefreshes =
   statsAfter.misses - statsBefore.misses + (statsAfter.staleServes - statsBefore.staleServes);
@@ -138,8 +124,10 @@ invalidateGitCache(repo);
 invalidateProjectPathCache(repo);
 const tCold0 = performance.now();
 const cold = getGitStatus(repo);
+
 getProjectPath(repo, "git-relative");
 const coldMs = performance.now() - tCold0;
+
 console.log(`cold fallback serve: ${coldMs.toFixed(3)}ms (hasGit=${cold.hasGit})`);
 
 // 3 — event loop delay while the background refresh is in flight.
@@ -149,6 +137,7 @@ getGitStatus(repo); // kicks the async refresh
 await flushGitRefreshes();
 await flushProjectPathRefreshes();
 const loopP99 = histogram.percentile(99) / 1e6;
+
 console.log(`event-loop delay during refresh: p99=${loopP99.toFixed(3)}ms`);
 histogram.disable();
 
@@ -175,8 +164,13 @@ function checkWall(ok, message) {
     console.warn(`WARN (loaded machine, not enforced): ${message}`);
   }
 }
+
 checkWall(cachedStats.p99 < P99_BUDGET_MS, `cached p99 ${cachedStats.p99.toFixed(3)}ms >= ${P99_BUDGET_MS}ms`);
 checkWall(coldMs < P99_BUDGET_MS, `cold fallback ${coldMs.toFixed(3)}ms >= ${P99_BUDGET_MS}ms`);
 checkWall(loopP99 < LOOP_P99_BUDGET_MS, `loop p99 ${loopP99.toFixed(3)}ms >= ${LOOP_P99_BUDGET_MS}ms`);
-if (failed === 0) console.log(quiet ? "all gates pass" : "invariant gates pass (wall budgets reported only - machine loaded)");
+
+if (failed === 0) {
+  console.log(quiet ? "all gates pass" : "invariant gates pass (wall budgets reported only - machine loaded)");
+}
+
 process.exit(failed);

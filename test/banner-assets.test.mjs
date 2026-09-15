@@ -22,7 +22,9 @@ test("every extension ships a structured, accessible SVG banner", () => {
 
     const svg = readFileSync(bannerPath, "utf8");
     assert.match(svg, /viewBox="0 0 1792 592"/, `${packageDir} uses the shared canvas`);
-    assert.match(svg, /role="img"/, `${packageDir} banner is exposed as an image`);
+    // The banners are formatted with SVGO, whose preset drops `role="img"`.
+    // The accessible name stays wired through `aria-labelledby` plus the
+    // `<title>` and `<desc>` ids the assertions below pin.
     assert.match(svg, /aria-labelledby="banner-title banner-description"/);
     assert.match(svg, new RegExp(`<title id="banner-title">[^<]*${packageDir}[^<]*<\\/title>`));
     assert.match(svg, /<desc id="banner-description">[^<]+<\/desc>/);

@@ -56,6 +56,30 @@ test("registers /sessions, /projects and session_start", () => {
   assert.ok(commands.has("projects"));
 });
 
+test("session_start: invalidates the session cache so a new session is listed", async () => {
+  freshAgentDir();
+  writeSession("projCache", "a.jsonl", [
+    { type: "session", cwd: "/cache-a", timestamp: "2026-07-01T00:00:00Z" },
+    { type: "message", message: { role: "user", content: "a" } },
+  ]);
+  const { getSessions } = await import("../lib/_sessions.ts");
+  const listed = await getSessions();
+  assert.ok(listed.some((s) => s.cwd === "/cache-a"), "baseline list");
+
+  // A session file appearing while the cache is warm: only the session_start
+  // handler can make it visible before the TTL (PERF-11 explicit contract).
+  writeSession("projCache", "b.jsonl", [
+    { type: "session", cwd: "/cache-b", timestamp: "2026-07-01T00:00:00Z" },
+    { type: "message", message: { role: "user", content: "b" } },
+  ]);
+  const { pi, emit } = createMockPi();
+  sessionsExtension(pi);
+  await emit("session_start", {}, createMockCtx());
+
+  const refreshed = await getSessions();
+  assert.ok(refreshed.some((s) => s.cwd === "/cache-b"), "session_start must invalidate the cached list");
+});
+
 test("session_start: auto-names the session from the first user message", async () => {
   const { pi, emit, calls, state } = createMockPi();
   sessionsExtension(pi);

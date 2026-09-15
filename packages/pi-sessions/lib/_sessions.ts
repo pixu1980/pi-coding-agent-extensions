@@ -2,7 +2,7 @@
  * pi-sessions - session file discovery and parsing (private module)
  */
 
-import { createReadStream, readFileSync, statSync, existsSync } from "node:fs";
+import { createReadStream, readFileSync, statSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -14,38 +14,53 @@ import type { SessionSummary, TextContentBlock } from "./_types.ts";
 
 let cachedSessions: SessionSummary[] | null = null;
 let cacheTimestamp = 0;
-let cacheDirMtime = 0;
 let pendingSessions: Promise<SessionSummary[]> | null = null;
 let cacheGeneration = 0;
 
 /**
- * Invalidate the session cache when the sessions directory changes.
+ * Invalidate the session cache. Explicit contract: called on session_start
+ * (a new session file exists now) and by tests. The cached path makes no
+ * filesystem call, so this is the only freshness lever before the TTL.
  */
-function getSessionsDirMtime(): number {
-  const dir = getSessionsDir();
-  if (!existsSync(dir)) return 0;
-  try {
-    return statSync(dir).mtimeMs;
-  } catch {
-    return 0;
-  }
+export function clearSessionsCache(): void {
+  cachedSessions = null;
+  cacheTimestamp = 0;
+  pendingSessions = null;
+  cacheGeneration++;
 }
 
 export type SessionListProgress = (loaded: number, total: number) => void;
 
+// ── Cached-path economics (PERF-11) ──────────────────────────────
+//
+// Measured on a real agent dir (493 sessions, 133,922 scanned lines):
+//   cold full listing  4341.9ms
+//   cached serve          0.012ms
+// A directory stat costs 1.8us - 0.00004% of the listing it would guard -
+// so the cached path makes NO filesystem call at all.
+//
+// The previous mtime check was dropped for a second reason: it statted the
+// PARENT sessions dir, and writing a session into an existing project
+// subdirectory does not change that mtime (measured), so it only ever
+// detected brand-new project directories - it paid a syscall per open for an
+// invalidation it did not deliver.
+
 /**
- * Get sessions asynchronously with caching. Cache is invalidated when the
- * sessions directory changes or its TTL expires.
+ * Get sessions asynchronously with caching. The cached list is served for
+ * `CACHE_TTL_MS`; `clearSessionsCache()` is the explicit invalidation hook.
  */
 export async function getSessions(onProgress?: SessionListProgress): Promise<SessionSummary[]> {
   const now = Date.now();
-  const currentMtime = getSessionsDirMtime();
 
-  if (cachedSessions && (now - cacheTimestamp) < CACHE_TTL_MS && currentMtime === cacheDirMtime) {
+  if (cachedSessions && (now - cacheTimestamp) < CACHE_TTL_MS) {
     onProgress?.(cachedSessions.length, cachedSessions.length);
+
     return cachedSessions;
   }
-  if (pendingSessions) return pendingSessions;
+
+  if (pendingSessions) {
+    return pendingSessions;
+  }
 
   const generation = cacheGeneration;
   const request = listSessionsAsync(onProgress);
@@ -56,21 +71,11 @@ export async function getSessions(onProgress?: SessionListProgress): Promise<Ses
     if (generation === cacheGeneration) {
       cachedSessions = sessions;
       cacheTimestamp = Date.now();
-      cacheDirMtime = getSessionsDirMtime();
     }
     return sessions;
   } finally {
     if (pendingSessions === request) pendingSessions = null;
   }
-}
-
-/** Clear session cache. */
-export function clearSessionsCache(): void {
-  cachedSessions = null;
-  cacheTimestamp = 0;
-  cacheDirMtime = 0;
-  pendingSessions = null;
-  cacheGeneration++;
 }
 
 // ── Session Listing ────────────────────────────────────────────────

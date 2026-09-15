@@ -6,7 +6,7 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { autoNameSession } from "./_sessions.ts";
+import { autoNameSession, clearSessionsCache } from "./_sessions.ts";
 import { showSessionSidebar, showFolderSidebar } from "./_overlays.ts";
 
 export default function (pi: ExtensionAPI): void {
@@ -28,6 +28,12 @@ export default function (pi: ExtensionAPI): void {
 
   // ── Auto-name sessions on start ───────────────────────────────
   pi.on("session_start", async (_event, ctx) => {
+    // Explicit cache invalidation (PERF-11): a session_start means a new
+    // session file exists, so the cached list is stale by construction.
+    // Clearing is free (two assignments); the full listing is only paid on
+    // the next panel open, which would re-list anyway.
+    clearSessionsCache();
+
     // If session has no display name, try to derive one from the first user message
     const currentName = pi.getSessionName();
     if (!currentName) {

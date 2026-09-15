@@ -28,7 +28,8 @@
   "files": [
     "index.ts",
     "lib/**",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public"

@@ -30,6 +30,7 @@
     "index.ts",
     "lib/**",
     "README.md",
+    "LICENSE",
     "DISCLOSURE"
   ],
   "publishConfig": {

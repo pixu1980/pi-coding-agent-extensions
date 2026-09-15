@@ -28,7 +28,8 @@
     "index.ts",
     "lib/**",
     "README.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public"

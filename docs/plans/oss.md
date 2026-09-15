@@ -24,7 +24,7 @@ comes first and gates everything else.
 | ----- | ---- | ------- | -------------- |
 | 0.1 | Step 7 | OSS-07 | Done. A dirty tree aborted the release path and made every package look release-worthy; it landed in its own commit, the tree is clean and the release path runs again. |
 | 0.2 | Step 9 | OSS-09 | Done. The gate exists, both commands exit 0, and a test proves the linter is not a placeholder. Step 2 still owes the contributor-facing documentation of it. |
-| 0.3 | Step 16 | OSS-16 | Cheap, and it repairs the release output and package metadata that the later steps rely on as a signal. |
+| 0.3 | Step 16 | OSS-16 | Done. The dry run reports what it would release, and every package declares the same node floor its host declares. This closes Phase 0. |
 
 ### Phase 1 - Legal and trust floor
 
@@ -207,11 +207,11 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **15.2**: Set the canonical user.name and user.email for the repository so new commits stop adding a third identity.
   - [ ] **15.3**: Document the identity and sign-off expectation in CONTRIBUTING.md next to the inbound-license statement, so a future DCO decision has a clean base.
   - [ ] **15.4**: Gate: git shortlog -sne reports exactly one contributor entry for the maintainer.
-- [ ] **Step 16 - OSS-16 (low)**: The release script reports misleading dry-run totals and 5 of 8 packages omit an engines field, so the release output and the metadata disagree with reality.
-  - [ ] **16.1**: Increment a separate dry-run counter in scripts/release.mjs so the summary distinguishes would-release from released, and extend test/release-helpers.test.mjs to assert the printed totals.
-  - [ ] **16.2**: Add an engines field to the 5 packages that lack one, aligned with the runtime each package actually needs and with the pi-cursor precedent of node >=22.13.0.
-  - [ ] **16.3**: Add a test asserting every published package declares engines, license, repository.directory and a non-empty files array, so metadata cannot drift silently.
-  - [ ] **16.4**: Gate: pnpm release:dry prints a non-zero would-release count, and pnpm test passes with the new metadata test.
+- [x] **Step 16 - OSS-16 (low)**: The release script reported misleading dry-run totals and 5 of 8 packages omitted an engines field, so the release output and the metadata disagreed with reality.
+  - [x] **16.1**: Added a separate wouldRelease counter and extracted the summary into releaseSummaryLines in scripts/release-helpers.mjs, which prints the counter that matches the mode. test/release-helpers.test.mjs asserts both branches, so a dry run can no longer claim it released nothing.
+  - [x] **16.2**: Gave all eight packages engines.node >=22.19.0. The sub-step proposed copying pi-cursor's >=22.13.0, and measuring that value showed it is wrong: @earendil-works/pi-coding-agent 0.85.1 declares `node: >=22.19.0` for itself and every package here peers on it, so >=22.13.0 admits a runtime pi cannot load into. pi-cursor was corrected along with the five that had no engines at all.
+  - [x] **16.3**: Added test/package-metadata.test.mjs, covering engines, license, repository.directory, the files array, and the LICENSE plus README that the files array must actually ship.
+  - [x] **16.4**: Gate met: pnpm release:dry prints 'would release: 8' instead of 'released: 0', pnpm test reports 27 pass 0 fail, and pnpm lint and pnpm format:check both exit 0.
 - [ ] **Step 17 - OSS-17 (info)**: Accepted risk, recorded by maintainer decision on this run: the repository has no CI, so 0 of 8 packages carry provenance attestations and releases are published from a developer machine with a personal npm credential.
   - [ ] **17.1**: Write an ADR under docs/adr/ recording the decision to publish locally without CI, the residual supply-chain exposure it accepts, and the trigger that would reopen it such as a second maintainer or a reported compromise.
   - [ ] **17.2**: State the exposure in SECURITY.md so a consumer can weigh it, including that no release is provenance-attested and that tags are lightweight and unsigned.

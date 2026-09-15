@@ -79,6 +79,24 @@ to the next answer you pick. The note travels with the answer back to the model:
 Q1: 1. Frontend - note: team prefers it
 ```
 
+### Paths (optional)
+
+The custom-answer and note fields are plain text editors, so with
+[`@pixu1980/pi-path-picker`](https://github.com/pixu1980/pi-coding-agent-extensions/tree/main/packages/pi-path-picker)
+installed they get **path completion** - the same one the main prompt has:
+
+```
+Type something. -> `.//`   + Tab   →  lists the contents of ./ inside the field
+```
+
+The rule is unchanged: `./`, `~/` or `/` inside a quote (`"`, `'`, `` ` ``)
+plus Tab. Nothing else opens the picker, and `Tab` keeps its other jobs -
+switching interview tabs when no editor is focused.
+
+pi-ask does not depend on pi-path-picker. It asks for the provider over pi's
+event bus at the moment the field opens, so when the picker is not installed the
+fields behave exactly as before.
+
 ## Interview
 
 The `interview` tool renders a tab bar: one tab per question (labels chosen by

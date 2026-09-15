@@ -11,4 +11,5 @@ import "./_interview.test.mjs";
 import "./_lang.test.mjs";
 import "./_logic.test.mjs";
 import "./_interview-ui.test.mjs";
+import "./_path-provider.test.mjs";
 import "./_types.test.mjs";

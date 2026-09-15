@@ -25,6 +25,7 @@ import {
 	type SelectAnswer,
 } from "./_types.ts";
 import { parseDigitKey, selectionFromCustom, selectionFromIndex, toggleIndex, withNote } from "./_logic.ts";
+import { attachPathAutocomplete, mustRebuildForAutocomplete, type PathProviderBus } from "./_path-provider.ts";
 
 interface AskState {
 	optionIndex: number;
@@ -37,8 +38,12 @@ interface AskState {
 
 /**
  * The `ask` tool definition registered by the extension.
+ *
+ * `pi` is optional and only used to reach pi-path-picker over the event bus, so
+ * the custom-answer and note fields get path completion like the main prompt.
+ * Without it the UI behaves exactly as before.
  */
-export function createAskTool(): ToolDefinition<typeof AskParams, AskDetails> {
+export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskParams, AskDetails> {
 	return {
 		name: "ask",
 		label: "Ask",
@@ -109,6 +114,9 @@ export function createAskTool(): ToolDefinition<typeof AskParams, AskDetails> {
 					},
 				};
 				const editor = new Editor(tui, editorTheme);
+				// Path completion for the custom-answer and note fields; a no-op when
+				// pi-path-picker is not installed.
+				attachPathAutocomplete(editor, pi, ctx.cwd);
 
 				editor.onSubmit = (value) => {
 					if (state.editMode) {
@@ -265,6 +273,9 @@ export function createAskTool(): ToolDefinition<typeof AskParams, AskDetails> {
 				}
 
 				function render(width: number): string[] {
+					// Suggestions land after the key that asked for them, so a cached
+					// frame would hide the menu. See _path-provider.ts.
+					if (mustRebuildForAutocomplete(editor)) cachedLines = undefined;
 					if (cachedLines) return cachedLines;
 
 					const lines: string[] = [];

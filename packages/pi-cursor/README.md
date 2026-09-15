@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-cursor - Cursor agents inside pi, on your own API key" width="1100">
+</p>
+
 # pi-cursor
 
 > Cursor API key provider for [pi](https://pi.dev) — run Cursor agents from pi with **your own** Cursor API key.
@@ -13,7 +17,9 @@ ships ~110 source files, an MCP tool bridge, a cloud-agent runtime, a usage
 reporting path and a 40-script smoke harness. `pi-cursor` is the small,
 auditable core: the Cursor API key, the Cursor models, and nothing else.
 
-The full comparison is in [`docs/audits/pi-cursor-sdk-source-audit.md`](../../docs/audits/pi-cursor-sdk-source-audit.md).
+What the reduction dropped: cloud agents, the MCP tool bridge that exposed pi's
+tools over loopback HTTP, cloud usage reporting, the SDK key-fingerprint the
+upstream cache stored, and alias-based model ids.
 
 ## Features
 
@@ -65,6 +71,29 @@ export CURSOR_API_KEY="..."   # machine-local only, never written by the extensi
 | `PI_CURSOR_MODEL_CACHE_TTL_MS` | `21600000` (6h) | Catalog cache freshness |
 | `PI_CURSOR_LOG_EGRESS` | `0` | `1` prints the outbound surface to stderr at startup |
 | `PI_CURSOR_ALLOW_BACKEND_OVERRIDE` | `0` | `1` permits `CURSOR_BACKEND_URL` outside the allowlist |
+| `CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON` | set by pi-cursor | Catalog `@cursor/sdk` validates local model selections against. pi-cursor publishes the catalog it resolved; a value you set yourself is left untouched. |
+
+## Plans and model availability
+
+Cursor's *Cloud Agent* API (`GET https://api.cursor.com/v1/models`) is what
+`Cursor.models.list()` reads, and it answers `403 [plan_required]` on a **Free**
+plan. pi-cursor still works there:
+
+- **Model catalog.** When the live fetch is refused the extension keeps its local
+  catalog, which includes **Auto** (`default`) — the one model a Free plan may
+  select. Named models (`grok-4.6`, `composer-2`, …) stay listed and are rejected
+  by Cursor's own backend with a clear message if your plan cannot use them.
+- **Local agent validation.** `@cursor/sdk` validates a local agent's model by
+  calling that same Cloud endpoint, and treats a validation failure as fatal. At
+  startup pi-cursor therefore exports `CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON` (the
+  SDK's own override) with the catalog it resolved, so validation happens
+  in-process and never blocks a local run.
+- **Startup note.** A failed discovery is reported as one line naming the real
+  error — `UnknownAgentError: [plan_required] … (code=plan_required, status=403)`
+  — instead of the bare SDK error class.
+
+Named models and the cloud endpoints need a paid Cursor plan; Auto is
+available on every plan.
 
 ## Egress
 
@@ -79,6 +108,10 @@ Cursor SDK, driven from three call sites:
 
 Call sites: `Cursor.models.list()` (model discovery), `Agent.create()` (one
 local agent per pi session), `agent.send()` (one run per turn).
+
+The catalog `@cursor/sdk` uses to validate a **local** model selection is
+supplied by pi-cursor through `CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON`, so the SDK
+issues no `GET /v1/models` of its own for validation.
 
 Your API key travels as a `Authorization: Bearer …` header to those two hosts
 and nowhere else. Two guards back that up:
@@ -117,7 +150,7 @@ message is sent, because the agent already holds the earlier turns.
 ```bash
 cd packages/pi-cursor
 pnpm install
-pnpm test        # 143 tests
+pnpm test        # 166 tests
 pnpm typecheck   # tsc --noEmit
 ```
 

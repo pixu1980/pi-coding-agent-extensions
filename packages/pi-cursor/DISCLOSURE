@@ -35,10 +35,16 @@ extension drives: `Cursor.models.list()` (model discovery), `Agent.create()`
 | `api2.cursor.sh` | `auth/exchange_user_api_key` | The API key, as the bearer credential |
 | `api2.cursor.sh` | `agent_service_connect`, `chat`, tool executors | Your prompt, your working directory's files as the agent reads/edits them |
 | `api2.cursor.sh` | `aiserver.v1.AnalyticsService.TrackEvents` / `BootstrapStatsig` | Anonymous SDK counters: `surface`, `sdk_version`, `os_platform`, `os_arch`, run/duration/error-code fields |
-| `api.cursor.com` | `GET /v1/models` | Nothing but the bearer credential |
+| `api.cursor.com` | `GET /v1/models` | Nothing but the bearer credential. Cloud Agent catalog, `403 [plan_required]` on a Free plan. |
 
 Both hosts are Cursor-owned. There is no third-party analytics or crash
 reporting in the path.
+
+pi-cursor also suppresses a request the SDK would otherwise make: `Agent.create()`
+validates a local model selection against `GET /v1/models` unless
+`CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON` is set. pi-cursor sets it from the catalog
+it resolved, so no validation request leaves the process (and a Free plan, for
+which that endpoint is refused, can still start a local run).
 
 ### Notes on the Cursor SDK's own behaviour
 
@@ -70,6 +76,10 @@ bundle:
    message and diagnostic is scrubbed before it is emitted.
 4. **Bounded activity trace.** Tool activity is summarised (command, path,
    pattern) and capped, so file bodies are not copied into the session log.
+5. **Local catalog, not a silent failure.** When the Cloud catalog is refused
+   (Free plan) or unreachable, pi-cursor keeps a local catalog that includes
+   Auto and publishes it to the SDK, so a local run starts with a message the
+   user can act on instead of an opaque `UnknownAgentError`.
 
 ## Deliberate non-goals
 
@@ -91,3 +101,8 @@ bundle:
   disclosed here rather than hidden.
 - pi-cursor adds no guarantee about what Cursor does with the data sent to it;
   that is governed by Cursor's own terms.
+- **A Free Cursor plan can only run Auto** (`default`). The named models are
+  listed because the catalog is shared, but Cursor's backend rejects them on
+  Free with "Named models unavailable". Discovery against the Cloud catalog is
+  also refused on Free; the extension falls back to its local catalog and says
+  so at startup.

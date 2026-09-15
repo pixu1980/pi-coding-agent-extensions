@@ -13,7 +13,7 @@ export const CURSOR_PROVIDER_ID = "cursor";
 export const CURSOR_PROVIDER_NAME = "Cursor";
 
 /**
- * API flavour tag. `Api` in pi-ai is an open union (`KnownApi | (string & {})`),
+ * API flavor tag. `Api` in pi-ai is an open union (`KnownApi | (string & {})`),
  * so a custom tag is legal and routes every model to our `streamSimple`.
  */
 export const CURSOR_API_ID = "cursor-sdk";
@@ -41,7 +41,7 @@ export const CURSOR_EGRESS_ALLOWLIST = ["api.cursor.com", "api2.cursor.sh"] as c
 /**
  * Backend URL override read by the Cursor SDK.
  *
- * The SDK honours this variable internally. We never set it; we only refuse to
+ * The SDK honors this variable internally. We never set it; we only refuse to
  * run when it points somewhere we do not trust, so a stray shell export cannot
  * silently redirect a user's API key to a third party.
  */
@@ -57,9 +57,20 @@ export const CURSOR_EGRESS_LOG_ENV = "PI_CURSOR_LOG_EGRESS";
 export const CURSOR_MODEL_CACHE_FILE = "pi-cursor-models.json";
 
 /**
+ * Env var `@cursor/sdk` reads to validate a local agent's model selection
+ * offline, instead of calling the Cloud Agent catalog (`GET /v1/models`).
+ *
+ * That endpoint answers `403 [plan_required]` on a Free Cursor plan, and the
+ * SDK treats a validation failure as fatal, so without this override every
+ * local run is blocked before it starts. pi-cursor publishes the catalog it
+ * discovered (or its local fallback) here at startup.
+ */
+export const CURSOR_LOCAL_CATALOG_ENV = "CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON";
+
+/**
  * Set by pi when `--offline` (or `PI_OFFLINE=1`) is used.
  *
- * pi's own network operations honour it, but the Cursor SDK does not: it issues
+ * pi's own network operations honor it, but the Cursor SDK does not: it issues
  * its requests directly. Startup model discovery must therefore check this
  * flag itself, or an offline run still sends the user's API key to Cursor.
  */
@@ -73,6 +84,8 @@ export const CURSOR_MODEL_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 /** Conservative defaults used when the catalog does not describe a model. */
 export const CURSOR_FALLBACK_CONTEXT_WINDOW = 128_000;
+
+/** Output-token ceiling assumed when the catalog does not describe a model. */
 export const CURSOR_FALLBACK_MAX_TOKENS = 16_384;
 
 /** Per-model cost placeholder. Cursor bills by subscription/usage, not per token here. */

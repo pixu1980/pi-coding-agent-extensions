@@ -243,22 +243,31 @@ export function createMockPi(overrides = {}) {
     },
 
     // ── Event bus ──
-    events: {
-      _subs: new Set(),
-      subscribe(fn) {
-        this._subs.add(fn);
-        return () => this._subs.delete(fn);
-      },
-      emit(type, payload) {
-        for (const fn of this._subs) {
-          try {
-            fn({ type, ...payload });
-          } catch {
-            /* ignore */
+    // Mirrors pi's EventBus: `on(channel, handler)` returns an unsubscribe and
+    // `emit(channel, data)` delivers SYNCHRONOUSLY. Synchrony is load-bearing:
+    // pi-path-picker answers a provider request by calling `reply` from inside
+    // its handler, and consumers attach the provider right after `emit` returns.
+    events: (() => {
+      const listeners = new Map();
+      return {
+        on(channel, handler) {
+          if (!listeners.has(channel)) listeners.set(channel, new Set());
+          listeners.get(channel).add(handler);
+          return () => listeners.get(channel)?.delete(handler);
+        },
+        emit(channel, data) {
+          for (const handler of listeners.get(channel) ?? []) {
+            try {
+              // Not awaited on purpose: the real bus isolates handler failures
+              // and never lets one extension break another.
+              void handler(data);
+            } catch {
+              /* ignore */
+            }
           }
-        }
-      },
-    },
+        },
+      };
+    })(),
   };
 
   const emit = async (event, payload = {}, ctx = createMockCtx()) => {

@@ -15,6 +15,8 @@ Make the pi-sessions cached path filesystem-free and move freshness to an explic
 
 ## Consequences
 
+The cached listing path is filesystem-free and deterministically invalidated, at the cost of a bounded staleness window.
+
 Buys:
 
 - Zero filesystem calls on the cached path: the 0.012 ms serve is now true on every open, with no syscall residue.

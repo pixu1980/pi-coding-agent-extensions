@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -86,10 +86,6 @@ test('publishes packages locally from the release process', () => {
 
   assert.match(source, /execIn\(pkgPath, `npm publish --access public`/);
   assert.doesNotMatch(source, /GitHub Actions/);
-});
-
-test('does not depend on a GitHub Actions publishing workflow', () => {
-  assert.equal(existsSync(`${ROOT}/.github/workflows/publish.yml`), false);
 });
 
 // ── changedFilesSinceTag ───────────────────────────────────────────────

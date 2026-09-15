@@ -45,7 +45,7 @@ export interface UiServerOptions {
   resource: UiResourceContent;
   manager: McpServerManager;
   /**
-   * Live extension config, used to re-read the server definition when
+   * Live extension config: re-reads the server definition when
    * recovering a terminated Streamable HTTP session (see
    * session-recovery.ts). Optional so existing embedders/tests that don't
    * need session recovery aren't forced to supply it; without it, proxied
@@ -119,9 +119,11 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
   };
 
   const initialStreamContext = hostContext["pi-mcp-adapter/stream"];
+
   if (initialStreamContext && typeof initialStreamContext === "object") {
     const streamId = (initialStreamContext as { streamId?: unknown }).streamId;
     const mode = (initialStreamContext as { mode?: unknown }).mode;
+
     if (typeof streamId === "string" && (mode === "eager" || mode === "stream-first")) {
       streamSummary = {
         streamId,
@@ -138,7 +140,11 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
   const updateStreamSummary = (payload: unknown) => {
     const envelope = getVisualizationStreamEnvelope((payload as { structuredContent?: unknown } | null)?.structuredContent);
-    if (!envelope) return;
+
+    if (!envelope) {
+      return;
+    }
+
     if (!streamSummary) {
       streamSummary = {
         streamId: envelope.streamId,
@@ -147,10 +153,13 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         phases: [],
       };
     }
+
     streamSummary.frames += 1;
+
     if (!streamSummary.phases.includes(envelope.phase)) {
       streamSummary.phases.push(envelope.phase);
     }
+
     streamSummary.finalStatus = envelope.status;
     streamSummary.lastMessage = envelope.message;
   };
@@ -163,15 +172,20 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
     for (let index = eventLog.length - 1; index >= 0; index -= 1) {
       const entry = eventLog[index];
       const envelope = getVisualizationStreamEnvelope((entry.payload as { structuredContent?: unknown } | null)?.structuredContent);
+
       if (envelope?.frameType === "checkpoint" || envelope?.frameType === "final") {
         return index;
       }
     }
+
     return -1;
   };
 
   const pruneEventLog = () => {
-    if (eventLog.length <= MAX_EVENT_LOG) return;
+    if (eventLog.length <= MAX_EVENT_LOG) {
+      return;
+    }
+
     const latestCheckpointIndex = getLatestCheckpointIndex();
 
     if (latestCheckpointIndex > 0) {
@@ -184,12 +198,17 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
   };
 
   const pushEvent = (name: string, payload: unknown) => {
-    if (completed) return;
+    if (completed) {
+      return;
+    }
+
     const eventId = nextEventId++;
+
     eventLog.push({ id: eventId, name, payload });
     updateStreamSummary(payload);
     pruneEventLog();
     const chunk = serializeEvent(eventId, name, payload);
+
     for (const client of sseClients) {
       try {
         client.write(chunk);
@@ -204,15 +223,17 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
     const eventsToReplay = Number.isFinite(parsedLastId)
       ? eventLog.filter((entry) => entry.id > parsedLastId)
       : (() => {
-          const latestCheckpointIndex = getLatestCheckpointIndex();
-          return latestCheckpointIndex >= 0 ? eventLog.slice(latestCheckpointIndex) : eventLog;
-        })();
+        const latestCheckpointIndex = getLatestCheckpointIndex();
+
+        return latestCheckpointIndex >= 0 ? eventLog.slice(latestCheckpointIndex) : eventLog;
+      })();
 
     for (const entry of eventsToReplay) {
       try {
         res.write(serializeEvent(entry.id, entry.name, entry.payload));
       } catch {
         sseClients.delete(res);
+
         return;
       }
     }
@@ -222,19 +243,28 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
     for (const client of sseClients) {
       try {
         client.end();
-      } catch {}
+      } catch {
+        // The client may already have disconnected.
+      }
     }
+
     sseClients.clear();
   };
 
   const stopWatchdog = () => {
-    if (!watchdog) return;
+    if (!watchdog) {
+      return;
+    }
+
     clearInterval(watchdog);
     watchdog = null;
   };
 
   const markCompleted = (reason: string) => {
-    if (completed) return;
+    if (completed) {
+      return;
+    }
+
     log.debug("Session completed", { reason });
     pushEvent("session-complete", { reason });
     completed = true;
@@ -248,7 +278,10 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
       const url = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
 
       if (method === "GET" && url.pathname === "/") {
-        if (!validateTokenQuery(url, sessionToken, res)) return;
+        if (!validateTokenQuery(url, sessionToken, res)) {
+          return;
+        }
+
         touchHeartbeat();
 
         const html = buildHostHtmlTemplate({
@@ -268,11 +301,15 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
           "Cache-Control": "no-store",
         });
         res.end(html);
+
         return;
       }
 
       if (method === "GET" && url.pathname === "/events") {
-        if (!validateTokenQuery(url, sessionToken, res)) return;
+        if (!validateTokenQuery(url, sessionToken, res)) {
+          return;
+        }
+
         touchHeartbeat();
         log.debug("SSE client connected", { clientCount: sseClients.size + 1 });
         res.writeHead(200, {
@@ -287,34 +324,46 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         req.on("close", () => {
           sseClients.delete(res);
         });
+
         return;
       }
 
       if (method === "GET" && url.pathname === "/health") {
-        if (!validateTokenQuery(url, sessionToken, res)) return;
+        if (!validateTokenQuery(url, sessionToken, res)) {
+          return;
+        }
+
         sendJson(res, 200, { ok: true, result: { healthy: true } });
+
         return;
       }
 
       if (method === "GET" && url.pathname === "/ui-app") {
-        if (!validateTokenQuery(url, sessionToken, res)) return;
+        if (!validateTokenQuery(url, sessionToken, res)) {
+          return;
+        }
+
         touchHeartbeat();
         // Enforce host metadata independently of where app HTML places its document head.
         const cspContent = buildCspMetaContent(options.resource.meta.csp);
+
         res.writeHead(200, {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "no-store",
           ...(cspContent ? { "Content-Security-Policy": cspContent } : {}),
         });
         res.end(options.resource.html);
+
         return;
       }
 
       if (method === "GET" && url.pathname === "/app-bridge.bundle.js") {
         // Serve the pre-bundled AppBridge module
         const bundlePath = path.join(import.meta.dirname, "_app-bridge.bundle.js");
+
         try {
           const content = await fs.readFile(bundlePath, "utf-8");
+
           res.writeHead(200, {
             "Content-Type": "application/javascript",
             "Cache-Control": "public, max-age=31536000",
@@ -323,35 +372,51 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         } catch {
           sendJson(res, 500, { ok: false, error: "Bundle not found" });
         }
+
         return;
       }
 
       if (method !== "POST") {
         sendJson(res, 404, { ok: false, error: "Not found" });
+
         return;
       }
 
       const body = await parseBody(req, res);
-      if (!body) return;
-      if (!validateTokenBody(body, sessionToken, res)) return;
+
+      if (!body) {
+        return;
+      }
+
+      if (!validateTokenBody(body, sessionToken, res)) {
+        return;
+      }
+
       const params = body.params ?? {};
+
       touchHeartbeat();
 
       if (url.pathname === "/proxy/tools/call") {
         options.consentManager.ensureApproved(options.serverName);
         const callParams = params as CallToolRequest["params"];
+
         if (!callParams || typeof callParams.name !== "string" || !callParams.name.trim()) {
           sendJson(res, 400, { ok: false, error: "Invalid tools/call params" });
+
           return;
         }
 
         const connection = options.manager.getConnection(options.serverName);
+
         if (!connection || connection.status !== "connected") {
           sendJson(res, 503, { ok: false, error: `Server "${options.serverName}" is not connected` });
+
           return;
         }
+
         if (isServerDisabled(options.config?.mcpServers[options.serverName]) || isServerDisabled(connection.definition)) {
           sendJson(res, 503, { ok: false, error: `Server "${options.serverName}" is disabled` });
+
           return;
         }
 
@@ -367,23 +432,27 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
           };
           const result = options.config
             ? await withSessionRecovery(
-                { manager: options.manager, config: options.config, onNeedsAuth: options.onNeedsAuth },
-                options.serverName,
-                (conn) => conn.client.callTool(callArgs, undefined, options.manager.getRequestOptions?.(options.serverName)),
-              )
+              { manager: options.manager, config: options.config, onNeedsAuth: options.onNeedsAuth },
+              options.serverName,
+              (conn) => conn.client.callTool(callArgs, undefined, options.manager.getRequestOptions?.(options.serverName)),
+            )
             : await connection.client.callTool(callArgs, undefined, options.manager.getRequestOptions?.(options.serverName));
+
           sendJson(res, 200, { ok: true, result });
         } finally {
           options.manager.decrementInFlight(options.serverName);
           options.manager.touch(options.serverName);
         }
+
         return;
       }
 
       if (url.pathname === "/proxy/ui/consent") {
         const approved = !!(params as { approved?: boolean }).approved;
+
         options.consentManager.registerDecision(options.serverName, approved);
         sendJson(res, 200, { ok: true, result: { approved } });
+
         return;
       }
 
@@ -391,13 +460,14 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         const msgParams = params as UiMessageParams;
         const promptText = extractUiPromptText(msgParams);
         
-        // Track messages by type (order: prompt → intent → notify)
+        // Track messages by type (order: prompt -> intent -> notify)
         // Must match the order in index.ts onMessage handler
         if (promptText) {
           sessionMessages.prompts.push(promptText);
           log.debug("UI prompt received", { prompt: promptText.slice(0, 100) });
         } else if (msgParams.type === "intent" || msgParams.intent) {
           const intentName = msgParams.intent ?? "";
+
           if (intentName) {
             sessionMessages.intents.push({ 
               intent: intentName, 
@@ -407,6 +477,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
           }
         } else if (msgParams.type === "notify" || msgParams.message) {
           const notifyText = msgParams.message ?? "";
+
           if (notifyText) {
             sessionMessages.notifications.push(notifyText);
             log.debug("UI notification", { message: notifyText.slice(0, 100) });
@@ -415,35 +486,45 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         
         await options.onMessage?.(msgParams);
         sendJson(res, 200, { ok: true, result: {} });
+
         return;
       }
 
       if (url.pathname === "/proxy/ui/context") {
         const ctxParams = params as UiModelContextParams;
+
         log.debug("UI context update", { hasContent: !!ctxParams.content });
         await options.onContextUpdate?.(ctxParams);
         sendJson(res, 200, { ok: true, result: {} });
+
         return;
       }
 
       if (url.pathname === "/proxy/ui/open-link") {
         const openParams = params as { url?: string };
+
         if (!openParams?.url || typeof openParams.url !== "string") {
           sendJson(res, 400, { ok: false, error: "Invalid open-link params" });
+
           return;
         }
+
         let result: UiOpenLinkResult = {};
+
         try {
           new URL(openParams.url);
         } catch {
           result = { isError: true };
         }
+
         sendJson(res, 200, { ok: true, result });
+
         return;
       }
 
       if (url.pathname === "/proxy/ui/download-file") {
         sendJson(res, 200, { ok: true, result: { isError: true } });
+
         return;
       }
 
@@ -451,18 +532,23 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         const displayParams = params as UiDisplayModeRequest;
         const requested = displayParams?.mode;
         const available = hostContext.availableDisplayModes ?? ["inline"];
+
         if (requested && available.includes(requested)) {
           currentDisplayMode = requested;
         }
+
         hostContext.displayMode = currentDisplayMode;
         pushEvent("host-context", { displayMode: currentDisplayMode });
         const result: UiDisplayModeResult = { mode: currentDisplayMode };
+
         sendJson(res, 200, { ok: true, result });
+
         return;
       }
 
       if (url.pathname === "/proxy/ui/heartbeat") {
         sendJson(res, 200, { ok: true, result: {} });
+
         return;
       }
 
@@ -470,14 +556,19 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         const reason = typeof (params as { reason?: string }).reason === "string"
           ? (params as { reason?: string }).reason!
           : "done";
+
         markCompleted(reason);
         sendJson(res, 200, { ok: true, result: {} });
         setTimeout(() => {
           try {
             server.close();
-          } catch {}
+          } catch {
+            // Closing twice is not an error.
+          }
+
           closeSse();
         }, 20).unref();
+
         return;
       }
 
@@ -488,14 +579,19 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         const message = error.authMessage ?? (options.config
           ? formatAuthRequiredMessage(options.config, options.serverName, fallback)
           : fallback);
+
         sendJson(res, 401, { ok: false, error: message });
+
         return;
       }
+
       const wrapped = wrapError(error, { server: options.serverName, tool: options.toolName });
       const status = /approval required|denied/i.test(wrapped.message) ? 403 : 500;
+
       if (status === 500) {
         log.error("Request handler error", error instanceof Error ? error : undefined);
       }
+
       sendJson(res, status, { ok: false, error: wrapped.message });
     }
   });
@@ -505,18 +601,29 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
       (result) => pushEvent("tool-result", result),
       (error) => {
         const reason = error instanceof Error ? error.message : String(error);
-        pushEvent("tool-cancelled", { reason });
+
+        pushEvent("tool-canceled", { reason });
       }
     );
   }
 
   watchdog = setInterval(() => {
-    if (completed) return;
-    if (Date.now() - lastHeartbeatAt <= ABANDONED_GRACE_MS) return;
+    if (completed) {
+      return;
+    }
+
+    if (Date.now() - lastHeartbeatAt <= ABANDONED_GRACE_MS) {
+      return;
+    }
+
     markCompleted("stale");
+
     try {
       server.close();
-    } catch {}
+    } catch {
+      // The watchdog may find the server already closed.
+    }
+
     closeSse();
   }, WATCHDOG_INTERVAL_MS);
   watchdog.unref();
@@ -531,10 +638,13 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
     server.listen(options.port ?? 0, "127.0.0.1", () => {
       server.off("error", onError);
       const address = server.address();
+
       if (!address || typeof address === "string") {
         const err = new ServerError("invalid address");
+
         log.error("Invalid server address", err);
         reject(err);
+
         return;
       }
 
@@ -548,9 +658,13 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         toolName: options.toolName,
         close: (reason?: string) => {
           markCompleted(reason ?? "closed");
+
           try {
             server.close();
-          } catch {}
+          } catch {
+            // The server may already be closed.
+          }
+
           closeSse();
         },
         sendToolInput: (args: Record<string, unknown>) => {
@@ -563,7 +677,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
           pushEvent("result-patch", result);
         },
         sendToolCancelled: (reason: string) => {
-          pushEvent("tool-cancelled", { reason });
+          pushEvent("tool-canceled", { reason });
         },
         sendHostContext: (context: UiHostContext) => {
           Object.assign(hostContext, context);
@@ -584,13 +698,17 @@ async function parseBody(
 ): Promise<UiProxyRequestBody<Record<string, unknown>> | null> {
   try {
     const body = await readBody(req);
+
     if (!body || typeof body !== "object") {
       sendJson(res, 400, { ok: false, error: "Invalid request body" });
+
       return null;
     }
+
     return body as UiProxyRequestBody<Record<string, unknown>>;
   } catch (error) {
     sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "Invalid body" });
+
     return null;
   }
 }
@@ -602,11 +720,14 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 
     req.on("data", (chunk: Buffer) => {
       size += chunk.length;
+
       if (size > MAX_BODY_SIZE) {
         req.destroy();
         reject(new Error("Request body too large"));
+
         return;
       }
+
       chunks.push(chunk);
     });
 
@@ -624,10 +745,13 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 
 function validateTokenQuery(url: URL, expected: string, res: ServerResponse): boolean {
   const token = url.searchParams.get("session");
+
   if (token !== expected) {
     sendJson(res, 403, { ok: false, error: "Invalid session" });
+
     return false;
   }
+
   return true;
 }
 
@@ -638,8 +762,10 @@ function validateTokenBody(
 ): boolean {
   if (body.token !== expected) {
     sendJson(res, 403, { ok: false, error: "Invalid session" });
+
     return false;
   }
+
   return true;
 }
 

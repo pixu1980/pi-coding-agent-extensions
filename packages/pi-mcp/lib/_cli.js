@@ -9,8 +9,14 @@ import stripJsonComments from "strip-json-comments";
 const HOME = os.homedir();
 
 function expandHome(input) {
-  if (input === "~") return HOME;
-  if (input.startsWith("~/")) return path.resolve(HOME, input.slice(2));
+  if (input === "~") {
+    return HOME;
+  }
+
+  if (input.startsWith("~/")) {
+    return path.resolve(HOME, input.slice(2));
+  }
+
   return path.resolve(input);
 }
 
@@ -65,14 +71,17 @@ function loadPiConfig() {
 
   const raw = readJsonFile(PI_CONFIG_PATH);
   const mcpServers = raw.mcpServers ?? raw["mcp-servers"] ?? {};
+
   if (!mcpServers || typeof mcpServers !== "object" || Array.isArray(mcpServers)) {
     throw new Error(`Invalid MCP config at ${PI_CONFIG_PATH}: expected \"mcpServers\" to be an object`);
   }
 
   const normalized = { ...raw };
+
   delete normalized["mcp-servers"];
 
   const imports = Array.isArray(raw.imports) ? raw.imports.filter((value) => typeof value === "string") : undefined;
+
   return {
     ...normalized,
     mcpServers,
@@ -85,6 +94,7 @@ function findAvailableImports() {
 
   for (const [kind, candidates] of Object.entries(IMPORT_PATHS)) {
     const existing = candidates.find((candidate) => fs.existsSync(candidate));
+
     if (existing) {
       found.push({ kind, path: existing });
     }
@@ -107,12 +117,15 @@ function printDiscovery(log, imports) {
 
   for (const [label, filePath] of paths) {
     const prefix = fs.existsSync(filePath) ? "✓" : "-";
+
     log(`${prefix} ${label}: ${filePath}`);
   }
 
   log("\nCompatibility imports:\n");
+
   if (imports.length === 0) {
     log("- No host-specific MCP configs detected");
+
     return;
   }
 
@@ -139,9 +152,11 @@ async function runInit(argv, log = console.log) {
   printDiscovery(log, foundImports);
 
   const discoverySettingChanged = discoverHostConfigs && existingConfig.settings?.hostConfigDiscovery !== "on";
+
   if (importsToAdd.length === 0 && !discoverySettingChanged) {
     log("\nNo Pi config changes needed.");
     log("Standard MCP configs are discovered automatically, and host-specific imports are already configured or unavailable.");
+
     return 0;
   }
 
@@ -155,21 +170,25 @@ async function runInit(argv, log = console.log) {
   if (importsToAdd.length > 0) {
     log(`\nDetected host configs to import into Pi: ${importsToAdd.join(", ")}`);
   }
+
   if (discoverySettingChanged) {
     log("Opting in to host-specific fallback discovery (standard and Pi-owned configs still take precedence).");
   }
 
   if (dryRun) {
     log(`Dry run: would update ${PI_CONFIG_PATH}`);
+
     return 0;
   }
 
   writePiConfig(nextConfig);
   log(`Updated ${PI_CONFIG_PATH}`);
   log("Pi will now keep reading standard MCP configs automatically, while these imports cover host-specific config formats.");
+
   if (discoverySettingChanged) {
     log("Host config discovery is explicit and does not write to or execute commands from external host files.");
   }
+
   return 0;
 }
 
@@ -178,12 +197,14 @@ export async function main(argv = process.argv.slice(2), log = console.log, erro
 
   if (!command || command === "help" || command === "--help" || command === "-h") {
     printHelp(log);
+
     return 0;
   }
 
   if (command === "install") {
     error("The custom downloader has been retired.");
     error("Use `pi install npm:pi-mcp-adapter` instead, then optionally run `pi-mcp-adapter init`.");
+
     return 1;
   }
 
@@ -193,6 +214,7 @@ export async function main(argv = process.argv.slice(2), log = console.log, erro
 
   error(`Unknown command: ${command}`);
   printHelp(log);
+
   return 1;
 }
 

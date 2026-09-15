@@ -76,6 +76,7 @@ export interface UiStreamSummary {
 export function getUiStreamHostContext(hostContext: Record<string, unknown> | undefined): UiStreamHostContext | undefined {
   const candidate = hostContext?.[UI_STREAM_HOST_CONTEXT_KEY];
   const parsed = uiStreamHostContextSchema.safeParse(candidate);
+
   return parsed.success ? parsed.data : undefined;
 }
 
@@ -83,7 +84,9 @@ export function getVisualizationStreamEnvelope(structuredContent: unknown): Visu
   if (!structuredContent || typeof structuredContent !== "object" || Array.isArray(structuredContent)) {
     return undefined;
   }
+
   const candidate = (structuredContent as Record<string, unknown>)[UI_STREAM_STRUCTURED_CONTENT_KEY];
   const parsed = visualizationStreamEnvelopeSchema.safeParse(candidate);
+
   return parsed.success ? parsed.data : undefined;
 }

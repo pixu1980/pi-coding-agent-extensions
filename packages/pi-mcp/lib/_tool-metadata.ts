@@ -22,22 +22,27 @@ export function buildToolMetadata(
       failedTools.push("(unnamed)");
       continue;
     }
+
     if (!isToolAllowed(tool.name, serverName, effectivePrefix, definition.includeTools, definition.excludeTools)) {
       continue;
     }
 
     const name = formatToolName(tool.name, serverName, effectivePrefix);
+
     if (seenNames.has(name)) {
       continue;
     }
+
     seenNames.add(name);
 
     let uiResourceUri: string | undefined;
+
     try {
       uiResourceUri = getToolUiResourceUri({ _meta: tool._meta });
     } catch {
       failedTools.push(tool.name);
     }
+
     metadata.push({
       name,
       originalName: tool.name,
@@ -51,14 +56,17 @@ export function buildToolMetadata(
   if (definition.exposeResources !== false) {
     for (const resource of resources) {
       const baseName = `read_${resourceNameToToolName(resource.name)}`;
+
       if (!isToolAllowed(baseName, serverName, effectivePrefix, definition.includeTools, definition.excludeTools)) {
         continue;
       }
 
       const name = formatToolName(baseName, serverName, effectivePrefix);
+
       if (seenNames.has(name)) {
         continue;
       }
+
       seenNames.add(name);
 
       metadata.push({
@@ -79,18 +87,28 @@ export function getToolNames(state: McpExtensionState, serverName: string): stri
 
 export function totalToolCount(state: McpExtensionState): number {
   let count = 0;
+
   for (const metadata of state.toolMetadata.values()) {
     count += metadata.length;
   }
+
   return count;
 }
 
 export function findToolByName(metadata: ToolMetadata[] | undefined, toolName: string): ToolMetadata | undefined {
-  if (!metadata) return undefined;
+  if (!metadata) {
+    return undefined;
+  }
+
   const exact = metadata.find(m => m.name === toolName);
-  if (exact) return exact;
-  const normalized = toolName.replace(/-/g, "_");
-  return metadata.find(m => m.name.replace(/-/g, "_") === normalized);
+
+  if (exact) {
+    return exact;
+  }
+
+  const normalized = toolName.replaceAll('-', "_");
+
+  return metadata.find(m => m.name.replaceAll('-', "_") === normalized);
 }
 
 export function formatSchema(schema: unknown, indent = "  "): string {
@@ -109,18 +127,22 @@ export function formatSchema(schema: unknown, indent = "  "): string {
     }
 
     const lines: string[] = [];
+
     for (const [name, propSchema] of Object.entries(props)) {
       lines.push(...formatProperty(name, propSchema, required.includes(name), indent));
     }
+
     return lines.join("\n");
   }
 
   const lines = formatNestedSchema(s, indent);
+
   if (lines.length > 0) {
     return lines.join("\n");
   }
 
   const typeStr = formatType(s);
+
   if (typeStr) {
     return `${indent}(${typeStr})`;
   }
@@ -136,8 +158,15 @@ function formatProperty(name: string, schema: unknown, required: boolean, indent
   const s = schema as Record<string, unknown>;
   const parts = [`${indent}${name}`];
   const typeStr = formatType(s);
-  if (typeStr) parts.push(`(${typeStr})`);
-  if (required) parts.push("*required*");
+
+  if (typeStr) {
+    parts.push(`(${typeStr})`);
+  }
+
+  if (required) {
+    parts.push("*required*");
+  }
+
   appendSchemaAnnotations(parts, s);
 
   return [parts.join(" "), ...formatNestedSchema(s, `${indent}  `)];
@@ -149,14 +178,18 @@ function formatNestedSchema(schema: Record<string, unknown>, indent: string): st
   if (Array.isArray(schema.anyOf)) {
     lines.push(...formatVariants("anyOf", schema.anyOf, indent));
   }
+
   if (Array.isArray(schema.oneOf)) {
     lines.push(...formatVariants("oneOf", schema.oneOf, indent));
   }
+
   if (schema.items !== undefined) {
     lines.push(...formatProperty("items", schema.items, false, indent));
   }
+
   if (schema.properties && typeof schema.properties === "object" && !Array.isArray(schema.properties)) {
     const required = Array.isArray(schema.required) ? schema.required.filter((name): name is string => typeof name === "string") : [];
+
     for (const [name, propSchema] of Object.entries(schema.properties as Record<string, unknown>)) {
       lines.push(...formatProperty(name, propSchema, required.includes(name), indent));
     }
@@ -177,6 +210,7 @@ function formatVariants(keyword: "anyOf" | "oneOf", variants: unknown[], indent:
     const s = variant as Record<string, unknown>;
     const typeStr = formatType(s) || "schema";
     const parts = [`${indent}  - ${typeStr}`];
+
     appendSchemaAnnotations(parts, s);
     lines.push(parts.join(" "));
     lines.push(...formatNestedSchema(s, `${indent}    `));

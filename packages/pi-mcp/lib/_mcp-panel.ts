@@ -34,7 +34,10 @@ const DEFAULT_THEME: PanelTheme = {
 };
 
 function fg(code: string, text: string): string {
-  if (!code) return text;
+  if (!code) {
+    return text;
+  }
+
   return `\x1b[${code}m${text}\x1b[0m`;
 }
 
@@ -50,20 +53,28 @@ const RAINBOW_COLORS = [
 
 function rainbowProgress(filled: number, total: number): string {
   const dots: string[] = [];
+
   for (let i = 0; i < total; i++) {
     const color = RAINBOW_COLORS[i % RAINBOW_COLORS.length];
-    dots.push(fg(color, i < filled ? "●" : "○"));
+
+    dots.push(fg(color, i < filled ? "-" : "○"));
   }
+
   return dots.join(" ");
 }
 
 function fuzzyScore(query: string, text: string): number {
   const lq = query.toLowerCase();
   const lt = text.toLowerCase();
-  if (lt.includes(lq)) return 100 + (lq.length / lt.length) * 50;
+
+  if (lt.includes(lq)) {
+    return 100 + (lq.length / lt.length) * 50;
+  }
+
   let score = 0;
   let qi = 0;
   let consecutive = 0;
+
   for (let i = 0; i < lt.length && qi < lq.length; i++) {
     if (lt[i] === lq[qi]) {
       score += 10 + consecutive;
@@ -73,6 +84,7 @@ function fuzzyScore(query: string, text: string): number {
       consecutive = 0;
     }
   }
+
   return qi === lq.length ? score : 0;
 }
 
@@ -84,9 +96,11 @@ function sanitizeRowContent(content: string): string {
   const withoutOsc = stripOscSequences(content);
   let result = "";
   let pendingSpace = false;
+
   for (let i = 0; i < withoutOsc.length; i++) {
     const rest = withoutOsc.slice(i);
     const ansi = rest.match(/^(?:\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-Z\\-_])/);
+
     if (ansi) {
       result += ansi[0];
       i += ansi[0].length - 1;
@@ -94,6 +108,7 @@ function sanitizeRowContent(content: string): string {
     }
 
     const code = withoutOsc.charCodeAt(i);
+
     if (code <= 0x1f || code === 0x7f || (code >= 0x80 && code <= 0x9f)) {
       pendingSpace = true;
       continue;
@@ -102,15 +117,18 @@ function sanitizeRowContent(content: string): string {
     if (pendingSpace && result && !result.endsWith(" ")) {
       result += " ";
     }
+
     pendingSpace = false;
     result += withoutOsc[i];
   }
+
   return result;
 }
 
 function estimateTokens(tool: CachedTool): number {
   const schemaLen = JSON.stringify(tool.inputSchema ?? {}).length;
   const descLen = tool.description?.length ?? 0;
+
   return Math.ceil((tool.name.length + descLen + schemaLen) / 4) + 10;
 }
 
@@ -186,12 +204,16 @@ class McpPanel {
     this.prefix = config.settings?.toolPrefix ?? "server";
 
     for (const [serverName, definition] of Object.entries(config.mcpServers)) {
-      if (this.authOnly && !callbacks.canAuthenticate(serverName)) continue;
+      if (this.authOnly && !callbacks.canAuthenticate(serverName)) {
+        continue;
+      }
+
       const prov = provenance.get(serverName);
       const serverCache = cache?.servers?.[serverName];
 
       const globalDirect = config.settings?.directTools;
       let toolFilter: true | string[] | false = false;
+
       if (definition.directTools !== undefined) {
         toolFilter = definition.directTools;
       } else if (globalDirect) {
@@ -199,6 +221,7 @@ class McpPanel {
       }
 
       const tools: ToolState[] = [];
+
       if (serverCache && !this.authOnly && !isServerDisabled(definition)) {
         for (const tool of serverCache.tools ?? []) {
           if (!isToolAllowed(tool.name, serverName, this.prefix, definition.includeTools, definition.excludeTools)) {
@@ -206,6 +229,7 @@ class McpPanel {
           }
 
           const isDirect = toolFilter === true || (Array.isArray(toolFilter) && toolFilter.includes(tool.name));
+
           tools.push({
             name: tool.name,
             description: tool.description ?? "",
@@ -214,15 +238,18 @@ class McpPanel {
             estimatedTokens: estimateTokens(tool),
           });
         }
+
         if (definition.exposeResources !== false) {
           for (const resource of serverCache.resources ?? []) {
             const baseName = `read_${resourceNameToToolName(resource.name)}`;
+
             if (!isToolAllowed(baseName, serverName, this.prefix, definition.includeTools, definition.excludeTools)) {
               continue;
             }
 
             const isDirect = toolFilter === true || (Array.isArray(toolFilter) && toolFilter.includes(baseName));
             const ct: CachedTool = { name: baseName, description: resource.description };
+
             tools.push({
               name: baseName,
               description: resource.description ?? `Read resource: ${resource.uri}`,
@@ -257,10 +284,13 @@ class McpPanel {
   }
 
   private resetInactivityTimeout(): void {
-    if (this.inactivityTimeout) clearTimeout(this.inactivityTimeout);
+    if (this.inactivityTimeout) {
+      clearTimeout(this.inactivityTimeout);
+    }
+
     this.inactivityTimeout = setTimeout(() => {
       this.cleanup();
-      this.done({ cancelled: true, changes: new Map() });
+      this.done({ canceled: true, changes: new Map() });
     }, McpPanel.INACTIVITY_MS);
   }
 
@@ -276,29 +306,39 @@ class McpPanel {
     const mode = this.descSearchActive ? "desc" : "name";
 
     this.visibleItems = [];
+
     for (let si = 0; si < this.servers.length; si++) {
       const server = this.servers[si];
+
       if (query && this.authOnly) {
         const score = mode === "name" ? fuzzyScore(query, server.name) : 0;
+
         if (score > 0) {
           this.visibleItems.push({ type: "server", serverIndex: si });
         }
+
         continue;
       }
 
       this.visibleItems.push({ type: "server", serverIndex: si });
+
       if (server.expanded || query) {
         for (let ti = 0; ti < server.tools.length; ti++) {
           const tool = server.tools[ti];
+
           if (query) {
             const score = mode === "name"
               ? Math.max(
-                  fuzzyScore(query, tool.name),
-                  fuzzyScore(query, server.name) * 0.6,
-                )
+                fuzzyScore(query, tool.name),
+                fuzzyScore(query, server.name) * 0.6,
+              )
               : fuzzyScore(query, tool.description);
-            if (score === 0) continue;
+
+            if (score === 0) {
+              continue;
+            }
           }
+
           this.visibleItems.push({ type: "tool", serverIndex: si, toolIndex: ti });
         }
       }
@@ -311,6 +351,7 @@ class McpPanel {
             (other) => other.type === "tool" && other.serverIndex === item.serverIndex,
           );
         }
+
         return true;
       });
     }
@@ -322,10 +363,16 @@ class McpPanel {
 
   private buildResult(): McpPanelResult {
     const changes = new Map<string, true | string[] | false>();
+
     for (const server of this.servers) {
       const changed = server.tools.some((t) => t.isDirect !== t.wasDirect);
-      if (!changed) continue;
+
+      if (!changed) {
+        continue;
+      }
+
       const directTools = server.tools.filter((t) => t.isDirect);
+
       if (directTools.length === server.tools.length && server.tools.length > 0) {
         changes.set(server.name, true);
       } else if (directTools.length === 0) {
@@ -334,29 +381,36 @@ class McpPanel {
         changes.set(server.name, directTools.map((t) => t.name));
       }
     }
-    return { changes, cancelled: false };
+
+    return { changes, canceled: false };
   }
 
   handleInput(data: string): void {
     this.resetInactivityTimeout();
     this.importNotice = null;
-    if (!this.authInFlight) this.authNotice = null;
+
+    if (!this.authInFlight) {
+      this.authNotice = null;
+    }
 
     if (this.confirmingDiscard) {
       this.handleDiscardInput(data);
+
       return;
     }
 
     // Global shortcuts - always work, even during desc search
     if (matchesKey(data, "ctrl+c")) {
       this.cleanup();
-      this.done({ cancelled: true, changes: new Map() });
+      this.done({ canceled: true, changes: new Map() });
+
       return;
     }
 
     if (matchesKey(data, "ctrl+s")) {
       this.cleanup();
       this.done(this.buildResult());
+
       return;
     }
 
@@ -367,30 +421,51 @@ class McpPanel {
         this.descQuery = "";
         this.rebuildVisibleItems();
         this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
+
         return;
       }
+
       if (matchesKey(data, "backspace")) {
         if (this.descQuery.length > 0) {
           this.descQuery = this.descQuery.slice(0, -1);
           this.rebuildVisibleItems();
           this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
         }
+
         return;
       }
-      if (this.keys.selectUp(data)) { this.moveCursor(-1); return; }
-      if (this.keys.selectDown(data)) { this.moveCursor(1); return; }
+
+      if (this.keys.selectUp(data)) {
+        this.moveCursor(-1);
+
+        return; 
+      }
+
+      if (this.keys.selectDown(data)) {
+        this.moveCursor(1);
+
+        return; 
+      }
+
       if (matchesKey(data, "space")) {
         // Toggle even while in desc search
         const item = this.visibleItems[this.cursorIndex];
-        if (item) this.toggleItem(item);
+
+        if (item) {
+          this.toggleItem(item);
+        }
+
         return;
       }
+
       if (data.length === 1 && data.charCodeAt(0) >= 32) {
         this.descQuery += data;
         this.rebuildVisibleItems();
         this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
+
         return;
       }
+
       return;
     }
 
@@ -399,88 +474,144 @@ class McpPanel {
         this.nameQuery = "";
         this.rebuildVisibleItems();
         this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
+
         return;
       }
+
       if (this.dirty) {
         this.confirmingDiscard = true;
         this.discardSelected = 1;
+
         return;
       }
+
       this.cleanup();
-      this.done({ cancelled: true, changes: new Map() });
+      this.done({ canceled: true, changes: new Map() });
+
       return;
     }
 
-    if (this.keys.selectUp(data)) { this.moveCursor(-1); return; }
-    if (this.keys.selectDown(data)) { this.moveCursor(1); return; }
+    if (this.keys.selectUp(data)) {
+      this.moveCursor(-1);
+
+      return; 
+    }
+
+    if (this.keys.selectDown(data)) {
+      this.moveCursor(1);
+
+      return; 
+    }
 
     if (matchesKey(data, "space")) {
       const item = this.visibleItems[this.cursorIndex];
-      if (item && !this.authOnly) this.toggleItem(item);
+
+      if (item && !this.authOnly) {
+        this.toggleItem(item);
+      }
+
       return;
     }
 
     if (this.keys.selectConfirm(data)) {
       const item = this.visibleItems[this.cursorIndex];
-      if (!item) return;
+
+      if (!item) {
+        return;
+      }
+
       const server = this.servers[item.serverIndex];
+
       if (item.type === "server") {
-        if (server.connectionStatus === "disabled") return;
-        if (this.authOnly || server.connectionStatus === "needs-auth") {
-          this.authenticateServer(server);
+        if (server.connectionStatus === "disabled") {
           return;
         }
+
+        if (this.authOnly || server.connectionStatus === "needs-auth") {
+          this.authenticateServer(server);
+
+          return;
+        }
+
         server.expanded = !server.expanded;
         this.rebuildVisibleItems();
         this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
       } else if (item.toolIndex !== undefined) {
         const tool = server.tools[item.toolIndex];
+
         tool.isDirect = !tool.isDirect;
+
         if (tool.isDirect && server.source === "import") {
           this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} - will copy to user config on save`;
         }
+
         this.updateDirty();
       }
+
       return;
     }
 
     if (matchesKey(data, "ctrl+a")) {
       const item = this.visibleItems[this.cursorIndex];
-      if (item) this.authenticateSelectedServer(item);
+
+      if (item) {
+        this.authenticateSelectedServer(item);
+      }
+
       return;
     }
 
     if (matchesKey(data, "ctrl+r")) {
       const item = this.visibleItems[this.cursorIndex];
-      if (!item) return;
+
+      if (!item) {
+        return;
+      }
+
       this.reconnectServer(this.servers[item.serverIndex]);
+
       return;
     }
 
     if (matchesKey(data, "ctrl+y")) {
       const item = this.visibleItems[this.cursorIndex];
-      if (!item) return;
+
+      if (!item) {
+        return;
+      }
+
       const server = this.servers[item.serverIndex];
-      if (server.connectionStatus !== "failed" || !server.failureMessage) return;
+
+      if (server.connectionStatus !== "failed" || !server.failureMessage) {
+        return;
+      }
+
       const serverName = sanitizeDisplayText(server.name);
       const failureMessage = sanitizeDisplayText(server.failureMessage);
+
       copyToClipboard(failureMessage).then(() => {
         this.authNotice = `Copied error for ${serverName} to clipboard`;
         this.tui.requestRender();
       }).catch((error) => {
         const message = sanitizeDisplayText(error instanceof Error ? error.message : String(error));
+
         this.authNotice = `Failed to copy error for ${serverName}: ${message}`;
         this.tui.requestRender();
       });
+
       return;
     }
 
     if (data === "?") {
-      if (this.authOnly) return;
+      if (this.authOnly) {
+        return;
+      }
+
       this.descSearchActive = true;
       this.descQuery = "";
       this.rebuildVisibleItems();
       this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
+
       return;
     }
 
@@ -491,14 +622,16 @@ class McpPanel {
         this.rebuildVisibleItems();
         this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
       }
+
       return;
     }
 
-    // All other printable chars → always-on name search
+    // All other printable chars -> always-on name search
     if (data.length === 1 && data.charCodeAt(0) >= 32) {
       this.nameQuery += data;
       this.rebuildVisibleItems();
       this.cursorIndex = Math.min(this.cursorIndex, Math.max(0, this.visibleItems.length - 1));
+
       return;
     }
   }
@@ -508,11 +641,19 @@ class McpPanel {
   }
 
   private authenticateServer(server: ServerState): void {
-    if (this.authInFlight) return;
-    if (server.connectionStatus === "connecting" || server.connectionStatus === "disabled") return;
+    if (this.authInFlight) {
+      return;
+    }
+
+    if (server.connectionStatus === "connecting" || server.connectionStatus === "disabled") {
+      return;
+    }
+
     const serverName = sanitizeDisplayText(server.name);
+
     if (!this.callbacks.canAuthenticate(server.name)) {
       this.authNotice = `${serverName} does not use OAuth authentication.`;
+
       return;
     }
 
@@ -522,20 +663,24 @@ class McpPanel {
 
     this.callbacks.authenticate(server.name).then((result) => {
       server.connectionStatus = this.callbacks.getConnectionStatus(server.name);
+
       if (result.ok) {
         this.authNotice = `OAuth finished for ${serverName}. Reconnecting...`;
         this.authInFlight = null;
         this.tui.requestRender();
         this.reconnectServer(server, { afterAuth: true });
+
         return;
       }
 
       const message = sanitizeDisplayText(result.message);
+
       this.authNotice = `OAuth failed for ${serverName}${message ? `: ${message}` : ". Check the notification for details."}`;
       this.authInFlight = null;
       this.tui.requestRender();
     }).catch((error) => {
       const message = sanitizeDisplayText(error instanceof Error ? error.message : String(error));
+
       server.connectionStatus = this.callbacks.getConnectionStatus(server.name);
       this.authNotice = `OAuth failed for ${serverName}: ${message}`;
       this.authInFlight = null;
@@ -544,93 +689,130 @@ class McpPanel {
   }
 
   private reconnectServer(server: ServerState, options: { afterAuth?: boolean } = {}): void {
-    if (server.connectionStatus === "connecting" || server.connectionStatus === "disabled") return;
+    if (server.connectionStatus === "connecting" || server.connectionStatus === "disabled") {
+      return;
+    }
+
     const serverName = sanitizeDisplayText(server.name);
+
     server.connectionStatus = "connecting";
     this.tui.requestRender();
 
     this.callbacks.reconnect(server.name).then((connected) => {
       server.connectionStatus = this.callbacks.getConnectionStatus(server.name);
       server.failureMessage = this.callbacks.getFailureMessage?.(server.name) ?? null;
+
       if (server.connectionStatus === "connected") {
         const entry = this.callbacks.refreshCacheAfterReconnect(server.name);
+
         if (entry) {
           this.rebuildServerTools(server, entry);
         }
+
         server.hasCachedData = true;
       }
+
       if (options.afterAuth) {
         this.authNotice = connected && server.connectionStatus === "connected"
           ? `OAuth finished for ${serverName}. Reconnected.`
           : `OAuth finished for ${serverName}, but reconnect did not complete. Press ctrl+r to retry.`;
       }
+
       this.tui.requestRender();
     }).catch((error) => {
       server.connectionStatus = "failed";
       const message = sanitizeDisplayText(error instanceof Error ? error.message : String(error));
+
       this.authNotice = `Reconnect failed for ${serverName}: ${message}`;
       this.tui.requestRender();
     });
   }
 
   private toggleItem(item: VisibleItem): void {
-    if (this.authOnly) return;
+    if (this.authOnly) {
+      return;
+    }
+
     const server = this.servers[item.serverIndex];
+
     if (item.type === "server") {
       const newState = !server.tools.every((t) => t.isDirect);
+
       if (server.source === "import" && newState) {
         this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} - will copy to user config on save`;
       }
-      for (const t of server.tools) t.isDirect = newState;
+
+      for (const t of server.tools) {
+        t.isDirect = newState;
+      }
     } else if (item.toolIndex !== undefined) {
       const tool = server.tools[item.toolIndex];
+
       tool.isDirect = !tool.isDirect;
+
       if (tool.isDirect && server.source === "import") {
         this.importNotice = `Imported from ${sanitizeDisplayText(server.importKind ?? "external")} - will copy to user config on save`;
       }
     }
+
     this.updateDirty();
   }
 
   private handleDiscardInput(data: string): void {
     if (matchesKey(data, "ctrl+c")) {
       this.cleanup();
-      this.done({ cancelled: true, changes: new Map() });
+      this.done({ canceled: true, changes: new Map() });
+
       return;
     }
+
     if (matchesKey(data, "escape") || data === "n" || data === "N") {
       this.confirmingDiscard = false;
+
       return;
     }
+
     if (this.keys.selectConfirm(data)) {
       this.cleanup();
+
       if (this.discardSelected === 0) {
-        this.done({ cancelled: true, changes: new Map() });
+        this.done({ canceled: true, changes: new Map() });
       } else {
         this.done(this.buildResult());
       }
+
       return;
     }
+
     if (data === "y" || data === "Y") {
       this.cleanup();
-      this.done({ cancelled: true, changes: new Map() });
+      this.done({ canceled: true, changes: new Map() });
+
       return;
     }
+
     if (matchesKey(data, "left") || matchesKey(data, "right") || matchesKey(data, "tab")) {
       this.discardSelected = this.discardSelected === 0 ? 1 : 0;
     }
   }
 
   private moveCursor(delta: number): void {
-    if (this.visibleItems.length === 0) return;
+    if (this.visibleItems.length === 0) {
+      return;
+    }
+
     this.cursorIndex = Math.max(0, Math.min(this.visibleItems.length - 1, this.cursorIndex + delta));
   }
 
   private rebuildServerTools(server: ServerState, entry: ServerCacheEntry): void {
     const existingState = new Map<string, boolean>();
-    for (const t of server.tools) existingState.set(t.name, t.isDirect);
+
+    for (const t of server.tools) {
+      existingState.set(t.name, t.isDirect);
+    }
 
     const newTools: ToolState[] = [];
+
     for (const tool of entry.tools ?? []) {
       if (!isToolAllowed(tool.name, server.name, this.prefix, server.includeTools, server.excludeTools)) {
         continue;
@@ -638,6 +820,7 @@ class McpPanel {
 
       const prev = existingState.get(tool.name);
       const isDirect = prev !== undefined ? prev : false;
+
       newTools.push({
         name: tool.name,
         description: tool.description ?? "",
@@ -650,6 +833,7 @@ class McpPanel {
     if (server.exposeResources) {
       for (const resource of entry.resources ?? []) {
         const baseName = `read_${resourceNameToToolName(resource.name)}`;
+
         if (!isToolAllowed(baseName, server.name, this.prefix, server.includeTools, server.excludeTools)) {
           continue;
         }
@@ -657,6 +841,7 @@ class McpPanel {
         const prev = existingState.get(baseName);
         const isDirect = prev !== undefined ? prev : false;
         const ct: CachedTool = { name: baseName, description: resource.description };
+
         newTools.push({
           name: baseName,
           description: resource.description ?? `Read resource: ${resource.uri}`,
@@ -681,7 +866,7 @@ class McpPanel {
     const inverse = (s: string) => `\x1b[7m${s}\x1b[27m`;
 
     const row = (content: string) =>
-      fg(t.border, "│") + truncateToWidth(" " + sanitizeRowContent(content), innerW, "…", true) + fg(t.border, "│");
+      fg(t.border, "│") + truncateToWidth(" " + sanitizeRowContent(content), innerW, "...", true) + fg(t.border, "│");
     const emptyRow = () => fg(t.border, "│") + " ".repeat(innerW) + fg(t.border, "│");
     const divider = () => fg(t.border, "├" + "─".repeat(innerW) + "┤");
 
@@ -689,12 +874,14 @@ class McpPanel {
     const borderLen = innerW - visibleWidth(titleText);
     const leftB = Math.floor(borderLen / 2);
     const rightB = borderLen - leftB;
+
     lines.push(fg(t.border, "╭" + "─".repeat(leftB)) + fg(t.title, titleText) + fg(t.border, "─".repeat(rightB) + "╮"));
 
     lines.push(emptyRow());
 
     const cursor = fg(t.selected, "│");
     const searchIcon = fg(t.border, "◎");
+
     if (this.descSearchActive) {
       lines.push(row(`${searchIcon}  ${fg(t.needsAuth, "desc:")} ${this.descQuery}${cursor}`));
     } else if (this.nameQuery) {
@@ -704,12 +891,15 @@ class McpPanel {
     }
 
     lines.push(emptyRow());
+
     if (this.noticeLines.length > 0) {
       for (const notice of this.noticeLines) {
         lines.push(row(fg(t.hint, italic(sanitizeDisplayText(notice)))));
       }
+
       lines.push(emptyRow());
     }
+
     lines.push(divider());
 
     if (this.servers.length === 0) {
@@ -731,6 +921,7 @@ class McpPanel {
 
         if (item.type === "server") {
           lines.push(row(this.renderServerRow(server, isCursor)));
+
           if (isCursor && server.connectionStatus === "failed" && server.failureMessage) {
             for (const line of this.wrapText(sanitizeDisplayText(server.failureMessage), innerW - 6)) {
               lines.push(row(`    ${fg(t.cancel, line)}`));
@@ -745,6 +936,7 @@ class McpPanel {
 
       if (total > maxVis) {
         const prog = Math.round(((this.cursorIndex + 1) / total) * 10);
+
         lines.push(row(`${rainbowProgress(prog, 10)}  ${fg(t.hint, `${this.cursorIndex + 1}/${total}`)}`));
         lines.push(emptyRow());
       }
@@ -753,6 +945,7 @@ class McpPanel {
         lines.push(row(fg(t.needsAuth, italic(sanitizeDisplayText(this.importNotice)))));
         lines.push(emptyRow());
       }
+
       if (this.authNotice) {
         lines.push(row(fg(t.needsAuth, italic(sanitizeDisplayText(this.authNotice)))));
         lines.push(emptyRow());
@@ -769,6 +962,7 @@ class McpPanel {
       const keepBtn = this.discardSelected === 1
         ? inverse(bold(fg(t.confirm, "  Keep & Close  ")))
         : fg(t.hint, "  Keep & Close  ");
+
       lines.push(row(`Discard unsaved changes?  ${discardBtn}   ${keepBtn}`));
     } else {
       if (this.authOnly) {
@@ -781,6 +975,7 @@ class McpPanel {
         );
         const stats =
           directCount > 0 ? `${directCount} direct  ~${totalTokens.toLocaleString()} tokens` : "no direct tools";
+
         lines.push(row(fg(t.description, stats + (this.dirty ? fg(t.needsAuth, "  (unsaved)") : ""))));
       }
     }
@@ -788,32 +983,34 @@ class McpPanel {
     lines.push(emptyRow());
     const hints = this.authOnly
       ? [
-          italic("↑↓") + " navigate",
-          italic("⏎") + " auth",
-          italic("ctrl+a") + " auth",
-          italic("esc") + " clear/close",
-          italic("ctrl+c") + " quit",
-        ]
+        italic("↑↓") + " navigate",
+        italic("⏎") + " auth",
+        italic("ctrl+a") + " auth",
+        italic("esc") + " clear/close",
+        italic("ctrl+c") + " quit",
+      ]
       : [
-          italic("↑↓") + " navigate",
-          italic("space") + " toggle",
-          italic("⏎") + " expand/auth",
-          italic("ctrl+a") + " auth",
-          italic("ctrl+r") + " reconnect",
-          ...(this.selectedServerHasFailureMessage() ? [italic("ctrl+y") + " copy error"] : []),
-          italic("?") + " desc search",
-          italic("ctrl+s") + " save",
-          italic("esc") + " clear/close",
-          italic("ctrl+c") + " quit",
-        ];
+        italic("↑↓") + " navigate",
+        italic("space") + " toggle",
+        italic("⏎") + " expand/auth",
+        italic("ctrl+a") + " auth",
+        italic("ctrl+r") + " reconnect",
+        ...(this.selectedServerHasFailureMessage() ? [italic("ctrl+y") + " copy error"] : []),
+        italic("?") + " desc search",
+        italic("ctrl+s") + " save",
+        italic("esc") + " clear/close",
+        italic("ctrl+c") + " quit",
+      ];
     const gap = "  ";
     const gapW = 2;
     const maxW = innerW - 2;
     let curLine = "";
     let curW = 0;
+
     for (const hint of hints) {
       const hw = visibleWidth(hint);
       const needed = curW === 0 ? hw : gapW + hw;
+
       if (curW > 0 && curW + needed > maxW) {
         lines.push(row(fg(t.hint, curLine)));
         curLine = hint;
@@ -823,7 +1020,10 @@ class McpPanel {
         curW += needed;
       }
     }
-    if (curLine) lines.push(row(fg(t.hint, curLine)));
+
+    if (curLine) {
+      lines.push(row(fg(t.hint, curLine)));
+    }
 
     lines.push(fg(t.border, "╰" + "─".repeat(innerW) + "╯"));
 
@@ -835,7 +1035,7 @@ class McpPanel {
     const bold = (s: string) => `\x1b[1m${s}\x1b[22m`;
 
     const expandIcon = server.expanded ? "▾" : "▸";
-    const prefix = isCursor ? fg(t.selected, expandIcon) : fg(t.border, server.expanded ? expandIcon : "·");
+    const prefix = isCursor ? fg(t.selected, expandIcon) : fg(t.border, server.expanded ? expandIcon : "-");
 
     const serverName = sanitizeDisplayText(server.name);
     const importKind = sanitizeDisplayText(server.importKind ?? "import");
@@ -850,19 +1050,24 @@ class McpPanel {
     const directCount = server.tools.filter((t) => t.isDirect).length;
     const totalCount = server.tools.length;
     let toggleIcon = fg(t.description, "○");
+
     if (directCount === totalCount && totalCount > 0) {
-      toggleIcon = fg(t.direct, "●");
+      toggleIcon = fg(t.direct, "-");
     } else if (directCount > 0) {
       toggleIcon = fg(t.needsAuth, "◐");
     }
 
     let toolInfo = "";
+
     if (totalCount > 0) {
       toolInfo = `${directCount}/${totalCount}`;
+
       if (directCount > 0) {
         const tokens = server.tools.filter((t) => t.isDirect).reduce((s, t) => s + t.estimatedTokens, 0);
+
         toolInfo += `  ~${tokens.toLocaleString()}`;
       }
+
       toolInfo = fg(t.description, toolInfo);
     }
 
@@ -871,8 +1076,13 @@ class McpPanel {
 
   private selectedServerHasFailureMessage(): boolean {
     const item = this.visibleItems[this.cursorIndex];
-    if (!item) return false;
+
+    if (!item) {
+      return false;
+    }
+
     const server = this.servers[item.serverIndex];
+
     return server.connectionStatus === "failed" && !!server.failureMessage;
   }
 
@@ -883,42 +1093,79 @@ class McpPanel {
     let current = "";
     const splitLongWord = (word: string): string => {
       let rest = word;
+
       while (visibleWidth(rest) > max) {
         let take = "";
         let index = 0;
+
         while (index < rest.length && visibleWidth(take + rest[index]) <= max) {
           take += rest[index];
           index++;
         }
-        if (!take) take = rest[0];
+
+        if (!take) {
+          take = rest[0];
+        }
+
         lines.push(take);
         rest = rest.slice(take.length);
       }
+
       return rest;
     };
 
     for (const word of words) {
       const candidate = current ? `${current} ${word}` : word;
+
       if (visibleWidth(candidate) <= max) {
         current = candidate;
       } else {
-        if (current) lines.push(current);
+        if (current) {
+          lines.push(current);
+        }
+
         current = splitLongWord(word);
       }
     }
-    if (current) lines.push(current);
+
+    if (current) {
+      lines.push(current);
+    }
+
     return lines.length > 0 ? lines : [text];
   }
 
   private renderConnectionStatus(server: ServerState): string {
     const t = this.t;
-    if (this.authInFlight === server.name) return `  ${fg(t.needsAuth, "authenticating")}`;
-    if (server.connectionStatus === "disabled") return `  ${fg(t.description, "disabled")}`;
-    if (server.connectionStatus === "needs-auth") return `  ${fg(t.needsAuth, "needs auth")}`;
-    if (server.connectionStatus === "connecting") return `  ${fg(t.needsAuth, "connecting")}`;
-    if (server.connectionStatus === "failed") return `  ${fg(t.cancel, "failed")}`;
-    if (this.authOnly && server.connectionStatus === "connected") return `  ${fg(t.direct, "connected")}`;
-    if (this.authOnly) return `  ${fg(t.description, "idle")}`;
+
+    if (this.authInFlight === server.name) {
+      return `  ${fg(t.needsAuth, "authenticating")}`;
+    }
+
+    if (server.connectionStatus === "disabled") {
+      return `  ${fg(t.description, "disabled")}`;
+    }
+
+    if (server.connectionStatus === "needs-auth") {
+      return `  ${fg(t.needsAuth, "needs auth")}`;
+    }
+
+    if (server.connectionStatus === "connecting") {
+      return `  ${fg(t.needsAuth, "connecting")}`;
+    }
+
+    if (server.connectionStatus === "failed") {
+      return `  ${fg(t.cancel, "failed")}`;
+    }
+
+    if (this.authOnly && server.connectionStatus === "connected") {
+      return `  ${fg(t.direct, "connected")}`;
+    }
+
+    if (this.authOnly) {
+      return `  ${fg(t.description, "idle")}`;
+    }
+
     return "";
   }
 
@@ -926,7 +1173,7 @@ class McpPanel {
     const t = this.t;
     const bold = (s: string) => `\x1b[1m${s}\x1b[22m`;
 
-    const toggleIcon = tool.isDirect ? fg(t.direct, "●") : fg(t.description, "○");
+    const toggleIcon = tool.isDirect ? fg(t.direct, "-") : fg(t.description, "○");
     const cursor = isCursor ? fg(t.selected, "▸") : " ";
     const toolName = sanitizeDisplayText(tool.name);
     const description = sanitizeDisplayText(tool.description);
@@ -936,7 +1183,7 @@ class McpPanel {
     const maxDescLen = Math.max(0, innerW - prefixLen - 8);
     const descStr =
       maxDescLen > 5 && description
-        ? fg(t.description, "- " + truncateToWidth(description, maxDescLen, "…"))
+        ? fg(t.description, "- " + truncateToWidth(description, maxDescLen, "..."))
         : "";
 
     return `  ${cursor} ${toggleIcon} ${nameStr} ${descStr}`;

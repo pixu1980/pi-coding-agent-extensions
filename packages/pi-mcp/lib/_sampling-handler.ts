@@ -36,26 +36,32 @@ export async function handleSamplingRequest(
 ): Promise<CreateMessageResult> {
   const params = request.params;
   const signal = options.getSignal();
+
   throwIfAborted(signal);
 
   if ("task" in params && params.task) {
     throw new Error("MCP sampling tasks are not supported");
   }
+
   if (params.includeContext && params.includeContext !== "none") {
     throw new Error("MCP sampling context inclusion is not supported");
   }
+
   if (params.tools?.length) {
     throw new Error("MCP sampling tool use is not supported");
   }
+
   if (params.toolChoice) {
     throw new Error("MCP sampling tool choice is not supported");
   }
+
   if (params.stopSequences?.length) {
     throw new Error("MCP sampling stop sequences are not supported");
   }
 
   const messages = params.messages.map(convertSamplingMessage);
   const { model, apiKey, headers } = await resolveSamplingModel(options, params.modelPreferences);
+
   throwIfAborted(signal);
   await confirmSampling(
     options,
@@ -81,12 +87,14 @@ export async function handleSamplingRequest(
   );
 
   const converted = convertAssistantResult(result);
+
   throwIfAborted(signal);
   await confirmSampling(
     options,
     "Return MCP sampling response",
     formatResponseApproval(options.serverName, converted),
   );
+
   return converted;
 }
 
@@ -97,27 +105,46 @@ function formatRequestApproval(
   messages: Message[],
 ): string {
   const lines = [`${serverName} wants to sample ${messages.length} message${messages.length === 1 ? "" : "s"} with ${modelName}.`];
+
   if (systemPrompt) {
     lines.push(`System: ${truncateAtWord(systemPrompt, 400)}`);
   }
+
   for (const [index, message] of messages.entries()) {
     lines.push(`${index + 1}. ${message.role}: ${truncateAtWord(messageText(message), 400)}`);
   }
+
   return lines.join("\n\n");
 }
 
 function formatResponseApproval(serverName: string, response: CreateMessageResult): string {
   const text = response.content.type === "text" ? response.content.text : `[${response.content.type} content]`;
+
   return `${serverName} will receive this response from ${response.model}:\n\n${truncateAtWord(text, 1000)}`;
 }
 
 function messageText(message: Message): string {
-  if (typeof message.content === "string") return message.content;
+  if (typeof message.content === "string") {
+    return message.content;
+  }
+
   return message.content.map((block) => {
-    if (block.type === "text") return block.text;
-    if (block.type === "image") return `[image: ${block.mimeType}]`;
-    if (block.type === "thinking") return "[thinking]";
-    if (block.type === "toolCall") return `[tool call: ${block.name}]`;
+    if (block.type === "text") {
+      return block.text;
+    }
+
+    if (block.type === "image") {
+      return `[image: ${block.mimeType}]`;
+    }
+
+    if (block.type === "thinking") {
+      return "[thinking]";
+    }
+
+    if (block.type === "toolCall") {
+      return `[tool call: ${block.name}]`;
+    }
+
     return "[content]";
   }).join("\n");
 }
@@ -135,9 +162,14 @@ async function resolveSamplingModel(
 
   for (const hint of modelPreferences?.hints ?? []) {
     const normalizedHint = hint.name?.trim().toLowerCase();
-    if (!normalizedHint) continue;
+
+    if (!normalizedHint) {
+      continue;
+    }
+
     for (const model of availableModels) {
       const searchableNames = [`${model.provider}/${model.id}`, model.id, model.name];
+
       if (searchableNames.some((name) => name.toLowerCase().includes(normalizedHint))) {
         addSamplingCandidate(candidates, model);
       }
@@ -145,7 +177,10 @@ async function resolveSamplingModel(
   }
 
   const currentModel = options.getCurrentModel();
-  if (currentModel) addSamplingCandidate(candidates, currentModel);
+
+  if (currentModel) {
+    addSamplingCandidate(candidates, currentModel);
+  }
 
   for (const model of availableModels) {
     addSamplingCandidate(candidates, model);
@@ -153,20 +188,25 @@ async function resolveSamplingModel(
 
   const errors: string[] = [];
   const signal = options.getSignal();
+
   for (const model of candidates) {
     throwIfAborted(signal);
     const auth = await options.modelRegistry.getApiKeyAndHeaders(model);
+
     throwIfAborted(signal);
+
     if (auth.ok === false) {
       errors.push(`${model.provider}/${model.id}: ${auth.error}`);
       continue;
     }
+
     return { model, apiKey: auth.apiKey, headers: auth.headers };
   }
 
   if (errors.length > 0) {
     throw new Error(`No configured auth for MCP sampling model. ${errors.join("; ")}`);
   }
+
   throw new Error("No Pi model is available for MCP sampling");
 }
 
@@ -177,11 +217,16 @@ function addSamplingCandidate(candidates: Model<Api>[], model: Model<Api>): void
 }
 
 async function confirmSampling(options: SamplingHandlerOptions, title: string, message: string): Promise<void> {
-  if (options.autoApprove) return;
+  if (options.autoApprove) {
+    return;
+  }
+
   if (!options.ui) {
     throw new Error("MCP sampling requires interactive approval. Set settings.samplingAutoApprove to true to allow it without UI.");
   }
+
   const approved = await options.ui.confirm(title, message);
+
   if (!approved) {
     throw new Error("MCP sampling request was declined");
   }
@@ -189,6 +234,7 @@ async function confirmSampling(options: SamplingHandlerOptions, title: string, m
 
 function convertSamplingMessage(message: SamplingMessage): Message {
   const blocks = Array.isArray(message.content) ? message.content : [message.content];
+
   if (message.role === "user") {
     return {
       role: "user",
@@ -213,6 +259,7 @@ function convertUserContent(block: SamplingMessageContentBlock): TextContent {
   if (block.type === "text") {
     return { type: "text", text: block.text };
   }
+
   throw new Error(`MCP sampling ${block.type} content is not supported`);
 }
 
@@ -220,6 +267,7 @@ function convertAssistantContent(block: SamplingMessageContentBlock): TextConten
   if (block.type === "text") {
     return { type: "text", text: block.text };
   }
+
   throw new Error(`MCP sampling assistant ${block.type} content is not supported`);
 }
 
@@ -227,14 +275,21 @@ function convertAssistantResult(message: AssistantMessage): CreateMessageResult 
   if (message.stopReason === "error") {
     throw new Error(message.errorMessage ?? "MCP sampling model call failed");
   }
+
   if (message.stopReason === "aborted") {
     throw new Error(message.errorMessage ?? "MCP sampling model call was aborted");
   }
 
   const text = message.content
     .map((block) => {
-      if (block.type === "text") return block.text;
-      if (block.type === "thinking") return undefined;
+      if (block.type === "text") {
+        return block.text;
+      }
+
+      if (block.type === "thinking") {
+        return undefined;
+      }
+
       throw new Error(`MCP sampling result ${block.type} content is not supported`);
     })
     .filter((value): value is string => value !== undefined)
@@ -254,9 +309,18 @@ function convertAssistantResult(message: AssistantMessage): CreateMessageResult 
 }
 
 function mapStopReason(reason: AssistantMessage["stopReason"]): CreateMessageResult["stopReason"] {
-  if (reason === "stop") return "endTurn";
-  if (reason === "length") return "maxTokens";
-  if (reason === "toolUse") return "toolUse";
+  if (reason === "stop") {
+    return "endTurn";
+  }
+
+  if (reason === "length") {
+    return "maxTokens";
+  }
+
+  if (reason === "toolUse") {
+    return "toolUse";
+  }
+
   return reason;
 }
 

@@ -11,7 +11,10 @@ import { getAuthEntry } from "./_mcp-auth.ts";
  */
 export function getStoredTokens(serverName: string): OAuthTokens | undefined {
   const tokens = getAuthEntry(serverName)?.tokens;
-  if (!tokens) return undefined;
+
+  if (!tokens) {
+    return undefined;
+  }
 
   if (tokens.expiresAt !== undefined && tokens.expiresAt < Date.now() / 1000) {
     return undefined;

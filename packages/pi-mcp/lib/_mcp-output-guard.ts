@@ -66,6 +66,7 @@ export interface GuardedMcpOutput {
 export function resolveMcpOutputGuardOptions(settings?: McpSettings): Pick<McpOutputGuardOptions, "enabled" | "maxBytes" | "maxLines" | "detailsMaxBytes"> {
   const configured = settings?.outputGuard;
   const tuning = typeof configured === "object" && configured !== null ? configured : undefined;
+
   return {
     enabled: envKillSwitch("MCP_OUTPUT_GUARD") ?? configured !== false,
     maxBytes: positiveInt(tuning?.maxBytes) ?? DEFAULT_MCP_OUTPUT_MAX_BYTES,
@@ -152,31 +153,46 @@ export async function guardMcpOutput(
 
 function sanitizeContent(content: ContentBlock[]): ContentBlock[] {
   return content.map((block) => {
-    if (block.type !== "image") return block;
+    if (block.type !== "image") {
+      return block;
+    }
+
     const mimeType = typeof block.mimeType === "string" && block.mimeType.trim()
       ? block.mimeType.trim().slice(0, 100)
       : "image/png";
+
     return { ...block, mimeType };
   });
 }
 
 function withEmptyTextFallback(content: ContentBlock[], fallback: string | undefined): ContentBlock[] {
-  if (!fallback) return content;
+  if (!fallback) {
+    return content;
+  }
+
   const textOutput = content
     .filter((block) => block.type === "text")
     .map((block) => (block as { text: string }).text)
     .join("\n");
-  if (textOutput) return content;
+
+  if (textOutput) {
+    return content;
+  }
+
   return [{ type: "text", text: fallback }, ...content.filter((block) => block.type === "image")];
 }
 
 function addAffixes(content: ContentBlock[], prefix: string, suffix: string): ContentBlock[] {
-  if (!prefix && !suffix) return content;
+  if (!prefix && !suffix) {
+    return content;
+  }
+
   const next: ContentBlock[] = [...content];
 
   if (prefix) {
     const index = next.findIndex((block) => block.type === "text");
     const block = next[index];
+
     if (index >= 0 && block.type === "text") {
       next[index] = { ...block, text: `${prefix}${block.text}` };
     } else {
@@ -186,13 +202,16 @@ function addAffixes(content: ContentBlock[], prefix: string, suffix: string): Co
 
   if (suffix) {
     let index = -1;
+
     for (let i = next.length - 1; i >= 0; i--) {
       if (next[i].type === "text") {
         index = i;
         break;
       }
     }
+
     const block = next[index];
+
     if (index >= 0 && block.type === "text") {
       next[index] = { ...block, text: `${block.text}${suffix}` };
     } else {
@@ -205,6 +224,7 @@ function addAffixes(content: ContentBlock[], prefix: string, suffix: string): Co
 
 function reserveBudget(maxBytes: number, maxLines: number, notice: string): { maxBytes: number; maxLines: number } {
   const noticeStats = textStats(`\n\n${notice}`);
+
   return {
     maxBytes: Math.max(0, maxBytes - noticeStats.bytes),
     maxLines: Math.max(0, maxLines - noticeStats.lines),
@@ -217,30 +237,45 @@ function truncateHead(text: string, maxBytes: number, maxLines: number): { conte
   let bytes = 0;
 
   for (const line of lines) {
-    if (output.length >= maxLines) break;
+    if (output.length >= maxLines) {
+      break;
+    }
+
     const separatorBytes = output.length > 0 ? 1 : 0;
     const lineBytes = byteLength(line);
+
     if (bytes + separatorBytes + lineBytes > maxBytes) {
       const remaining = maxBytes - bytes - separatorBytes;
+
       if (remaining > 0) {
         output.push(truncateStringToBytes(line, remaining));
       }
+
       break;
     }
+
     output.push(line);
     bytes += separatorBytes + lineBytes;
   }
 
   const content = output.join("\n");
   const stats = textStats(content);
+
   return { content, bytes: stats.bytes, lines: stats.lines };
 }
 
 function truncateStringToBytes(value: string, maxBytes: number): string {
-  if (byteLength(value) <= maxBytes) return value;
+  if (byteLength(value) <= maxBytes) {
+    return value;
+  }
+
   const buffer = Buffer.from(value, "utf8");
   let end = Math.max(0, maxBytes);
-  while (end > 0 && (buffer[end] & 0xc0) === 0x80) end--;
+
+  while (end > 0 && (buffer[end] & 0xc0) === 0x80) {
+    end--;
+  }
+
   return buffer.subarray(0, end).toString("utf8");
 }
 
@@ -250,9 +285,11 @@ function formatTruncationNotice(
   writeError: string | undefined,
 ): string {
   const base = `[MCP text output truncated: original ${stats.lines.toLocaleString()} lines / ${formatSize(stats.bytes)}.`;
+
   if (fullOutputPath) {
     return `${base} Full text saved to: ${fullOutputPath} - use read with offset/limit or grep to inspect.]`;
   }
+
   return `${base} Full output could not be saved: ${writeError ?? "unknown error"}]`;
 }
 
@@ -264,7 +301,11 @@ function formatTruncationNotice(
 async function boundMcpResult(result: unknown, detailsMaxBytes: number): Promise<unknown> {
   const raw = safeStringify(result);
   const rawBytes = byteLength(raw);
-  if (rawBytes <= detailsMaxBytes) return result;
+
+  if (rawBytes <= detailsMaxBytes) {
+    return result;
+  }
+
   return summarizeMcpResult(result, raw, rawBytes);
 }
 
@@ -287,16 +328,21 @@ async function summarizeMcpResult(result: unknown, raw: string, rawBytes: number
   if (record && "structuredContent" in record) {
     summary.structuredContent = summarizeValue(record.structuredContent);
   }
+
   if (record && "_meta" in record) {
     summary.meta = summarizeValue(record._meta);
   }
+
   if (record) {
     const standard = new Set(["content", "isError", "structuredContent", "_meta"]);
     const extraFields = Object.keys(record)
       .filter((key) => !standard.has(key))
       .slice(0, KEY_PREVIEW_LIMIT)
       .map((key) => ({ key: truncateKey(key), type: typeof record[key], estimatedBytes: estimateValueBytes(record[key]), omitted: true }));
-    if (extraFields.length > 0) summary.extraFields = extraFields;
+
+    if (extraFields.length > 0) {
+      summary.extraFields = extraFields;
+    }
   }
 
   return summary;
@@ -305,29 +351,42 @@ async function summarizeMcpResult(result: unknown, raw: string, rawBytes: number
 function summarizeContent(content: unknown[]): Array<Record<string, unknown>> {
   const summaries: Array<Record<string, unknown>> = content.slice(0, CONTENT_SUMMARY_LIMIT).map((block) => {
     const record = asRecord(block);
-    if (!record) return { type: typeof block, omitted: true };
+
+    if (!record) {
+      return { type: typeof block, omitted: true };
+    }
+
     if (record.type === "text") {
       const text = typeof record.text === "string" ? record.text : "";
+
       return { type: "text", bytes: byteLength(text), lines: textStats(text).lines, textOmitted: true };
     }
+
     if (record.type === "image") {
       const data = typeof record.data === "string" ? record.data : "";
+
       return { type: "image", mimeType: typeof record.mimeType === "string" ? record.mimeType : undefined, dataBytes: byteLength(data), dataOmitted: true };
     }
+
     return { type: typeof record.type === "string" ? record.type : "unknown", estimatedBytes: estimateValueBytes(record), omitted: true };
   });
+
   if (content.length > CONTENT_SUMMARY_LIMIT) {
     summaries.push({ type: "omitted", count: content.length - CONTENT_SUMMARY_LIMIT });
   }
+
   return summaries;
 }
 
 function summarizeValue(value: unknown): Record<string, unknown> {
   const record = asRecord(value);
+
   if (!record) {
     return { type: value === null ? "null" : typeof value, estimatedBytes: estimateValueBytes(value), omitted: true };
   }
+
   const keys = Object.keys(record);
+
   return {
     type: Array.isArray(value) ? "array" : "object",
     estimatedBytes: estimateValueBytes(value),
@@ -338,12 +397,26 @@ function summarizeValue(value: unknown): Record<string, unknown> {
 }
 
 function estimateValueBytes(value: unknown, depth = 0): number {
-  if (value === null || value === undefined) return 0;
-  if (typeof value === "string") return byteLength(value);
-  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return byteLength(String(value));
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  if (typeof value === "string") {
+    return byteLength(value);
+  }
+
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return byteLength(String(value));
+  }
+
   const record = asRecord(value);
-  if (!record || depth >= 2) return 0;
+
+  if (!record || depth >= 2) {
+    return 0;
+  }
+
   const values = Array.isArray(value) ? value.slice(0, KEY_PREVIEW_LIMIT) : Object.values(record).slice(0, KEY_PREVIEW_LIMIT);
+
   return values.reduce((total, item) => total + estimateValueBytes(item, depth + 1), 0);
 }
 
@@ -355,7 +428,9 @@ async function saveArtifact(kind: string, text: string): Promise<{ path?: string
   try {
     const dir = await mkdtemp(join(tmpdir(), "pi-mcp-output-"));
     const path = join(dir, `${kind}-${randomBytes(4).toString("hex")}.txt`);
+
     await writeFile(path, text, { encoding: "utf8", mode: 0o600 });
+
     return { path };
   } catch (error) {
     return { error: error instanceof Error ? error.message : String(error) };
@@ -384,21 +459,41 @@ function byteLength(text: string): number {
 }
 
 function positiveInt(value: unknown): number | undefined {
-  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return undefined;
+  }
+
   const integer = Math.floor(value);
+
   return integer > 0 ? integer : undefined;
 }
 
 function envKillSwitch(name: string): boolean | undefined {
   const value = process.env[name]?.trim().toLowerCase();
-  if (!value) return undefined;
-  if (["0", "false", "no", "off"].includes(value)) return false;
-  if (["1", "true", "yes", "on"].includes(value)) return true;
+
+  if (!value) {
+    return undefined;
+  }
+
+  if (["0", "false", "no", "off"].includes(value)) {
+    return false;
+  }
+
+  if (["1", "true", "yes", "on"].includes(value)) {
+    return true;
+  }
+
   return undefined;
 }
 
 function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KiB`;
+  }
+
   return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
 }

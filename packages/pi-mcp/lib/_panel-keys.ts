@@ -29,6 +29,7 @@ export function createPanelKeys(keybindings?: PanelKeybindings): PanelKeys {
       selectConfirm: (data) => keybindings.matches(data, "tui.select.confirm"),
     };
   }
+
   return {
     selectUp: (data) => matchesKey(data, "up"),
     selectDown: (data) => matchesKey(data, "down"),

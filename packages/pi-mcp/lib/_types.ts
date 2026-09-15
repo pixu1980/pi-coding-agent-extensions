@@ -181,6 +181,7 @@ export interface UiMessageParams {
 export function extractUiPromptText(params: UiMessageParams): string | undefined {
   if (params.type === "prompt" || params.prompt) {
     const prompt = params.prompt ?? String(params.message ?? "");
+
     return prompt || undefined;
   }
 
@@ -189,6 +190,7 @@ export function extractUiPromptText(params: UiMessageParams): string | undefined
       .map((block) => (block && typeof block === "object" && "text" in block ? String((block as { text?: unknown }).text ?? "") : ""))
       .filter(Boolean)
       .join("\n\n");
+
     return text || undefined;
   }
 
@@ -209,12 +211,14 @@ export interface UiPromptHandoff {
  */
 export function parseUiPromptHandoff(prompt: string): UiPromptHandoff | undefined {
   const newlineIndex = prompt.indexOf("\n");
+
   if (newlineIndex <= 0) {
     return undefined;
   }
 
   const intent = prompt.slice(0, newlineIndex).trim();
   const payloadText = prompt.slice(newlineIndex + 1).trim();
+
   if (!intent || !payloadText) {
     return undefined;
   }
@@ -225,9 +229,11 @@ export function parseUiPromptHandoff(prompt: string): UiPromptHandoff | undefine
 
   try {
     const parsed = JSON.parse(payloadText);
+
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return undefined;
     }
+
     return {
       intent,
       params: parsed as Record<string, unknown>,
@@ -535,7 +541,7 @@ export interface McpPanelCallbacks {
 
 export interface McpPanelResult {
   changes: Map<string, true | string[] | false>;
-  cancelled: boolean;
+  canceled: boolean;
 }
 
 /**
@@ -545,20 +551,31 @@ export function getServerPrefix(
   serverName: string,
   mode: ToolPrefix
 ): string {
-  if (mode === "none") return "";
+  if (mode === "none") {
+    return "";
+  }
+
   if (mode === "short") {
-    let short = serverName.replace(/-?mcp$/i, "").replace(/-/g, "_");
-    if (!short) short = "mcp";
+    let short = serverName.replace(/-?mcp$/i, "").replaceAll('-', "_");
+
+    if (!short) {
+      short = "mcp";
+    }
+
     return short;
   }
-  if (mode === "mcp") return `mcp__${serverName.replace(/-/g, "_")}`;
-  return serverName.replace(/-/g, "_");
+
+  if (mode === "mcp") {
+    return `mcp__${serverName.replaceAll('-', "_")}`;
+  }
+
+  return serverName.replaceAll('-', "_");
 }
 
 /**
  * Format a tool name with server prefix.
  * With prefix "none" the command is bare and dash-separated
- * (e.g. pix_frontend_vanilla_reactive → `pix-frontend-vanilla-reactive`).
+ * (e.g. pix_frontend_vanilla_reactive -> `pix-frontend-vanilla-reactive`).
  */
 export function formatToolName(
   toolName: string,
@@ -566,8 +583,12 @@ export function formatToolName(
   prefix: ToolPrefix
 ): string {
   const p = getServerPrefix(serverName, prefix);
-  const sanitized = toolName.replace(/\./g, "_");
-  if (!p) return sanitized.replace(/_/g, "-"); // "none": bare dash-separated command
+  const sanitized = toolName.replaceAll('.', "_");
+
+  if (!p) {
+    return sanitized.replaceAll('_', "-");
+  } // "none": bare dash-separated command
+
   return `${p}_${sanitized}`;
 }
 
@@ -579,8 +600,12 @@ export function resolveToolPrefix(
 }
 
 export function sanitizePromptName(name: string): string {
-  const cleaned = name.replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^[_-]+|[_-]+$/g, "");
-  if (!cleaned) return "prompt";
+  const cleaned = name.replaceAll(/[^A-Za-z0-9_-]+/g, "_").replaceAll(/^[_-]+|[_-]+$/g, "");
+
+  if (!cleaned) {
+    return "prompt";
+  }
+
   return /^[0-9]/.test(cleaned) ? `_${cleaned}` : cleaned;
 }
 
@@ -596,12 +621,16 @@ export function formatPromptCommandName(
 ): string {
   const serverPart = getServerPrefix(serverName, prefix);
   const sanitized = sanitizePromptName(promptName);
-  if (!serverPart) return sanitized; // "none": bare prompt command
+
+  if (!serverPart) {
+    return sanitized;
+  } // "none": bare prompt command
+
   return `mcp__${serverPart}__${sanitized}`;
 }
 
 function normalizeToolName(value: string): string {
-  return value.replace(/-/g, "_");
+  return value.replaceAll('-', "_");
 }
 
 function getToolNameCandidates(toolName: string, serverName: string, prefix: ToolPrefix): Set<string> {
@@ -615,19 +644,27 @@ function getToolNameCandidates(toolName: string, serverName: string, prefix: Too
 }
 
 function globToRegExp(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
+  const escaped = pattern.replaceAll(/[.+^${}()|[\]\\]/g, "\\$&").replaceAll('*', ".*").replaceAll('?', ".");
+
   return new RegExp(`^${escaped}$`);
 }
 
 function matchesToolPattern(candidates: Set<string>, patterns?: unknown): boolean {
-  if (!Array.isArray(patterns) || patterns.length === 0) return false;
+  if (!Array.isArray(patterns) || patterns.length === 0) {
+    return false;
+  }
 
   for (const pattern of patterns) {
-    if (typeof pattern !== "string") continue;
+    if (typeof pattern !== "string") {
+      continue;
+    }
+
     const normalized = normalizeToolName(pattern);
+
     if (!normalized.includes("*") && !normalized.includes("?") && candidates.has(normalized)) {
       return true;
     }
+
     if ((normalized.includes("*") || normalized.includes("?")) && [...candidates].some(candidate => globToRegExp(normalized).test(candidate))) {
       return true;
     }
@@ -642,7 +679,10 @@ export function isToolIncluded(
   prefix: ToolPrefix,
   includeTools?: unknown
 ): boolean {
-  if (!Array.isArray(includeTools) || includeTools.length === 0) return true;
+  if (!Array.isArray(includeTools) || includeTools.length === 0) {
+    return true;
+  }
+
   return matchesToolPattern(getToolNameCandidates(toolName, serverName, prefix), includeTools);
 }
 

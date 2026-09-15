@@ -2,8 +2,8 @@
 
 export function resourceNameToToolName(name: string): string {
   let result = name
-    .replace(/[^a-zA-Z0-9]/g, "_")
-    .replace(/_+/g, "_")
+    .replaceAll(/[^a-zA-Z0-9]/g, "_")
+    .replaceAll(/_+/g, "_")
     .replace(/^_+/, "")  // Remove leading underscores
     .replace(/_+$/, "")  // Remove trailing underscores
     .toLowerCase();

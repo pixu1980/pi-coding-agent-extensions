@@ -34,10 +34,10 @@ const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 // ── Read-through memory cache (PERF-03) ──────────────────────────
 // loadMetadataCache runs on several per-session hot paths (tool surface
-// sync, prompt registration, panel open, connect flows). Each call used to
-// readFileSync + JSON.parse the whole file. A statSync is orders of
-// magnitude cheaper, so reads are cached in memory keyed by { mtimeMs,
-// size }; saveMetadataCache invalidates the entry so merged writes are
+// sync, prompt registration, panel open, connect flows). An uncached call
+// reads and parses the whole file, and a statSync is orders of magnitude
+// cheaper, so reads are cached in memory keyed by { mtimeMs, size };
+// saveMetadataCache invalidates the entry so merged writes are
 // always re-read fresh. Correctness is keyed on the file identity, not on
 // wall-clock TTL, so no value ever goes stale.
 
@@ -62,6 +62,7 @@ export function getMetadataCacheStats(): MetadataCacheStats {
 function identityOf(path: string): CacheFileIdentity | null {
   try {
     const stat = statSync(path);
+
     return { mtimeMs: stat.mtimeMs, size: stat.size };
   } catch {
     return null;
@@ -70,15 +71,27 @@ function identityOf(path: string): CacheFileIdentity | null {
 
 function decodeCache(raw: string): MetadataCache | null {
   let parsed: unknown;
+
   try {
     parsed = JSON.parse(raw);
   } catch {
     return null;
   }
-  if (!parsed || typeof parsed !== "object") return null;
+
+  if (!parsed || typeof parsed !== "object") {
+    return null;
+  }
+
   const candidate = parsed as MetadataCache;
-  if (candidate.version !== CACHE_VERSION) return null;
-  if (!candidate.servers || typeof candidate.servers !== "object") return null;
+
+  if (candidate.version !== CACHE_VERSION) {
+    return null;
+  }
+
+  if (!candidate.servers || typeof candidate.servers !== "object") {
+    return null;
+  }
+
   return candidate;
 }
 
@@ -90,47 +103,59 @@ export function getMetadataCachePath(): string {
 
 export function loadMetadataCache(): MetadataCache | null {
   const cachePath = getMetadataCachePath();
+
   stats.loads++;
 
-  // No file → drop any cached copy and report none.
+  // No file -> drop any cached copy and report none.
   const identity = identityOf(cachePath);
+
   if (!identity) {
     memoryCache = null;
+
     return null;
   }
 
-  // Same identity as last real read → serve from memory, zero file reads.
+  // Same identity as last real read -> serve from memory, zero file reads.
   if (memoryCache && memoryCache.identity &&
       memoryCache.identity.mtimeMs === identity.mtimeMs &&
       memoryCache.identity.size === identity.size) {
     stats.memoryHits++;
+
     return memoryCache.data;
   }
 
   stats.fileReads++;
   let raw: string | null = null;
+
   try {
     raw = readFileSync(cachePath, "utf-8");
   } catch {
     memoryCache = { identity, data: null };
+
     return null;
   }
+
   const data = decodeCache(raw);
+
   // Store the canonical object; hand out a shallow copy so no caller can
   // poison the in-memory copy by mutating the servers map.
   memoryCache = { identity, data };
+
   return data ? { ...data, servers: { ...data.servers } } : null;
 }
 
 export function saveMetadataCache(cache: MetadataCache): void {
   const cachePath = getMetadataCachePath();
   const dir = dirname(cachePath);
+
   mkdirSync(dir, { recursive: true });
 
   let merged: MetadataCache = { version: CACHE_VERSION, servers: {} };
+
   try {
     if (existsSync(cachePath)) {
       const existing = JSON.parse(readFileSync(cachePath, "utf-8")) as MetadataCache;
+
       if (existing && existing.version === CACHE_VERSION && existing.servers) {
         merged.servers = { ...existing.servers };
       }
@@ -143,6 +168,7 @@ export function saveMetadataCache(cache: MetadataCache): void {
   merged.servers = { ...merged.servers, ...cache.servers };
 
   const tmpPath = `${cachePath}.${process.pid}.tmp`;
+
   writeFileSync(tmpPath, JSON.stringify(merged, null, 2), "utf-8");
   renameSync(tmpPath, cachePath);
   // The file changed under us: drop the read-through copy so the next load
@@ -170,6 +196,7 @@ export function computeServerHash(definition: ServerEntry): string {
     excludeTools: definition.excludeTools,
   };
   const normalized = stableStringify(identity);
+
   return createHash("sha256").update(normalized).digest("hex");
 }
 
@@ -179,14 +206,25 @@ export function isServerCacheValid(
   maxAgeMs: number = CACHE_MAX_AGE_MS
 ): boolean {
   let configHash: string;
+
   try {
     configHash = computeServerHash(definition);
   } catch {
     return false;
   }
-  if (!entry || entry.configHash !== configHash) return false;
-  if (!entry.cachedAt || typeof entry.cachedAt !== "number") return false;
-  if (maxAgeMs > 0 && Date.now() - entry.cachedAt > maxAgeMs) return false;
+
+  if (!entry || entry.configHash !== configHash) {
+    return false;
+  }
+
+  if (!entry.cachedAt || typeof entry.cachedAt !== "number") {
+    return false;
+  }
+
+  if (maxAgeMs > 0 && Date.now() - entry.cachedAt > maxAgeMs) {
+    return false;
+  }
+
   return true;
 }
 
@@ -199,10 +237,13 @@ export function parseDirectToolSelectors(selectors: string[]): {
 
   for (let selector of selectors) {
     selector = selector.replace(/\/+$/, "");
+
     if (selector.includes("/")) {
       const [server, tool] = selector.split("/", 2);
+
       if (server && tool) {
         const serverTools = tools.get(server) ?? new Set<string>();
+
         serverTools.add(tool);
         tools.set(server, serverTools);
       } else if (server) {
@@ -226,16 +267,22 @@ export function getMissingConfiguredDirectToolServers(
   const envSelection = envOverride ? parseDirectToolSelectors(envOverride) : null;
 
   for (const [serverName, definition] of Object.entries(config.mcpServers)) {
-    if (isServerDisabled(definition)) continue;
+    if (isServerDisabled(definition)) {
+      continue;
+    }
+
     const hasDirectTools = envSelection
       ? envSelection.servers.has(serverName) || envSelection.tools.has(serverName)
       : definition.directTools !== undefined
         ? !!definition.directTools
         : !!globalDirect;
 
-    if (!hasDirectTools) continue;
+    if (!hasDirectTools) {
+      continue;
+    }
 
     const serverCache = cache?.servers?.[serverName];
+
     if (!serverCache || !isServerCacheValid(serverCache, definition)) {
       missing.push(serverName);
     }
@@ -255,15 +302,20 @@ export function reconstructToolMetadata(
   const effectivePrefix = resolveToolPrefix(definition, prefix);
 
   for (const tool of entry.tools ?? []) {
-    if (!tool?.name) continue;
+    if (!tool?.name) {
+      continue;
+    }
+
     if (!isToolAllowed(tool.name, serverName, effectivePrefix, definition.includeTools, definition.excludeTools)) {
       continue;
     }
 
     const name = formatToolName(tool.name, serverName, effectivePrefix);
+
     if (seenNames.has(name)) {
       continue;
     }
+
     seenNames.add(name);
 
     metadata.push({
@@ -278,16 +330,22 @@ export function reconstructToolMetadata(
 
   if (definition.exposeResources !== false) {
     for (const resource of entry.resources ?? []) {
-      if (!resource?.name || !resource?.uri) continue;
+      if (!resource?.name || !resource?.uri) {
+        continue;
+      }
+
       const baseName = `read_${resourceNameToToolName(resource.name)}`;
+
       if (!isToolAllowed(baseName, serverName, effectivePrefix, definition.includeTools, definition.excludeTools)) {
         continue;
       }
 
       const name = formatToolName(baseName, serverName, effectivePrefix);
+
       if (seenNames.has(name)) {
         continue;
       }
+
       seenNames.add(name);
 
       metadata.push({
@@ -333,10 +391,10 @@ export function serializePrompts(prompts: McpPrompt[]): CachedPrompt[] {
       description: prompt.description,
       arguments: Array.isArray(prompt.arguments)
         ? prompt.arguments.filter(argument => argument?.name).map(argument => ({
-            name: argument.name,
-            description: argument.description,
-            required: argument.required,
-          }))
+          name: argument.name,
+          description: argument.description,
+          required: argument.required,
+        }))
         : undefined,
     }));
 }
@@ -348,14 +406,16 @@ export function reconstructPromptMetadata(
   definition?: Pick<ServerEntry, "toolPrefix">,
 ): PromptMetadata[] {
   const effectivePrefix = resolveToolPrefix(definition, prefix);
+
   return (prompts ?? []).filter(prompt => prompt?.name).map(prompt => {
     const args: McpPromptArgument[] = Array.isArray(prompt.arguments)
       ? prompt.arguments.filter(argument => argument?.name).map(argument => ({
-          name: argument.name,
-          description: argument.description,
-          required: argument.required,
-        }))
+        name: argument.name,
+        description: argument.description,
+        required: argument.required,
+      }))
       : [];
+
     return {
       serverName,
       originalName: prompt.name,
@@ -370,13 +430,17 @@ export function reconstructPromptMetadata(
 function stableStringify(value: unknown): string {
   if (value === null || value === undefined || typeof value !== "object") {
     const serialized = JSON.stringify(value);
+
     return serialized === undefined ? "undefined" : serialized;
   }
+
   if (Array.isArray(value)) {
     return `[${value.map(v => stableStringify(v)).join(",")}]`;
   }
+
   const obj = value as Record<string, unknown>;
   const keys = Object.keys(obj).sort();
+
   return `{${keys.map(k => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(",")}}`;
 }
 

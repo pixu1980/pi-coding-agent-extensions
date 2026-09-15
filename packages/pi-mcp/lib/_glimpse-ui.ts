@@ -8,15 +8,19 @@ let glimpseAvailable: boolean | null = null;
 let resolvedBinaryPath: string | null = null;
 
 export function isGlimpseAvailable(): boolean {
-  if (glimpseAvailable !== null) return glimpseAvailable;
+  if (glimpseAvailable !== null) {
+    return glimpseAvailable;
+  }
 
   if (platform() !== "darwin") {
     glimpseAvailable = false;
+
     return false;
   }
 
   resolvedBinaryPath = getGlimpseBinaryPath();
   glimpseAvailable = resolvedBinaryPath !== null;
+
   return glimpseAvailable;
 }
 
@@ -30,15 +34,25 @@ function getGlimpseBinaryPath(): string | null {
     const require = createRequire(import.meta.url);
     const glimpseuiPath = require.resolve("glimpseui");
     const binaryPath = join(dirname(glimpseuiPath), "glimpse");
-    if (existsSync(binaryPath)) return binaryPath;
-  } catch {}
+
+    if (existsSync(binaryPath)) {
+      return binaryPath;
+    }
+  } catch {
+    // Not installed in local node_modules; the global root is tried next.
+  }
 
   // Global npm install
   try {
     const globalRoot = execFileSync("npm", ["root", "-g"], { encoding: "utf-8" }).trim();
     const binaryPath = join(globalRoot, "glimpseui", "src", "glimpse");
-    if (existsSync(binaryPath)) return binaryPath;
-  } catch {}
+
+    if (existsSync(binaryPath)) {
+      return binaryPath;
+    }
+  } catch {
+    // Not installed globally either; the caller reports the dependency as missing.
+  }
 
   return null;
 }
@@ -65,14 +79,20 @@ export async function openGlimpseWindow(
   });
 
   win.on("closed", () => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
+
     active = false;
     options.onClosed();
   });
 
   return {
     close: () => {
-      if (!active) return;
+      if (!active) {
+        return;
+      }
+
       active = false;
       win.close();
     },

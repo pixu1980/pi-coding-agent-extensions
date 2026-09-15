@@ -16,12 +16,16 @@ const HANGING = () => new Promise(() => {});
 
 function fakeManager() {
   const connected = new Set();
+
   return {
     connected,
     manager: {
       getConnection: (name) => (connected.has(name) ? { status: "connected" } : null),
       connect: async (name) => {
-        if (name === "slow") await HANGING();
+        if (name === "slow") {
+          await HANGING();
+        }
+
         connected.add(name);
       },
       isIdle: () => false,
@@ -39,12 +43,14 @@ test("health check: one hung server does not delay the others", { timeout: 3000 
     backoffMaxMs: 10,
     reconnectLimit: 4,
   });
+
   lm.registerServer("fast", { command: "fast" });
   lm.registerServer("slow", { command: "slow" });
   lm.markKeepAlive("fast", { command: "fast" });
   lm.markKeepAlive("slow", { command: "slow" });
 
   const t0 = Date.now();
+
   await lm.checkConnections();
   assert.ok(connected.has("fast"), "fast server reconnects while slow hangs");
   assert.ok(Date.now() - t0 < 2500, "a health pass must finish despite the hung server");
@@ -68,13 +74,14 @@ test("health check: failed reconnect backs off and retries later", { timeout: 30
     backoffMaxMs: 50,
     reconnectLimit: 4,
   });
+
   lm.registerServer("s", { command: "s" });
   lm.markKeepAlive("s", { command: "s" });
 
   await lm.checkConnections();
   assert.equal(attempts, 1, "first pass attempts once");
 
-  await lm.checkConnections(); // immediately after failure → backoff skips
+  await lm.checkConnections(); // immediately after failure -> backoff skips
   assert.equal(attempts, 1, "backoff prevents an immediate re-attempt");
 
   await new Promise((resolve) => setTimeout(resolve, 80)); // beyond max backoff

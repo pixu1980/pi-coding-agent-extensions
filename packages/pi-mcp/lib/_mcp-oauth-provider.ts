@@ -48,6 +48,7 @@ let configuredOAuthCallbackPort = DEFAULT_OAUTH_CALLBACK_PORT
 
 if (process.env.MCP_OAUTH_CALLBACK_PORT) {
   const parsedPort = Number.parseInt(process.env.MCP_OAUTH_CALLBACK_PORT, 10)
+
   if (Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort <= 65535) {
     configuredOAuthCallbackPort = parsedPort
   }
@@ -100,14 +101,20 @@ const reservedAuthorizationParams = new Set([
 ])
 
 function addAuthorizationParams(authorizationUrl: URL, params: Record<string, string> | undefined): URL {
-  if (!params) return authorizationUrl
+  if (!params) {
+    return authorizationUrl
+  }
+
   const nextUrl = new URL(authorizationUrl.toString())
+
   for (const [key, value] of Object.entries(params)) {
     if (reservedAuthorizationParams.has(key) || nextUrl.searchParams.has(key)) {
       throw new Error(`OAuth authorizationParams.${key} cannot override an authorization flow parameter`)
     }
+
     nextUrl.searchParams.set(key, value)
   }
+
   return nextUrl
 }
 
@@ -163,10 +170,14 @@ export class McpOAuthProvider implements OAuthClientProvider {
         `OAuth authorization server issuer changed for ${this.serverName}; clear credentials before authenticating again`,
       )
     }
-    if (!entry || !issuer) return
+
+    if (!entry || !issuer) {
+      return
+    }
 
     const storedIssuers = [entry.clientInfo?.issuer, entry.tokens?.issuer]
       .filter((storedIssuer): storedIssuer is string => storedIssuer !== undefined)
+
     if (storedIssuers.some(storedIssuer => !issuersMatch(storedIssuer, issuer))) {
       this.flowIssuerMismatch = true
       throw new Error(
@@ -176,7 +187,10 @@ export class McpOAuthProvider implements OAuthClientProvider {
   }
 
   private throwIfInactive(): void {
-    if (!this.active) throw new Error("OAuth flow is no longer active")
+    if (!this.active) {
+      throw new Error("OAuth flow is no longer active")
+    }
+
     this.runtimeSignal?.throwIfAborted()
   }
 
@@ -204,6 +218,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
     }
 
     const redirectUrl = this.redirectUrl
+
     if (!redirectUrl) {
       throw new Error("redirectUrl is required for authorization_code flow")
     }
@@ -226,6 +241,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
   async clientInformation(): Promise<OAuthClientInformationMixed | undefined> {
     const issuer = this.discoveredIssuer
     const stored = await getAuthForUrl(this.serverName, this.serverUrl, this.storageOptions)
+
     this.assertStoredIssuerBindings(stored, issuer)
 
     // Check config first (pre-registered client). Store only its issuer binding.
@@ -234,6 +250,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
       const storedClient = stored?.clientInfo?.clientId === this.config.clientId
         ? stored.clientInfo
         : undefined
+
       if (issuer && (storedClient?.issuer !== issuer || storedClient.configPreRegistered !== true)) {
         updateClientInfo(
           this.serverName,
@@ -242,12 +259,14 @@ export class McpOAuthProvider implements OAuthClientProvider {
           this.storageOptions,
         )
       }
+
       const clientSecret = this.config.clientSecret?.startsWith("!")
         ? await resolveCommandSecret(
           this.config.clientSecret,
           `MCP server "${this.serverName}" OAuth clientSecret`,
         )
         : this.config.clientSecret
+
       return {
         client_id: this.config.clientId,
         client_secret: clientSecret,
@@ -258,6 +277,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
     // Keep client registration associated with this in-flight flow even if
     // another runtime writes the shared persistent entry for the same name.
     const clientInfo = this.flowClientInfo ?? stored?.clientInfo
+
     if (clientInfo) {
       // A stored SEP-2352 issuer stub for a config-pre-registered client
       // (identified by the explicit marker, or by the legacy stub shape of
@@ -272,21 +292,26 @@ export class McpOAuthProvider implements OAuthClientProvider {
           && clientInfo.clientIdIssuedAt === undefined
           && clientInfo.clientSecretExpiresAt === undefined
           && clientInfo.redirectUris === undefined)
+
       if (isConfigStub) {
         return undefined
       }
+
       // Check if client secret has expired
       if (clientInfo.clientSecretExpiresAt && clientInfo.clientSecretExpiresAt < Date.now() / 1000) {
         return undefined
       }
+
       if (issuer && clientInfo.issuer && !issuersMatch(clientInfo.issuer, issuer)) {
         return undefined
       }
+
       if (issuer && clientInfo.issuer === undefined) {
         clientInfo.issuer = issuer
         this.flowClientInfo = clientInfo
         updateClientInfo(this.serverName, clientInfo, this.serverUrl, this.storageOptions)
       }
+
       // Return all registration metadata and the local issuer extension.
       // This keeps the SDK v1 view and the stored issuer binding consistent.
       return {
@@ -315,6 +340,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
   async saveClientInformation(info: OAuthClientInformationMixed): Promise<void> {
     this.throwIfInactive()
     const issuer = this.discoveredIssuer ?? (info as IssuerBoundClientInformation).issuer
+
     if (this.config.clientId && info.client_id === this.config.clientId) {
       updateClientInfo(
         this.serverName,
@@ -322,6 +348,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
         this.serverUrl,
         this.storageOptions,
       )
+
       return
     }
 
@@ -335,6 +362,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
       redirectUris,
       issuer,
     }
+
     this.flowClientInfo = clientInfo
     updateClientInfo(this.serverName, clientInfo, this.serverUrl, this.storageOptions)
   }
@@ -346,9 +374,15 @@ export class McpOAuthProvider implements OAuthClientProvider {
   async tokens(): Promise<OAuthTokens | undefined> {
     // Use getAuthForUrl to validate tokens are for the current server URL.
     const entry = await getAuthForUrl(this.serverName, this.serverUrl, this.storageOptions)
-    if (!entry?.tokens) return undefined
+
+    if (!entry?.tokens) {
+      return undefined
+    }
+
     const issuer = this.discoveredIssuer
+
     this.assertStoredIssuerBindings(entry, issuer)
+
     if (issuer && entry.tokens.issuer === undefined) {
       entry.tokens.issuer = issuer
       updateTokens(this.serverName, entry.tokens, this.serverUrl, this.storageOptions)
@@ -380,6 +414,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
       scope: tokens.scope,
       issuer: this.discoveredIssuer ?? (tokens as IssuerBoundTokens).issuer,
     }
+
     this.throwIfInactive()
     updateTokens(this.serverName, storedTokens, this.serverUrl, this.storageOptions)
     // Discovery must survive the browser redirect so the callback can verify
@@ -402,13 +437,16 @@ export class McpOAuthProvider implements OAuthClientProvider {
     if (this.usesClientCredentials) {
       throw new Error("redirectToAuthorization is not used for client_credentials flow")
     }
+
     // No flow-local state means we're on the post-refresh authorize fallback.
     this.throwIfInactive()
+
     if (!this.flowState) {
       throw new UnauthorizedError(
         `Re-authentication required for MCP server: ${this.serverName}`,
       )
     }
+
     // URL is passed to callback, not logged (may contain sensitive params)
     await this.callbacks.onRedirect(addAuthorizationParams(authorizationUrl, this.config.authorizationParams))
   }
@@ -429,10 +467,13 @@ export class McpOAuthProvider implements OAuthClientProvider {
     if (this.usesClientCredentials) {
       throw new Error("codeVerifier is not used for client_credentials flow")
     }
+
     this.throwIfInactive()
+
     if (!this.flowCodeVerifier) {
       throw new Error(`No code verifier saved for MCP server: ${this.serverName}`)
     }
+
     return this.flowCodeVerifier
   }
 
@@ -447,6 +488,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
 
   async discoveryState(): Promise<OAuthDiscoveryState | undefined> {
     this.throwIfInactive()
+
     return this.flowDiscoveryState ? structuredClone(this.flowDiscoveryState) : undefined
   }
 
@@ -466,12 +508,15 @@ export class McpOAuthProvider implements OAuthClientProvider {
     if (this.usesClientCredentials) {
       throw new Error("state is not used for client_credentials flow")
     }
+
     this.throwIfInactive()
+
     if (!this.flowState) {
       throw new UnauthorizedError(
         `Re-authentication required for MCP server: ${this.serverName}`,
       )
     }
+
     return this.flowState
   }
 
@@ -481,6 +526,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
    */
   async invalidateCredentials(type: "all" | "client" | "tokens" | "verifier" | "discovery"): Promise<void> {
     this.throwIfInactive()
+
     switch (type) {
       case "all":
         this.flowClientInfo = undefined
@@ -512,12 +558,15 @@ export class McpOAuthProvider implements OAuthClientProvider {
    */
   addClientAuthentication: AddClientAuthentication = async (headers, params, _url, metadata) => {
     this.throwIfInactive()
+
     if (params.get("grant_type") === "authorization_code" && !params.has("scope") && this.config.scope) {
       params.set("scope", this.config.scope)
     }
 
     const clientInfo = await this.clientInformation()
+
     this.throwIfInactive()
+
     if (!clientInfo) {
       return
     }
@@ -542,13 +591,16 @@ export class McpOAuthProvider implements OAuthClientProvider {
       if (!clientInfo.client_secret) {
         throw new Error("client_secret_basic authentication requires a client_secret")
       }
+
       headers.set("Authorization", `Basic ${Buffer.from(`${clientInfo.client_id}:${clientInfo.client_secret}`).toString("base64")}`)
+
       return
     }
 
     if (!params.has("client_id")) {
       params.set("client_id", clientInfo.client_id)
     }
+
     if (authMethod === "client_secret_post" && clientInfo.client_secret && !params.has("client_secret")) {
       params.set("client_secret", clientInfo.client_secret)
     }
@@ -561,9 +613,11 @@ export class McpOAuthProvider implements OAuthClientProvider {
 
     const params = new URLSearchParams({ grant_type: "client_credentials" })
     const requestedScope = scope ?? this.config.scope
+
     if (requestedScope) {
       params.set("scope", requestedScope)
     }
+
     return params
   }
 }

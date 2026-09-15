@@ -21,6 +21,7 @@ export class UnixSocketClientTransport implements Transport {
 
     await new Promise<void>((resolve, reject) => {
       const socket = createConnection(this.socketPath);
+
       this.socket = socket;
       let connected = false;
 
@@ -31,23 +32,35 @@ export class UnixSocketClientTransport implements Transport {
       socket.on("data", chunk => {
         try {
           this.readBuffer.append(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+
           while (true) {
             const message = this.readBuffer.readMessage();
-            if (message === null) break;
+
+            if (message === null) {
+              break;
+            }
+
             this.onmessage?.(message);
           }
         } catch (error) {
           const cause = error instanceof Error ? error : new Error(String(error));
+
           this.onerror?.(cause);
           void this.close();
         }
       });
       socket.on("error", error => {
-        if (!connected) reject(error);
+        if (!connected) {
+          reject(error);
+        }
+
         this.onerror?.(error);
       });
       socket.on("close", () => {
-        if (this.socket === socket) this.socket = undefined;
+        if (this.socket === socket) {
+          this.socket = undefined;
+        }
+
         this.readBuffer.clear();
         this.onclose?.();
       });
@@ -56,12 +69,17 @@ export class UnixSocketClientTransport implements Transport {
 
   async close(): Promise<void> {
     const socket = this.socket;
+
     this.socket = undefined;
     this.readBuffer.clear();
-    if (!socket || socket.destroyed) return;
+
+    if (!socket || socket.destroyed) {
+      return;
+    }
 
     await new Promise<void>(resolve => {
       const timeout = setTimeout(() => socket.destroy(), 2_000);
+
       timeout.unref();
       socket.once("close", () => {
         clearTimeout(timeout);
@@ -73,12 +91,18 @@ export class UnixSocketClientTransport implements Transport {
 
   async send(message: JSONRPCMessage): Promise<void> {
     const socket = this.socket;
-    if (!socket || socket.destroyed) throw new Error("Unix socket is not connected");
+
+    if (!socket || socket.destroyed) {
+      throw new Error("Unix socket is not connected");
+    }
 
     await new Promise<void>((resolve, reject) => {
       socket.write(serializeMessage(message), error => {
-        if (error) reject(error);
-        else resolve();
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
       });
     });
   }

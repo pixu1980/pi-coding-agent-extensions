@@ -63,7 +63,9 @@ class Logger {
   }
 
   private emit(level: LogLevel, message: string, context?: LogContext, error?: Error): void {
-    if (!this.shouldLog(level)) return;
+    if (!this.shouldLog(level)) {
+      return;
+    }
 
     const entry: LogEntry = {
       level,
@@ -150,13 +152,18 @@ class ChildLogger {
 }
 
 function formatContext(context?: LogContext): string {
-  if (!context || Object.keys(context).length === 0) return "";
+  if (!context || Object.keys(context).length === 0) {
+    return "";
+  }
+
   const parts: string[] = [];
+
   for (const [key, value] of Object.entries(context)) {
     if (value !== undefined && value !== null) {
       parts.push(`${key}=${typeof value === "string" ? value : JSON.stringify(value)}`);
     }
   }
+
   return parts.length > 0 ? `(${parts.join(", ")})` : "";
 }
 

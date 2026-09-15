@@ -32,6 +32,7 @@ const INIT_WAIT_TIMED_OUT: unique symbol = Symbol("init-wait-timed-out");
 
 async function awaitWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | typeof INIT_WAIT_TIMED_OUT> {
   let timer: ReturnType<typeof setTimeout> | undefined;
+
   try {
     return await Promise.race([
       promise,
@@ -57,6 +58,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
   async function shutdownState(currentState: McpExtensionState | null, reason: string): Promise<void> {
     if (!currentState) {
       publishMcpStatusShutdown(pi.events);
+
       return;
     }
 
@@ -68,6 +70,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     }
 
     let flushError: unknown;
+
     try {
       flushMetadataCache(currentState);
     } catch (error) {
@@ -128,7 +131,10 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     try {
       return pi.getActiveTools?.();
     } catch (error) {
-      if (isRuntimeNotBoundError(error)) return undefined;
+      if (isRuntimeNotBoundError(error)) {
+        return undefined;
+      }
+
       throw error;
     }
   };
@@ -137,7 +143,10 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     try {
       pi.setActiveTools(tools);
     } catch (error) {
-      if (isRuntimeNotBoundError(error)) return;
+      if (isRuntimeNotBoundError(error)) {
+        return;
+      }
+
       throw error;
     }
   };
@@ -145,9 +154,13 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
   const isRuntimeBound = (): boolean => {
     try {
       pi.getActiveTools?.();
+
       return true;
     } catch (error) {
-      if (isRuntimeNotBoundError(error)) return false;
+      if (isRuntimeNotBoundError(error)) {
+        return false;
+      }
+
       throw error;
     }
   };
@@ -179,27 +192,44 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
   }
 
   function resolveCurrentDirectTools(config: McpConfig, cache: MetadataCache | null): DirectToolSpec[] {
-    if (envRaw === "__none__") return [];
+    if (envRaw === "__none__") {
+      return [];
+    }
+
     const prefix = config.settings?.toolPrefix ?? "server";
+
     return resolveDirectTools(config, cache, prefix, envDirectToolOverride);
   }
 
   function deactivateTools(toolNames: string[]): string[] {
-    if (toolNames.length === 0) return [];
+    if (toolNames.length === 0) {
+      return [];
+    }
+
     const unregisterTool = (pi as ExtensionAPI & { unregisterTool?: (name: string) => boolean }).unregisterTool;
     const unregistered = toolNames.filter((toolName) => unregisterTool?.(toolName) === true);
     const fallbackNames = toolNames.filter((toolName) => !unregistered.includes(toolName));
     const remove = new Set(toolNames);
     const activeTools = getActiveToolsSafe();
+
     if (!activeTools || activeTools.length === 0) {
-      for (const toolName of fallbackNames) fallbackDeactivatedTools.add(toolName);
+      for (const toolName of fallbackNames) {
+        fallbackDeactivatedTools.add(toolName);
+      }
+
       return unregistered;
     }
+
     const nextActiveTools = activeTools.filter((name) => !remove.has(name));
+
     if (nextActiveTools.length !== activeTools.length) {
-      for (const toolName of fallbackNames) fallbackDeactivatedTools.add(toolName);
+      for (const toolName of fallbackNames) {
+        fallbackDeactivatedTools.add(toolName);
+      }
+
       setActiveToolsSafe(nextActiveTools);
     }
+
     return unregistered;
   }
 
@@ -218,34 +248,49 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     for (const spec of specs) {
       const fingerprint = directToolFingerprint(spec);
       const previous = registeredDirectTools.get(spec.prefixedName);
+
       if (previous !== fingerprint) {
         registerDirectTool(spec);
         registeredDirectTools.set(spec.prefixedName, fingerprint);
+
         if (fallbackDeactivatedTools.delete(spec.prefixedName)) {
           const activeTools = getActiveToolsSafe();
+
           if (activeTools && !activeTools.includes(spec.prefixedName)) {
             setActiveToolsSafe([...activeTools, spec.prefixedName]);
           }
         }
+
         (previous ? updated : added).push(spec.prefixedName);
       }
     }
 
     for (const toolName of [...registeredDirectTools.keys()]) {
-      if (nextNames.has(toolName)) continue;
+      if (nextNames.has(toolName)) {
+        continue;
+      }
+
       registeredDirectTools.delete(toolName);
       deactivated.push(toolName);
     }
 
     deactivateTools(deactivated);
+
     return { specs, added, updated, deactivated };
   }
 
   function applyDirectToolConfigChanges(changes: Map<string, true | string[] | false>): void {
-    if (!state) return;
+    if (!state) {
+      return;
+    }
+
     for (const [serverName, value] of changes) {
       const definition = state.config.mcpServers[serverName];
-      if (!definition) continue;
+
+      if (!definition) {
+        continue;
+      }
+
       state.config.mcpServers[serverName] = { ...definition, directTools: value };
     }
   }
@@ -254,8 +299,10 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     const config = state?.config ?? earlyConfig;
     const cache = loadMetadataCache();
     const result = syncDirectTools(config, cache);
+
     syncProxyTool(config, cache, result.specs);
     const changed = result.added.length + result.updated.length + result.deactivated.length;
+
     if (changed > 0 && ctx?.hasUI) {
       ctx.ui.notify(
         `MCP: direct tools refreshed (+${result.added.length}, ~${result.updated.length}, -${result.deactivated.length})`,
@@ -272,6 +319,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         logger.debug(`MCP: prompt "${spec.originalName}" on ${spec.serverName} skipped; /${spec.commandName} is already registered`);
         continue;
       }
+
       registeredPromptCommands.add(spec.commandName);
       pi.registerCommand(spec.commandName, createPromptCommand(pi, () => state, spec));
     }
@@ -298,6 +346,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       oauthRuntime,
       statusEvents: pi.events,
     });
+
     initPromise = promise;
 
     return promise.then(async (nextState) => {
@@ -307,15 +356,20 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         } catch (error) {
           console.error(`MCP: failed to clean stale initialization state: ${formatTerminalError(error)}`);
         }
+
         return;
       }
 
       state = nextState;
       nextState.onToolMetadataUpdated = (_serverName, _reason) => {
-        if (state !== nextState || !owner.isActive()) return;
+        if (state !== nextState || !owner.isActive()) {
+          return;
+        }
+
         syncPromptCommands();
         syncToolSurface(ctx);
       };
+
       syncPromptCommands();
       syncToolSurface(ctx);
       updateStatusBar(nextState);
@@ -324,16 +378,22 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       if (!owner.isActive() || generation !== lifecycleGeneration) {
         return;
       }
+
       if (initPromise !== promise && initPromise !== null) {
         return;
       }
+
       if (isRuntimeNotBoundError(err)) {
         logger.debug(`MCP: load-time initialization skipped (extension runtime not bound): ${formatTerminalError(err)}`);
       } else {
         console.error(`MCP initialization failed: ${formatTerminalError(err)}`);
       }
+
       initPromise = null;
-      if (state) return;
+
+      if (state) {
+        return;
+      }
 
       try {
         await Promise.all([
@@ -348,18 +408,32 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
 
   function startLoadTimeInitialization(): void {
     const hasStartupServer = Object.values(earlyConfig.mcpServers).some((definition) => {
-      if (definition.disabled === true) return false;
+      if (definition.disabled === true) {
+        return false;
+      }
+
       return definition.lifecycle === "eager" || definition.lifecycle === "keep-alive";
     });
-    if (!hasStartupServer) return;
+
+    if (!hasStartupServer) {
+      return;
+    }
+
     setImmediate(() => {
-      if (lifecycleGeneration !== 0 || state || initPromise) return;
+      if (lifecycleGeneration !== 0 || state || initPromise) {
+        return;
+      }
+
       // Headless CLI contexts (pi install/update/config, trust evaluation) never bind
       // the extension runtime; skip the eager connect there instead of failing later.
-      if (!isRuntimeBound()) return;
+      if (!isRuntimeBound()) {
+        return;
+      }
+
       const generation = ++lifecycleGeneration;
       const owner = createMcpRuntimeOwner();
       const oauthRuntime = createOAuthRuntime(owner.signal);
+
       currentOwner = owner;
       currentOAuthRuntime = oauthRuntime;
       startInitialization({
@@ -380,6 +454,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     const previousOAuthRuntime = currentOAuthRuntime;
     const owner = createMcpRuntimeOwner();
     const oauthRuntime = createOAuthRuntime(owner.signal);
+
     currentOwner = owner;
     currentOAuthRuntime = oauthRuntime;
     state = null;
@@ -388,6 +463,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     // Abort synchronously before awaiting cleanup so old callbacks and startup
     // work cannot resume into a stale ExtensionContext.
     const stopPrevious = previousOwner?.stop("MCP extension session restarted") ?? Promise.resolve();
+
     try {
       await Promise.all([
         stopPrevious,
@@ -398,15 +474,19 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       console.error(`MCP: failed to shut down previous session state: ${formatTerminalError(error)}`);
     }
 
-    if (generation !== lifecycleGeneration || !owner.isActive()) return;
+    if (generation !== lifecycleGeneration || !owner.isActive()) {
+      return;
+    }
 
     const initialization = startInitialization(ctx, owner, oauthRuntime, generation, "stale_session_start");
+
     if (envRaw !== undefined && envRaw !== "__none__") {
       const missingEnvDirectTools = getMissingConfiguredDirectToolServers(
         earlyConfig,
         loadMetadataCache(),
         envDirectToolOverride,
       );
+
       if (missingEnvDirectTools.length > 0) {
         await initialization;
       }
@@ -418,6 +498,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     const currentState = state;
     const owner = currentOwner;
     const oauthRuntime = currentOAuthRuntime;
+
     currentOwner = null;
     currentOAuthRuntime = null;
     state = null;
@@ -426,6 +507,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     // Abort before awaiting cleanup so delayed initialization cannot touch stale
     // Pi context after session shutdown.
     const stopOwner = owner?.stop("MCP extension session shutdown") ?? Promise.resolve();
+
     try {
       await Promise.all([
         stopOwner,
@@ -445,6 +527,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
     getArgumentCompletions: (prefix: string) => {
       const normalized = prefix.trimStart();
       const argumentMatch = normalized.match(/^(\S+)\s+(.*)$/);
+
       if (!argumentMatch) {
         const subcommands = [
           { value: "reconnect", label: "reconnect - Reconnect servers" },
@@ -456,20 +539,26 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
           { value: "enable", label: "enable - Enable a server" },
           { value: "status", label: "status - Show server status" },
         ].filter(({ value }) => value.startsWith(normalized));
+
         return subcommands.length > 0 ? subcommands : null;
       }
 
       const [, subcommand, argumentPrefix] = argumentMatch;
-      if ((subcommand !== "reconnect" && subcommand !== "logout" && subcommand !== "disable" && subcommand !== "enable") || !state) return null;
+
+      if ((subcommand !== "reconnect" && subcommand !== "logout" && subcommand !== "disable" && subcommand !== "enable") || !state) {
+        return null;
+      }
 
       const servers = Object.keys(state.config.mcpServers)
         .filter((serverName) => serverName.startsWith(argumentPrefix.trimStart()))
         .map((serverName) => ({ value: `${subcommand} ${serverName}`, label: serverName }));
+
       return servers.length > 0 ? servers : null;
     },
     handler: async (args, ctx) => {
       const commandOwner = currentOwner;
       const commandReload = typeof ctx.reload === "function" ? ctx.reload.bind(ctx) : async () => {};
+
       const commandHasUI = ctx.hasUI;
       const commandCtx = {
         hasUI: commandHasUI,
@@ -479,20 +568,30 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         cwd: ctx.cwd,
         mode: ctx.mode,
         signal: commandOwner?.signal ?? ctx.signal,
-      } as unknown as ExtensionContext;
+      } as ExtensionContext;
+
       if (!state && initPromise) {
         try {
           const initialized = await initPromise;
+
           commandOwner?.throwIfInactive();
           state = initialized;
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          if (commandCtx.hasUI) commandCtx.ui?.notify(`MCP initialization failed: ${message}`, "error");
+
+          if (commandCtx.hasUI) {
+            commandCtx.ui?.notify(`MCP initialization failed: ${message}`, "error");
+          }
+
           return;
         }
       }
+
       if (!state) {
-        if (commandCtx.hasUI) commandCtx.ui?.notify("MCP not initialized", "error");
+        if (commandCtx.hasUI) {
+          commandCtx.ui?.notify("MCP not initialized", "error");
+        }
+
         return;
       }
 
@@ -514,74 +613,98 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
           break;
         case "setup": {
           commandOwner?.throwIfInactive();
+
           if (programmaticConfig) {
             commandCtx.ui?.notify("MCP setup is unavailable when config is supplied by createMcpAdapter().", "info");
             break;
           }
+
           const result = await openMcpSetup(state, pi, commandCtx, earlyConfigPath, "setup");
+
           if (result?.configChanged) {
             commandOwner?.throwIfInactive();
             await commandReload();
+
             return;
           }
+
           break;
         }
+
         case "logout": {
           const serverName = rest;
+
           if (!serverName) {
-            if (commandCtx.hasUI) commandCtx.ui?.notify("Usage: /mcp logout <server>", "error");
+            if (commandCtx.hasUI) {
+              commandCtx.ui?.notify("Usage: /mcp logout <server>", "error");
+            }
+
             return;
           }
+
           commandOwner?.throwIfInactive();
           await logoutServer(serverName, state, commandCtx);
           break;
         }
+
         case "disable":
         case "enable": {
           const serverName = rest;
+
           if (programmaticConfig) {
             commandCtx.ui?.notify(`/mcp ${subcommand} is unavailable when config is supplied by createMcpAdapter().`, "info");
             break;
           }
+
           if (!serverName) {
             commandCtx.ui?.notify(`Usage: /mcp ${subcommand} <server>`, "error");
             break;
           }
+
           if (!state.config.mcpServers[serverName]) {
             commandCtx.ui?.notify(`Server "${serverName}" not found in effective config`, "error");
             break;
           }
+
           commandOwner?.throwIfInactive();
           const result = writeProjectServerDisabledOverride(earlyConfigPath, commandCtx.cwd, serverName, subcommand === "disable");
+
           if (result.changed) {
             commandCtx.ui?.notify(`${subcommand === "disable" ? "Disabled" : "Enabled"} server "${serverName}" in ${result.path} - run /reload to apply`, "info");
           } else {
             commandCtx.ui?.notify(`Server "${serverName}" is already ${subcommand === "disable" ? "disabled" : "enabled"}`, "info");
           }
+
           break;
         }
+
         case "status":
         case "":
         default:
           if (commandCtx.hasUI) {
             commandOwner?.throwIfInactive();
+
             if (programmaticConfig) {
               commandCtx.ui?.notify("MCP status is shown from the in-memory SDK config; configuration discovery is unavailable.", "info");
               await showStatus(state, commandCtx);
               break;
             }
+
             const result = await openMcpPanel(state, pi, commandCtx, earlyConfigPath, (changes) => {
               applyDirectToolConfigChanges(changes);
               syncToolSurface(commandCtx);
             });
+
             if (result?.configChanged) {
               commandOwner?.throwIfInactive();
               await commandReload();
+
               return;
             }
           } else {
             await showStatus(state, commandCtx);
           }
+
           break;
       }
     },
@@ -600,8 +723,9 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
         cwd: ctx.cwd,
         mode: ctx.mode,
         signal: commandOwner?.signal ?? ctx.signal,
-      } as unknown as ExtensionContext;
+      } as ExtensionContext;
       const serverName = args?.trim();
+
       if (!serverName && !commandCtx.hasUI) {
         return;
       }
@@ -609,29 +733,42 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       if (!state && initPromise) {
         try {
           const initialized = await initPromise;
+
           commandOwner?.throwIfInactive();
           state = initialized;
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          if (commandCtx.hasUI) commandCtx.ui?.notify(`MCP initialization failed: ${message}`, "error");
+
+          if (commandCtx.hasUI) {
+            commandCtx.ui?.notify(`MCP initialization failed: ${message}`, "error");
+          }
+
           return;
         }
       }
+
       if (!state) {
-        if (commandCtx.hasUI) commandCtx.ui?.notify("MCP not initialized", "error");
+        if (commandCtx.hasUI) {
+          commandCtx.ui?.notify("MCP not initialized", "error");
+        }
+
         return;
       }
 
       if (!serverName) {
         if (programmaticConfig) {
           commandCtx.ui?.notify("Use /mcp-auth <server> to authenticate a server from the in-memory SDK config.", "info");
+
           return;
         }
+
         await openMcpAuthPanel(state, pi, commandCtx, earlyConfigPath);
+
         return;
       }
 
       const result = await authenticateServer(serverName, state.config, commandCtx, commandCtx.signal, state.oauthRuntime);
+
       if (result.ok) {
         commandOwner?.throwIfInactive();
         await reconnectServer(state, commandCtx, serverName);
@@ -679,8 +816,10 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
       }, signal?: AbortSignal, _onUpdate?: unknown, _ctx?: unknown) {
         const executeOwner = currentOwner;
         let parsedArgs: Record<string, unknown> | undefined;
+
         if (params.args !== undefined && params.args !== "") {
           let args: unknown;
+
           if (typeof params.args === "string") {
             try {
               args = JSON.parse(params.args);
@@ -688,6 +827,7 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
               if (error instanceof SyntaxError) {
                 throw new Error(`Invalid args JSON: ${error.message}`, { cause: error });
               }
+
               throw error;
             }
           } else {
@@ -696,42 +836,53 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
 
           if (typeof args !== "object" || args === null || Array.isArray(args)) {
             const gotType = Array.isArray(args) ? "array" : args === null ? "null" : typeof args;
+
             throw new Error(`Invalid args: expected a JSON object, got ${gotType}`);
           }
+
           parsedArgs = args as Record<string, unknown>;
         }
 
         if (!state && initPromise) {
           try {
             const initialized = await awaitWithTimeout(initPromise, INIT_WAIT_TIMEOUT_MS);
+
             if (initialized === INIT_WAIT_TIMED_OUT) {
               return {
                 content: [{ type: "text" as const, text: "MCP initialization is still in progress. Try again shortly." }],
                 details: { error: "init_timeout", timeoutMs: INIT_WAIT_TIMEOUT_MS },
               };
             }
+
             executeOwner?.throwIfInactive();
             state = initialized;
           } catch (error) {
-            if (executeOwner && isAbortError(error, executeOwner.signal)) throw error;
+            if (executeOwner && isAbortError(error, executeOwner.signal)) {
+              throw error;
+            }
+
             const message = error instanceof Error ? error.message : String(error);
+
             return {
               content: [{ type: "text" as const, text: `MCP initialization failed: ${message}` }],
               details: { error: "init_failed", message },
             };
           }
         }
+
         if (!state) {
           return {
             content: [{ type: "text" as const, text: "MCP not initialized" }],
             details: { error: "not_initialized" },
           };
         }
+
         executeOwner?.throwIfInactive();
 
         if (params.action === "ui-messages") {
           return executeUiMessages(state);
         }
+
         if (params.action === "auth-start") {
           if (!params.server) {
             return {
@@ -739,10 +890,12 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
               details: { mode: "auth-start", error: "missing_server" },
             };
           }
+
           return signal
             ? executeAuthStart(state, params.server, signal)
             : executeAuthStart(state, params.server);
         }
+
         if (params.action === "auth-complete") {
           if (!params.server) {
             return {
@@ -750,37 +903,49 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
               details: { mode: "auth-complete", error: "missing_server" },
             };
           }
+
           const input = parsedArgs?.redirectUrl ?? parsedArgs?.code ?? parsedArgs?.input;
+
           if (typeof input !== "string" || input.trim().length === 0) {
             return {
               content: [{ type: "text" as const, text: "auth-complete requires args with `redirectUrl`, `code`, or `input`." }],
               details: { mode: "auth-complete", error: "missing_input" },
             };
           }
+
           return signal
             ? executeAuthComplete(state, params.server, input, signal)
             : executeAuthComplete(state, params.server, input);
         }
+
         if (params.tool) {
           return executeCall(state, params.tool, parsedArgs, params.server, getPiTools, signal);
         }
+
         if (params.connect) {
           const result = await executeConnect(state, params.connect, signal);
+
           syncToolSurface(_ctx as ExtensionContext);
+
           return result;
         }
+
         if (params.describe) {
           return executeDescribe(state, params.describe);
         }
+
         if (params.instructions) {
           return executeInstructions(state, params.instructions);
         }
+
         if (params.search) {
           return executeSearch(state, params.search, params.regex, params.server, params.includeSchemas);
         }
+
         if (params.server) {
           return executeList(state, params.server);
         }
+
         return executeStatus(state);
       },
     });
@@ -801,19 +966,25 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
 
     if (shouldRegisterProxyTool) {
       const description = buildProxyDescription(config, cache, directSpecs);
+
       if (!proxyToolRegistered || proxyToolDescription !== description) {
         registerProxyTool(description);
+
         return;
       }
+
       const activeTools = getActiveToolsSafe();
+
       if (activeTools && !activeTools.includes("mcp")) {
         setActiveToolsSafe([...activeTools, "mcp"]);
       }
+
       return;
     }
 
     if (proxyToolRegistered) {
       const unregistered = deactivateTools(["mcp"]);
+
       if (unregistered.includes("mcp")) {
         proxyToolRegistered = false;
         proxyToolDescription = null;
@@ -822,12 +993,14 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
   }
 
   const initialDirectTools = syncDirectTools(earlyConfig, earlyCache).specs;
+
   syncProxyTool(earlyConfig, earlyCache, initialDirectTools);
   startLoadTimeInitialization();
 }
 
 export function createMcpAdapter(options: McpAdapterOptions = {}) {
   const factoryConfig = options.config !== undefined ? cloneMcpConfig(options.config) : undefined;
+
   return function mcpAdapter(pi: ExtensionAPI) {
     installMcpAdapter(pi, {
       configPath: options.configPath,

@@ -5,7 +5,7 @@
  * Uses Node.js http module for compatibility.
  */
 
-import { createServer, type Server, type IncomingMessage, type ServerResponse } from "http"
+import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http"
 import {
   DEFAULT_OAUTH_CALLBACK_PATH,
   getConfiguredOAuthCallbackPort,
@@ -57,11 +57,11 @@ const HTML_MANUAL_SUCCESS = `<!DOCTYPE html>
 
 function escapeHtml(value: string): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;")
+    .replaceAll('&', "&amp;")
+    .replaceAll('<', "&lt;")
+    .replaceAll('>', "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll('\'', "&#39;")
 }
 
 const HTML_ERROR = (error: string) => `<!DOCTYPE html>
@@ -132,6 +132,7 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   if (url.pathname !== getOAuthCallbackPath()) {
     res.writeHead(404, { "Content-Type": "text/plain" })
     res.end("Not found")
+
     return
   }
 
@@ -144,8 +145,10 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   // Enforce state parameter presence for CSRF protection
   if (!state) {
     const errorMsg = "Missing required state parameter - potential CSRF attack"
+
     res.writeHead(400, { "Content-Type": "text/html" })
     res.end(HTML_ERROR(errorMsg))
+
     return
   }
 
@@ -156,15 +159,19 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   if (error) {
     if (!pending && !isReserved) {
       const errorMsg = "Invalid or expired state parameter - potential CSRF attack"
+
       res.writeHead(400, { "Content-Type": "text/html" })
       res.end(HTML_ERROR(errorMsg))
+
       return
     }
 
     const errorMsg = errorDescription || error
+
     // Send HTTP response first before rejecting promise
     res.writeHead(200, { "Content-Type": "text/html" })
     res.end(HTML_ERROR(errorMsg))
+
     // Reject promise after response is sent (defer to allow test to attach handler)
     if (pending) {
       reservedAuthStates.delete(state)
@@ -172,14 +179,17 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
       pendingAuths.delete(state)
       setTimeout(() => pending.reject(new Error(errorMsg)), 0)
     }
+
     return
   }
 
   // Validate state parameter
   if (!pending && !isReserved) {
     const errorMsg = "Invalid or expired state parameter - potential CSRF attack"
+
     res.writeHead(400, { "Content-Type": "text/html" })
     res.end(HTML_ERROR(errorMsg))
+
     return
   }
 
@@ -187,12 +197,14 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   if (!code) {
     res.writeHead(400, { "Content-Type": "text/html" })
     res.end(HTML_ERROR("No authorization code provided"))
+
     return
   }
 
   if (!pending) {
     res.writeHead(200, { "Content-Type": "text/html" })
     res.end(HTML_MANUAL_SUCCESS)
+
     return
   }
 
@@ -214,19 +226,25 @@ export async function ensureCallbackServer(options: EnsureCallbackServerOptions 
   if (stoppingPromise) {
     throw new Error("OAuth callback server stopped")
   }
+
   const generation = callbackGeneration
+
   while (bindingPromise) {
     await bindingPromise
+
     if (generation !== callbackGeneration) {
       throw new Error("OAuth callback server stopped")
     }
   }
+
   if (generation !== callbackGeneration) {
     throw new Error("OAuth callback server stopped")
   }
 
   const operation = ensureCallbackServerLocked(options)
+
   bindingPromise = operation
+
   try {
     await operation
   } finally {
@@ -242,9 +260,11 @@ async function ensureCallbackServerLocked(options: EnsureCallbackServerOptions =
   const requestedHost = options.callbackHost ?? DEFAULT_OAUTH_CALLBACK_HOST
   const rawRequestedPath = options.callbackPath ?? DEFAULT_OAUTH_CALLBACK_PATH
   const requestedPath = rawRequestedPath.startsWith("/") ? rawRequestedPath : `/${rawRequestedPath}`
+
   if (options.reserveState && !options.oauthState) {
     throw new Error("OAuth callback reservation requires an oauthState")
   }
+
   let reservedState: string | undefined
 
   const previousServer = server
@@ -260,12 +280,15 @@ async function ensureCallbackServerLocked(options: EnsureCallbackServerOptions =
             `OAuth callback server is using path ${getOAuthCallbackPath()}, but callback path ${requestedPath} is required and cannot be switched while authorizations are pending`
           )
         }
+
         setOAuthCallbackPath(requestedPath)
       }
+
       if (options.reserveState && options.oauthState) {
         reservedAuthStates.add(options.oauthState)
         reservedState = options.oauthState
       }
+
       return
     }
 
@@ -294,9 +317,11 @@ async function ensureCallbackServerLocked(options: EnsureCallbackServerOptions =
       setOAuthCallbackPort(requiredPort)
     } else {
       const address = candidateServer.address()
+
       if (!address || typeof address === "string" || typeof address.port !== "number") {
         throw new Error("OAuth callback server did not report an assigned port")
       }
+
       setOAuthCallbackPort(address.port)
     }
 
@@ -309,16 +334,20 @@ async function ensureCallbackServerLocked(options: EnsureCallbackServerOptions =
     callbackServerHost = requestedHost
     setOAuthCallbackPath(requestedPath)
     server = candidateServer
+
     if (options.reserveState && options.oauthState) {
       reservedAuthStates.add(options.oauthState)
       reservedState = options.oauthState
     }
+
     server.unref()
   } catch (error) {
     if (reservedState) {
       reservedAuthStates.delete(reservedState)
     }
+
     const nodeError = error as NodeJS.ErrnoException
+
     await new Promise<void>((resolve) => {
       candidateServer.close(() => resolve())
     })
@@ -349,6 +378,7 @@ export function releaseCallbackServer(oauthState: string): void {
  */
 export function waitForCallback(oauthState: string): Promise<OAuthCallbackResult> {
   reservedAuthStates.delete(oauthState)
+
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       if (pendingAuths.has(oauthState)) {
@@ -367,10 +397,11 @@ export function waitForCallback(oauthState: string): Promise<OAuthCallbackResult
 export function cancelPendingCallback(oauthState: string): void {
   reservedAuthStates.delete(oauthState)
   const pending = pendingAuths.get(oauthState)
+
   if (pending) {
     clearTimeout(pending.timeout)
     pendingAuths.delete(oauthState)
-    pending.reject(new Error("Authorization cancelled"))
+    pending.reject(new Error("Authorization canceled"))
   }
 }
 
@@ -378,7 +409,9 @@ export function cancelPendingCallback(oauthState: string): void {
  * Stop the callback server and reject all pending authorizations.
  */
 export function stopCallbackServer(): Promise<void> {
-  if (stoppingPromise) return stoppingPromise
+  if (stoppingPromise) {
+    return stoppingPromise
+  }
 
   callbackGeneration += 1
   const cleanup = (async () => {
@@ -401,6 +434,7 @@ export function stopCallbackServer(): Promise<void> {
 
     // Reject all pending auths (defer to allow any pending operations to complete)
     const pendingList = Array.from(pendingAuths.entries())
+
     pendingAuths.clear()
     reservedAuthStates.clear()
     setTimeout(() => {
@@ -412,9 +446,13 @@ export function stopCallbackServer(): Promise<void> {
   })()
 
   const operation = cleanup.finally(() => {
-    if (stoppingPromise === operation) stoppingPromise = undefined
+    if (stoppingPromise === operation) {
+      stoppingPromise = undefined
+    }
   })
+
   stoppingPromise = operation
+
   return operation
 }
 

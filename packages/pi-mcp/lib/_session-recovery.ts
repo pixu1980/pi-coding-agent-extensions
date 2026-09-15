@@ -44,13 +44,17 @@ const SERVER_NOT_INITIALIZED_MCP_MESSAGES = new Set([
 ]);
 
 export function isTerminatedSession(err: unknown, hadSessionId: boolean): boolean {
-  if (!hadSessionId) return false;
+  if (!hadSessionId) {
+    return false;
+  }
+
   if (err instanceof StreamableHTTPError) {
     return err.code === 404
       || (err.code === 400
         && /"code"\s*:\s*-32000/.test(err.message)
         && /"message"\s*:\s*"Bad Request: Server not initialized"/.test(err.message));
   }
+
   return err instanceof McpError
     && err.code === ErrorCode.ConnectionClosed
     && SERVER_NOT_INITIALIZED_MCP_MESSAGES.has(err.message);
@@ -61,6 +65,7 @@ function hasSessionId(connection: ServerConnection): boolean {
   // transports (and test doubles that omit `transport` entirely) simply
   // read as `undefined` here.
   const transport = connection.transport as { sessionId?: string } | undefined;
+
   return transport?.sessionId != null;
 }
 
@@ -97,7 +102,9 @@ export async function withSessionRecovery<T>(
   if (isServerDisabled(deps.config.mcpServers[serverName])) {
     throw new Error(`MCP server "${serverName}" is disabled`);
   }
+
   const connection = deps.manager.getConnection(serverName);
+
   if (!connection) {
     throw new Error(`Server "${serverName}" is not connected`);
   }
@@ -116,6 +123,7 @@ export async function withSessionRecovery<T>(
     // server was removed from config in the meantime there is nothing to
     // reconnect to, so surface the original error.
     const definition = deps.config.mcpServers[serverName];
+
     if (!definition) {
       throw err;
     }
@@ -127,6 +135,7 @@ export async function withSessionRecovery<T>(
     let freshConnection = deps.signal
       ? await deps.manager.reconnect(serverName, definition, connection, deps.signal)
       : await deps.manager.reconnect(serverName, definition, connection);
+
     throwIfAborted(deps.signal);
 
     if (freshConnection.status === "needs-auth") {
@@ -137,6 +146,7 @@ export async function withSessionRecovery<T>(
     if (freshConnection.status === "needs-auth") {
       throw new SessionRecoveryAuthRequiredError(serverName);
     }
+
     if (freshConnection.status !== "connected") {
       throw err;
     }

@@ -50,7 +50,9 @@ export async function resolveNpxBinary(
       ? parseNpmExecArgs(args)
       : null;
 
-  if (!parsed) return null;
+  if (!parsed) {
+    return null;
+  }
 
   const packageSpec = parsePackageSpec(parsed.packageSpec);
   const cacheKey = JSON.stringify([command, ...args]);
@@ -67,16 +69,20 @@ export async function resolveNpxBinary(
   }
 
   const resolved = resolveFromNpmCache(parsed.packageSpec, parsed.binName);
+
   if (resolved) {
     saveNpxCacheEntry(cacheKey, resolved);
+
     return { binPath: resolved.resolvedBin, extraArgs: parsed.extraArgs, isJs: resolved.isJs };
   }
 
   // Slow path: force npx cache population
   await forceNpxCache(parsed.packageSpec, signal);
   const resolvedAfterInstall = resolveFromNpmCache(parsed.packageSpec, parsed.binName);
+
   if (resolvedAfterInstall) {
     saveNpxCacheEntry(cacheKey, resolvedAfterInstall);
+
     return { binPath: resolvedAfterInstall.resolvedBin, extraArgs: parsed.extraArgs, isJs: resolvedAfterInstall.isJs };
   }
 
@@ -95,29 +101,51 @@ function parseNpxArgs(args: string[]): ParsedInvocation | null {
 
   for (let i = 0; i < before.length; i++) {
     const arg = before[i];
+
     if (foundFirstPositional) {
       positionals.push(arg);
       continue;
     }
-    if (arg === "-y" || arg === "--yes") continue;
+
+    if (arg === "-y" || arg === "--yes") {
+      continue;
+    }
+
     if (arg === "-p" || arg === "--package") {
       const value = before[i + 1];
-      if (!value || value.startsWith("-")) return null;
-      if (!packageSpec) packageSpec = value;
+
+      if (!value || value.startsWith("-")) {
+        return null;
+      }
+
+      if (!packageSpec) {
+        packageSpec = value;
+      }
+
       sawPackageFlag = true;
       i++;
       continue;
     }
+
     if (arg.startsWith("--package=")) {
       const value = arg.slice("--package=".length);
-      if (!value) return null;
-      if (!packageSpec) packageSpec = value;
+
+      if (!value) {
+        return null;
+      }
+
+      if (!packageSpec) {
+        packageSpec = value;
+      }
+
       sawPackageFlag = true;
       continue;
     }
+
     if (arg.startsWith("-")) {
       return null;
     }
+
     positionals.push(arg);
     foundFirstPositional = true;
   }
@@ -126,69 +154,124 @@ function parseNpxArgs(args: string[]): ParsedInvocation | null {
 
   if (sawPackageFlag) {
     const binName = positionals[0];
-    if (!packageSpec || !binName) return null;
+
+    if (!packageSpec || !binName) {
+      return null;
+    }
+
     const extraArgs = positionals.slice(1).concat(separatedAfter);
+
     return { packageSpec, binName, extraArgs };
   }
 
   const packagePositional = positionals[0];
-  if (!packagePositional) return null;
+
+  if (!packagePositional) {
+    return null;
+  }
+
   const extraArgs = positionals.slice(1).concat(separatedAfter);
+
   return { packageSpec: packagePositional, extraArgs };
 }
 
 function parseNpmExecArgs(args: string[]): ParsedInvocation | null {
-  if (args[0] !== "exec") return null;
+  if (args[0] !== "exec") {
+    return null;
+  }
+
   const execArgs = args.slice(1);
   const separatorIndex = execArgs.indexOf("--");
-  if (separatorIndex < 0) return null;
+
+  if (separatorIndex < 0) {
+    return null;
+  }
 
   const before = execArgs.slice(0, separatorIndex);
   const after = execArgs.slice(separatorIndex + 1);
 
   let packageSpec: string | undefined;
+
   for (let i = 0; i < before.length; i++) {
     const arg = before[i];
-    if (arg === "-y" || arg === "--yes") continue;
+
+    if (arg === "-y" || arg === "--yes") {
+      continue;
+    }
+
     if (arg === "--package") {
       const value = before[i + 1];
-      if (!value || value.startsWith("-")) return null;
-      if (!packageSpec) packageSpec = value;
+
+      if (!value || value.startsWith("-")) {
+        return null;
+      }
+
+      if (!packageSpec) {
+        packageSpec = value;
+      }
+
       i++;
       continue;
     }
+
     if (arg.startsWith("--package=")) {
       const value = arg.slice("--package=".length);
-      if (!value) return null;
-      if (!packageSpec) packageSpec = value;
+
+      if (!value) {
+        return null;
+      }
+
+      if (!packageSpec) {
+        packageSpec = value;
+      }
+
       continue;
     }
+
     if (arg.startsWith("-")) {
       return null;
     }
   }
 
   const binName = after[0];
-  if (!packageSpec || !binName) return null;
+
+  if (!packageSpec || !binName) {
+    return null;
+  }
+
   const extraArgs = after.slice(1);
+
   return { packageSpec, binName, extraArgs };
 }
 
 function resolveFromNpmCache(packageSpec: string, binName?: string): NpxCacheEntry | null {
   const cacheDir = getNpmCacheDir();
-  if (!cacheDir) return null;
+
+  if (!cacheDir) {
+    return null;
+  }
 
   const parsedSpec = parsePackageSpec(packageSpec);
-  if (!parsedSpec) return null;
+
+  if (!parsedSpec) {
+    return null;
+  }
 
   const { packageName, exactVersion } = parsedSpec;
   const packageDir = findCachedPackageDir(cacheDir, packageName, exactVersion);
-  if (!packageDir) return null;
+
+  if (!packageDir) {
+    return null;
+  }
 
   const packageJsonPath = join(packageDir, "package.json");
-  if (!existsSync(packageJsonPath)) return null;
+
+  if (!existsSync(packageJsonPath)) {
+    return null;
+  }
 
   let pkg: { bin?: string | Record<string, string>; version?: string } | null = null;
+
   try {
     pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
       bin?: string | Record<string, string>;
@@ -199,7 +282,10 @@ function resolveFromNpmCache(packageSpec: string, binName?: string): NpxCacheEnt
   }
 
   const binField = pkg?.bin;
-  if (!binField) return null;
+
+  if (!binField) {
+    return null;
+  }
 
   const candidates = buildBinCandidates(packageName, binName);
   let chosenBinName: string | undefined;
@@ -216,8 +302,10 @@ function resolveFromNpmCache(packageSpec: string, binName?: string): NpxCacheEnt
         break;
       }
     }
+
     if (!binRel) {
       const firstEntry = Object.entries(binField)[0];
+
       if (firstEntry) {
         chosenBinName = firstEntry[0];
         binRel = firstEntry[1];
@@ -225,17 +313,24 @@ function resolveFromNpmCache(packageSpec: string, binName?: string): NpxCacheEnt
     }
   }
 
-  if (!binRel) return null;
+  if (!binRel) {
+    return null;
+  }
 
   const nodeModulesDir = findNodeModulesDir(packageDir);
   const binLink = chosenBinName ? join(nodeModulesDir, ".bin", chosenBinName) : null;
   let resolvedBin = binLink && existsSync(binLink) ? safeRealpath(binLink) : "";
+
   if (!resolvedBin) {
     resolvedBin = resolve(packageDir, binRel);
-    if (!existsSync(resolvedBin)) return null;
+
+    if (!existsSync(resolvedBin)) {
+      return null;
+    }
   }
 
   const isJs = detectJsBinary(resolvedBin);
+
   return {
     resolvedBin,
     resolvedAt: Date.now(),
@@ -248,6 +343,7 @@ const FORCE_CACHE_TIMEOUT_MS = 30_000;
 
 async function forceNpxCache(packageSpec: string, signal?: AbortSignal): Promise<void> {
   throwIfAborted(signal);
+
   try {
     await new Promise<void>((resolve, reject) => {
       const proc = crossSpawn(
@@ -263,6 +359,7 @@ async function forceNpxCache(packageSpec: string, signal?: AbortSignal): Promise
         proc.kill();
         reject(signal?.reason instanceof Error ? signal.reason : new Error("MCP request aborted"));
       };
+
       signal?.addEventListener("abort", abort, { once: true });
       timer.unref();
       proc.on("close", () => {
@@ -277,21 +374,33 @@ async function forceNpxCache(packageSpec: string, signal?: AbortSignal): Promise
       });
     });
   } catch (error) {
-    if (signal?.aborted) throwIfAborted(signal);
+    if (signal?.aborted) {
+      throwIfAborted(signal);
+    }
     // Ignore failures, resolution will fall back to original command
   }
+
   throwIfAborted(signal);
 }
 
 function buildBinCandidates(packageName: string, explicitBin?: string): string[] {
   const candidates: string[] = [];
-  if (explicitBin) candidates.push(explicitBin);
+
+  if (explicitBin) {
+    candidates.push(explicitBin);
+  }
 
   if (packageName.startsWith("@")) {
     const namePart = packageName.split("/")[1] ?? "";
     const scopePart = packageName.split("/")[0]?.replace("@", "") ?? "";
-    if (namePart) candidates.push(namePart);
-    if (scopePart && namePart) candidates.push(`${scopePart}-${namePart}`);
+
+    if (namePart) {
+      candidates.push(namePart);
+    }
+
+    if (scopePart && namePart) {
+      candidates.push(`${scopePart}-${namePart}`);
+    }
   } else {
     candidates.push(packageName);
   }
@@ -301,14 +410,23 @@ function buildBinCandidates(packageName: string, explicitBin?: string): string[]
 
 function parsePackageSpec(spec: string): ParsedPackageSpec | null {
   const trimmed = spec.trim();
-  if (!trimmed) return null;
+
+  if (!trimmed) {
+    return null;
+  }
 
   let packageName: string;
   let requestedVersion: string | undefined;
+
   if (trimmed.startsWith("@")) {
     const slashIndex = trimmed.indexOf("/");
-    if (slashIndex < 0) return null;
+
+    if (slashIndex < 0) {
+      return null;
+    }
+
     const atIndex = trimmed.lastIndexOf("@");
+
     if (atIndex > slashIndex) {
       packageName = trimmed.slice(0, atIndex);
       requestedVersion = trimmed.slice(atIndex + 1);
@@ -317,6 +435,7 @@ function parsePackageSpec(spec: string): ParsedPackageSpec | null {
     }
   } else {
     const atIndex = trimmed.indexOf("@");
+
     if (atIndex >= 0) {
       packageName = trimmed.slice(0, atIndex);
       requestedVersion = trimmed.slice(atIndex + 1);
@@ -325,8 +444,12 @@ function parsePackageSpec(spec: string): ParsedPackageSpec | null {
     }
   }
 
-  if (!packageName) return null;
+  if (!packageName) {
+    return null;
+  }
+
   const normalizedVersion = requestedVersion?.replace(/^=/, "").replace(/^v/i, "");
+
   return {
     packageName,
     exactVersion: normalizedVersion && EXACT_PACKAGE_VERSION_RE.test(normalizedVersion)
@@ -338,14 +461,19 @@ function parsePackageSpec(spec: string): ParsedPackageSpec | null {
 function defaultBinName(packageName: string): string {
   if (packageName.startsWith("@")) {
     const parts = packageName.split("/");
+
     return parts[1] ?? packageName.replace("@", "").replace("/", "-");
   }
+
   return packageName;
 }
 
 function findCachedPackageDir(cacheDir: string, packageName: string, exactVersion?: string): string | null {
   const npxDir = join(cacheDir, "_npx");
-  if (!existsSync(npxDir)) return null;
+
+  if (!existsSync(npxDir)) {
+    return null;
+  }
 
   const packagePathParts = packageName.startsWith("@")
     ? packageName.split("/")
@@ -356,6 +484,7 @@ function findCachedPackageDir(cacheDir: string, packageName: string, exactVersio
     .map(entry => {
       const full = join(npxDir, entry.name);
       const mtime = safeStatMtime(full);
+
       return { name: entry.name, mtime };
     })
     .sort((a, b) => b.mtime - a.mtime);
@@ -363,15 +492,23 @@ function findCachedPackageDir(cacheDir: string, packageName: string, exactVersio
   for (const entry of candidates) {
     const pkgDir = join(npxDir, entry.name, "node_modules", ...packagePathParts);
     const packageJsonPath = join(pkgDir, "package.json");
-    if (!existsSync(packageJsonPath)) continue;
+
+    if (!existsSync(packageJsonPath)) {
+      continue;
+    }
+
     if (exactVersion) {
       try {
         const pkg = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as { version?: unknown };
-        if (pkg.version !== exactVersion) continue;
+
+        if (pkg.version !== exactVersion) {
+          continue;
+        }
       } catch {
         continue;
       }
     }
+
     return pkgDir;
   }
 
@@ -381,21 +518,30 @@ function findCachedPackageDir(cacheDir: string, packageName: string, exactVersio
 function findNodeModulesDir(packageDir: string): string {
   const parts = packageDir.split(sep);
   const idx = parts.lastIndexOf("node_modules");
+
   if (idx >= 0) {
     return parts.slice(0, idx + 1).join(sep);
   }
+
   return join(packageDir, "..");
 }
 
 function detectJsBinary(binPath: string): boolean {
   const ext = extname(binPath).toLowerCase();
-  if (ext === ".js" || ext === ".mjs" || ext === ".cjs") return true;
+
+  if (ext === ".js" || ext === ".mjs" || ext === ".cjs") {
+    return true;
+  }
+
   try {
     const fd = openSync(binPath, "r");
+
     try {
       const buf = Buffer.alloc(256);
+
       readSync(fd, buf, 0, 256, 0);
       const firstLine = buf.toString("utf-8").split("\n")[0] ?? "";
+
       return firstLine.startsWith("#!") && firstLine.includes("node");
     } finally {
       closeSync(fd);
@@ -408,23 +554,34 @@ function detectJsBinary(binPath: string): boolean {
 let npmCacheDirCached: string | null | undefined;
 
 function getNpmCacheDir(): string | null {
-  if (npmCacheDirCached !== undefined) return npmCacheDirCached;
-  if (process.env.NPM_CONFIG_CACHE) {
-    npmCacheDirCached = process.env.NPM_CONFIG_CACHE;
+  if (npmCacheDirCached !== undefined) {
     return npmCacheDirCached;
   }
+
+  if (process.env.NPM_CONFIG_CACHE) {
+    npmCacheDirCached = process.env.NPM_CONFIG_CACHE;
+
+    return npmCacheDirCached;
+  }
+
   try {
     const result = crossSpawn.sync("npm", ["config", "get", "cache"], { encoding: "utf-8" });
+
     if (result.status === 0) {
       const path = String(result.stdout).trim();
+
       npmCacheDirCached = path || null;
+
       return npmCacheDirCached;
     }
   } catch {
     npmCacheDirCached = null;
+
     return null;
   }
+
   npmCacheDirCached = null;
+
   return null;
 }
 
@@ -454,6 +611,7 @@ export function getNpxCacheStats(): NpxCacheStats {
 function npxIdentityOf(path: string): { mtimeMs: number; size: number } | null {
   try {
     const stat = statSync(path);
+
     return { mtimeMs: stat.mtimeMs, size: stat.size };
   } catch {
     return null;
@@ -462,49 +620,66 @@ function npxIdentityOf(path: string): { mtimeMs: number; size: number } | null {
 
 export function loadNpxCache(): NpxCache | null {
   const cachePath = getNpxCachePath();
+
   npxCacheStats.loads++;
   const identity = npxIdentityOf(cachePath);
+
   if (!identity) {
     npxMemoryCache = null;
+
     return null;
   }
+
   if (npxMemoryCache && npxMemoryCache.identity &&
       npxMemoryCache.identity.mtimeMs === identity.mtimeMs &&
       npxMemoryCache.identity.size === identity.size) {
     npxCacheStats.memoryHits++;
+
     return npxMemoryCache.data;
   }
+
   npxCacheStats.fileReads++;
   let raw: string | null = null;
+
   try {
     raw = readFileSync(cachePath, "utf-8");
   } catch {
     npxMemoryCache = { identity, data: null };
+
     return null;
   }
+
   let parsed: unknown = null;
+
   try {
     parsed = JSON.parse(raw);
   } catch {
     npxMemoryCache = { identity, data: null };
+
     return null;
   }
+
   const data = (parsed && typeof parsed === "object" && (parsed as NpxCache).version === CACHE_VERSION && (parsed as NpxCache).entries)
     ? (parsed as NpxCache)
     : null;
+
   npxMemoryCache = { identity, data };
+
   return data ? { ...data, entries: { ...data.entries } } : null;
 }
 
 export function saveNpxCacheEntry(key: string, entry: NpxCacheEntry): void {
   const cachePath = getNpxCachePath();
   const dir = dirname(cachePath);
+
   mkdirSync(dir, { recursive: true });
 
   let merged: NpxCache = { version: CACHE_VERSION, entries: {} };
+
   try {
     if (existsSync(cachePath)) {
       const existing = JSON.parse(readFileSync(cachePath, "utf-8")) as NpxCache;
+
       if (existing && existing.version === CACHE_VERSION && existing.entries) {
         merged.entries = { ...existing.entries };
       }
@@ -515,6 +690,7 @@ export function saveNpxCacheEntry(key: string, entry: NpxCacheEntry): void {
 
   merged.entries[key] = entry;
   const tmpPath = `${cachePath}.${process.pid}.tmp`;
+
   writeFileSync(tmpPath, JSON.stringify(merged, null, 2), "utf-8");
   renameSync(tmpPath, cachePath);
   // The file changed under us: drop the read-through copy.

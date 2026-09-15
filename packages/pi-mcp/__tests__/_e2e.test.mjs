@@ -24,15 +24,19 @@ test("package entry exports Pi's default extension factory", () => {
 function install(overrides = {}) {
   const { pi, emit, runCommand, commands, tools, handlers, calls } = createMockPi(overrides);
   const adapter = createMcpAdapter({ config: { mcpServers: {} } });
+
   adapter(pi);
+
   return { pi, emit, runCommand, commands, tools, handlers, calls };
 }
 
 test("adapter registers the mcp proxy tool and commands", () => {
   const { tools, commands, handlers } = install();
+
   assert.ok(tools.has("mcp"), "mcp proxy tool registered");
   assert.ok(commands.has("mcp"), "/mcp command registered");
   assert.ok(commands.has("mcp-auth"), "/mcp-auth command registered");
+
   for (const event of ["session_start", "session_shutdown", "tool_result"]) {
     assert.ok(handlers.get(event)?.length, `handler for ${event} registered`);
   }
@@ -40,6 +44,7 @@ test("adapter registers the mcp proxy tool and commands", () => {
 
 test("adapter registers the mcp-config flag", () => {
   const { calls } = install();
+
   assert.ok(calls.registerFlag.some(([name]) => name === "mcp-config"));
 });
 
@@ -47,6 +52,7 @@ test("mcp tool: missing action returns guidance instead of crashing", async () =
   const { tools } = install();
   const tool = tools.get("mcp");
   const result = await tool.execute("call-1", {});
+
   assert.ok(result.content, "returns content");
   assert.ok(result.content[0].text.length > 0);
 });
@@ -54,6 +60,7 @@ test("mcp tool: missing action returns guidance instead of crashing", async () =
 test("mcp tool: invalid JSON args are reported with a descriptive error", async () => {
   const { tools } = install();
   const tool = tools.get("mcp");
+
   await assert.rejects(
     tool.execute("call-1", { action: "call", args: "{not json" }),
     /Invalid args JSON/,
@@ -63,12 +70,14 @@ test("mcp tool: invalid JSON args are reported with a descriptive error", async 
 test("session_start handler exists and runs without throwing", async () => {
   const { emit } = install();
   const ctx = createMockCtx();
+
   await emit("session_start", {}, ctx);
   assert.ok(true);
 });
 
 test("session_shutdown handler runs without throwing", async () => {
   const { emit } = install();
+
   await emit("session_shutdown", {});
   assert.ok(true);
 });
@@ -76,6 +85,7 @@ test("session_shutdown handler runs without throwing", async () => {
 test("adapter factory is reusable per mock pi instance", () => {
   const a = install();
   const b = install();
+
   assert.notEqual(a.handlers, b.handlers);
   assert.ok(a.tools.has("mcp") && b.tools.has("mcp"));
 });
@@ -89,6 +99,7 @@ test("load-time init with keep-alive servers is skipped when the runtime is unbo
   const notInitialized = () => {
     throw new Error("Extension runtime not initialized. Action methods cannot be called during extension loading.");
   };
+
   const { pi, calls } = createMockPi({
     getActiveTools: notInitialized,
     setActiveTools: notInitialized,
@@ -96,7 +107,9 @@ test("load-time init with keep-alive servers is skipped when the runtime is unbo
 
   const errors = [];
   const originalError = console.error;
+
   console.error = (...args) => errors.push(args.join(" "));
+
   try {
     const adapter = createMcpAdapter({
       config: {
@@ -108,6 +121,7 @@ test("load-time init with keep-alive servers is skipped when the runtime is unbo
         },
       },
     });
+
     adapter(pi);
     // Give the scheduled setImmediate load-time init a chance to run.
     await new Promise((resolve) => setTimeout(resolve, 100));

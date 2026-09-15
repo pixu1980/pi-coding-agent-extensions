@@ -13,9 +13,11 @@
 export function toolErrorOverride(details: unknown): { isError: true } | undefined {
   if (details && typeof details === "object" && "error" in details) {
     const code = (details as { error?: unknown }).error;
+
     if (code === "tool_error" || code === "call_failed") {
       return { isError: true };
     }
   }
+
   return undefined;
 }

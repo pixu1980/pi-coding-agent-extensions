@@ -10,10 +10,10 @@
  * then the plaintext file is removed.
  */
 
-import { createHash } from 'crypto';
-import { createRequire } from 'module';
-import { readFileSync, existsSync, rmSync } from 'fs';
-import { dirname, join } from 'path';
+import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import { readFileSync, existsSync, rmSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { getAgentPath } from './_agent-dir.ts';
 import { resolveConfiguredOAuthDir } from './_config.ts';
 
@@ -87,15 +87,22 @@ export type OAuthCredentialStatus =
 function causeChainContains(error: unknown, pattern: RegExp): boolean {
   const seen = new Set<unknown>();
   let current = error;
+
   while ((typeof current === 'object' && current !== null) || typeof current === 'function') {
-    if (seen.has(current)) break;
+    if (seen.has(current)) {
+      break;
+    }
+
     seen.add(current);
     const candidate = current as { name?: unknown; message?: unknown; code?: unknown; cause?: unknown };
+
     if ([candidate.name, candidate.message, candidate.code].some(value => typeof value === 'string' && pattern.test(value))) {
       return true;
     }
+
     current = candidate.cause;
   }
+
   return false;
 }
 
@@ -103,6 +110,7 @@ export function formatOAuthCredentialStoreUnavailable(error: OAuthCredentialStor
   if (process.platform === 'linux' && causeChainContains(error, /key\s*(?:has been\s*)?revoked|keyrevoked/i)) {
     return 'OAuth credential store unavailable: the Linux session keyring may be revoked. Start Pi from a fresh login/keyring session and retry.';
   }
+
   return 'OAuth credential store unavailable. Configure or unlock the OS credential store and retry.';
 }
 
@@ -180,14 +188,21 @@ export function removeTestAuthSecretStoreEntry(account: string): void {
 }
 
 function getAuthSecretStore(): AuthSecretStore {
-  if (process.env[TEST_AUTH_STORE_ENV] === 'memory') return memoryAuthSecretStore;
-  if (process.env[TEST_AUTH_STORE_ENV] === 'unavailable') return unavailableAuthSecretStore;
+  if (process.env[TEST_AUTH_STORE_ENV] === 'memory') {
+    return memoryAuthSecretStore;
+  }
+
+  if (process.env[TEST_AUTH_STORE_ENV] === 'unavailable') {
+    return unavailableAuthSecretStore;
+  }
+
   return keyringAuthSecretStore;
 }
 
 function getKeyringEntry(account: string): KeyringEntry {
   try {
     KeyringEntryClass ??= loadKeyringEntryClass();
+
     return new KeyringEntryClass(AUTH_SECRET_SERVICE, account);
   } catch (error) {
     throw new Error('OAuth secure credential storage is unavailable. Configure the OS credential store and retry authentication.', { cause: error });
@@ -210,14 +225,17 @@ function loadKeyringEntryClass(keyringRequire: KeyringRequire = require, platfor
 
 function loadKeyringNativeBindingFallback(keyringRequire: KeyringRequire, platform: NodeJS.Platform, arch: NodeJS.Architecture): KeyringModule {
   const targets = getKeyringNativeBindingTargets(platform, arch);
+
   if (targets.length === 0) {
     throw new Error(`Unsupported @napi-rs/keyring native binding target: ${platform}-${arch}`);
   }
 
   let lastError: unknown;
+
   for (const target of targets) {
     try {
       const packageJsonPath = keyringRequire.resolve(`${target.packageName}/package.json`);
+
       return keyringRequire(join(dirname(packageJsonPath), target.bindingFile)) as KeyringModule;
     } catch (error) {
       lastError = error;
@@ -236,21 +254,51 @@ function getKeyringNativeBindingTargets(platform: NodeJS.Platform, arch: NodeJS.
 
 function getKeyringNativeBindingSuffixes(platform: NodeJS.Platform, arch: NodeJS.Architecture): string[] {
   if (platform === 'darwin') {
-    if (arch === 'arm64') return ['darwin-arm64'];
-    if (arch === 'x64') return ['darwin-x64'];
+    if (arch === 'arm64') {
+      return ['darwin-arm64'];
+    }
+
+    if (arch === 'x64') {
+      return ['darwin-x64'];
+    }
   }
+
   if (platform === 'win32') {
-    if (arch === 'arm64') return ['win32-arm64-msvc'];
-    if (arch === 'x64') return ['win32-x64-msvc'];
-    if (arch === 'ia32') return ['win32-ia32-msvc'];
+    if (arch === 'arm64') {
+      return ['win32-arm64-msvc'];
+    }
+
+    if (arch === 'x64') {
+      return ['win32-x64-msvc'];
+    }
+
+    if (arch === 'ia32') {
+      return ['win32-ia32-msvc'];
+    }
   }
+
   if (platform === 'linux') {
-    if (arch === 'arm64') return ['linux-arm64-gnu', 'linux-arm64-musl'];
-    if (arch === 'arm') return ['linux-arm-gnueabihf'];
-    if (arch === 'riscv64') return ['linux-riscv64-gnu'];
-    if (arch === 'x64') return ['linux-x64-gnu', 'linux-x64-musl'];
+    if (arch === 'arm64') {
+      return ['linux-arm64-gnu', 'linux-arm64-musl'];
+    }
+
+    if (arch === 'arm') {
+      return ['linux-arm-gnueabihf'];
+    }
+
+    if (arch === 'riscv64') {
+      return ['linux-riscv64-gnu'];
+    }
+
+    if (arch === 'x64') {
+      return ['linux-x64-gnu', 'linux-x64-musl'];
+    }
   }
-  if (platform === 'freebsd' && arch === 'x64') return ['freebsd-x64'];
+
+  if (platform === 'freebsd' && arch === 'x64') {
+    return ['freebsd-x64'];
+  }
+
   return [];
 }
 
@@ -264,12 +312,17 @@ export function loadTestKeyringEntryClass(keyringRequire: KeyringRequire, platfo
 
 export function getAuthStorageOptions(oauthDir: unknown, cwd = process.cwd()): AuthStorageOptions {
   const baseDir = resolveConfiguredOAuthDir(oauthDir, cwd);
+
   return baseDir ? { baseDir } : {};
 }
 
 export function getAuthBaseDir(options: AuthStorageOptions = {}): string {
   const override = process.env.MCP_OAUTH_DIR?.trim();
-  if (override) return override;
+
+  if (override) {
+    return override;
+  }
+
   return options.baseDir ?? getAgentPath('mcp-oauth');
 }
 
@@ -280,7 +333,9 @@ function getServerDir(serverName: string, options?: AuthStorageOptions): string 
   if (typeof serverName !== 'string') {
     throw new Error(`Invalid MCP server name: ${JSON.stringify(serverName)}`);
   }
+
   const storageKey = getAuthEntryAccount(serverName);
+
   return join(getAuthBaseDir(options), storageKey);
 }
 
@@ -288,6 +343,7 @@ function getAuthEntryAccount(serverName: string): string {
   if (typeof serverName !== 'string') {
     throw new Error(`Invalid MCP server name: ${JSON.stringify(serverName)}`);
   }
+
   return `sha256-${createHash('sha256').update(serverName, 'utf8').digest('hex')}`;
 }
 
@@ -311,8 +367,12 @@ function parseAuthEntryPayload(serverName: string, payload: string, source: stri
 }
 
 function isAuthEntryChunkManifest(value: unknown): value is AuthEntryChunkManifest {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
   const manifest = value as Partial<AuthEntryChunkManifest>;
+
   return manifest[AUTH_CHUNK_MANIFEST_KEY] === 1
     && typeof manifest.chunkCount === 'number'
     && Number.isInteger(manifest.chunkCount)
@@ -331,12 +391,14 @@ function getAuthEntryChunkAccounts(account: string, manifest: AuthEntryChunkMani
 
 function readChunkManifestFromPayload(serverName: string, payload: string, source: string): AuthEntryChunkManifest | undefined {
   const parsed = parseJsonPayload(serverName, payload, source);
+
   return isAuthEntryChunkManifest(parsed) ? parsed : undefined;
 }
 
 function readExistingChunkManifest(store: AuthSecretStore, serverName: string, account: string): AuthEntryChunkManifest | undefined {
   try {
     const payload = store.read(account);
+
     return payload === undefined ? undefined : readChunkManifestFromPayload(serverName, payload, 'OS secure credential store');
   } catch {
     return undefined;
@@ -350,7 +412,10 @@ function removeChunkPayloads(store: AuthSecretStore, account: string, manifest: 
 }
 
 function tryRemoveChunkPayloads(store: AuthSecretStore, account: string, manifest: AuthEntryChunkManifest | undefined): void {
-  if (!manifest) return;
+  if (!manifest) {
+    return;
+  }
+
   try {
     removeChunkPayloads(store, account, manifest);
   } catch {
@@ -371,9 +436,11 @@ function readChunkedAuthEntry(serverName: string, account: string, manifest: Aut
   const chunks = getAuthEntryChunkAccounts(account, manifest).map((chunkAccount) => {
     try {
       const chunk = store.read(chunkAccount);
+
       if (chunk === undefined) {
         throw new Error(`Missing OAuth credential chunk ${chunkAccount} for ${serverName}`);
       }
+
       return chunk;
     } catch (error) {
       throw new OAuthCredentialStoreError(
@@ -383,19 +450,29 @@ function readChunkedAuthEntry(serverName: string, account: string, manifest: Aut
       );
     }
   });
+
   return parseAuthEntryPayload(serverName, chunks.join(''), 'OS secure credential store chunks');
 }
 
 function readLegacyAuthEntry(serverName: string, options?: AuthStorageOptions): AuthEntry | undefined {
   const filePath = getAuthEntryFilePath(serverName, options);
-  if (!existsSync(filePath)) return undefined;
+
+  if (!existsSync(filePath)) {
+    return undefined;
+  }
+
   const data = readFileSync(filePath, 'utf-8');
+
   return parseAuthEntryPayload(serverName, data, filePath);
 }
 
 function removeLegacyAuthEntry(serverName: string, options?: AuthStorageOptions): void {
   const filePath = getAuthEntryFilePath(serverName, options);
-  if (!existsSync(filePath)) return;
+
+  if (!existsSync(filePath)) {
+    return;
+  }
+
   try {
     rmSync(filePath, { force: true });
   } catch (error) {
@@ -403,6 +480,7 @@ function removeLegacyAuthEntry(serverName: string, options?: AuthStorageOptions)
   }
 
   const dir = getServerDir(serverName, options);
+
   try {
     rmSync(dir, { recursive: true });
   } catch {
@@ -421,13 +499,16 @@ function writeSecureAuthEntry(serverName: string, entry: AuthEntry): void {
     if (manifest) {
       for (let index = 0; index < manifest.chunkCount; index++) {
         const chunk = payload.slice(index * AUTH_SECRET_CHUNK_SIZE, (index + 1) * AUTH_SECRET_CHUNK_SIZE);
+
         store.write(getAuthEntryChunkAccount(account, manifest, index), chunk);
       }
+
       store.write(account, JSON.stringify(manifest));
     } else {
       // Compact: multiline secrets corrupt gnome-keyring plaintext (GKeyFile) collections.
       store.write(account, payload);
     }
+
     if (previousManifest?.chunkDigest !== manifest?.chunkDigest) {
       tryRemoveChunkPayloads(store, account, previousManifest);
     }
@@ -452,6 +533,7 @@ function readAuthEntry(
 ): AuthEntry | undefined {
   const account = getAuthEntryAccount(serverName);
   let payload: string | undefined;
+
   try {
     payload = getAuthSecretStore().read(account);
   } catch (error) {
@@ -467,15 +549,25 @@ function readAuthEntry(
     const entry = manifest
       ? readChunkedAuthEntry(serverName, account, manifest)
       : parseAuthEntryPayload(serverName, payload, 'OS secure credential store');
+
     removeLegacyAuthEntry(serverName, options);
+
     return entry;
   }
 
   const legacyEntry = readLegacyAuthEntry(serverName, options);
-  if (!legacyEntry) return undefined;
-  if (behavior.migrateLegacy === false) return legacyEntry;
+
+  if (!legacyEntry) {
+    return undefined;
+  }
+
+  if (behavior.migrateLegacy === false) {
+    return legacyEntry;
+  }
+
   writeSecureAuthEntry(serverName, legacyEntry);
   removeLegacyAuthEntry(serverName, options);
+
   return legacyEntry;
 }
 
@@ -492,13 +584,20 @@ export function getAuthEntry(serverName: string, options?: AuthStorageOptions): 
  */
 export function getAuthForUrl(serverName: string, serverUrl: string, options?: AuthStorageOptions): AuthEntry | undefined {
   const entry = getAuthEntry(serverName, options);
-  if (!entry) return undefined;
+
+  if (!entry) {
+    return undefined;
+  }
 
   // If no serverUrl is stored, this is from an old version - consider it invalid
-  if (!entry.serverUrl) return undefined;
+  if (!entry.serverUrl) {
+    return undefined;
+  }
 
   // If URL has changed, credentials are invalid
-  if (entry.serverUrl !== serverUrl) return undefined;
+  if (entry.serverUrl !== serverUrl) {
+    return undefined;
+  }
 
   return entry;
 }
@@ -515,10 +614,17 @@ export function inspectAuthForUrl(
 ): OAuthCredentialStatus {
   try {
     const entry = readAuthEntry(serverName, options, { migrateLegacy: false });
-    if (!entry?.serverUrl || entry.serverUrl !== serverUrl) return { status: 'absent' };
+
+    if (!entry?.serverUrl || entry.serverUrl !== serverUrl) {
+      return { status: 'absent' };
+    }
+
     return { status: 'present', entry };
   } catch (error) {
-    if (!(error instanceof OAuthCredentialStoreError)) throw error;
+    if (!(error instanceof OAuthCredentialStoreError)) {
+      throw error;
+    }
+
     return { status: 'unavailable', message: formatOAuthCredentialStoreUnavailable(error) };
   }
 }
@@ -531,6 +637,7 @@ export function saveAuthEntry(serverName: string, entry: AuthEntry, serverUrl?: 
   if (serverUrl) {
     entry.serverUrl = serverUrl;
   }
+
   writeSecureAuthEntry(serverName, entry);
   removeLegacyAuthEntry(serverName, options);
 }
@@ -541,10 +648,15 @@ export function saveAuthEntry(serverName: string, entry: AuthEntry, serverUrl?: 
 export function removeAuthEntry(serverName: string, options?: AuthStorageOptions): void {
   const account = getAuthEntryAccount(serverName);
   const store = getAuthSecretStore();
+
   try {
     const payload = store.read(account);
     const manifest = payload === undefined ? undefined : readChunkManifestFromPayload(serverName, payload, 'OS secure credential store');
-    if (manifest) removeChunkPayloads(store, account, manifest);
+
+    if (manifest) {
+      removeChunkPayloads(store, account, manifest);
+    }
+
     store.remove(account);
   } catch (error) {
     throw new OAuthCredentialStoreError(
@@ -553,6 +665,7 @@ export function removeAuthEntry(serverName: string, options?: AuthStorageOptions
       error,
     );
   }
+
   removeLegacyAuthEntry(serverName, options);
 }
 
@@ -566,11 +679,13 @@ export function updateTokens(
   options?: AuthStorageOptions
 ): void {
   const entry = getAuthEntry(serverName, options) ?? {};
+
   if (serverUrl && entry.serverUrl !== serverUrl) {
     delete entry.clientInfo;
     delete entry.codeVerifier;
     delete entry.oauthState;
   }
+
   entry.tokens = tokens;
   saveAuthEntry(serverName, entry, serverUrl, options);
 }
@@ -585,11 +700,13 @@ export function updateClientInfo(
   options?: AuthStorageOptions
 ): void {
   const entry = getAuthEntry(serverName, options) ?? {};
+
   if (serverUrl && entry.serverUrl !== serverUrl) {
     delete entry.tokens;
     delete entry.codeVerifier;
     delete entry.oauthState;
   }
+
   entry.clientInfo = clientInfo;
   saveAuthEntry(serverName, entry, serverUrl, options);
 }
@@ -599,11 +716,13 @@ export function updateClientInfo(
  */
 export function updateCodeVerifier(serverName: string, codeVerifier: string, serverUrl?: string, options?: AuthStorageOptions): void {
   const entry = getAuthEntry(serverName, options) ?? {};
+
   if (serverUrl && entry.serverUrl !== serverUrl) {
     delete entry.tokens;
     delete entry.clientInfo;
     delete entry.oauthState;
   }
+
   entry.codeVerifier = codeVerifier;
   saveAuthEntry(serverName, entry, serverUrl, options);
 }
@@ -613,6 +732,7 @@ export function updateCodeVerifier(serverName: string, codeVerifier: string, ser
  */
 export function clearCodeVerifier(serverName: string, options?: AuthStorageOptions): void {
   const entry = getAuthEntry(serverName, options);
+
   if (entry) {
     delete entry.codeVerifier;
     saveAuthEntry(serverName, entry, undefined, options);
@@ -624,11 +744,13 @@ export function clearCodeVerifier(serverName: string, options?: AuthStorageOptio
  */
 export function updateOAuthState(serverName: string, state: string, serverUrl?: string, options?: AuthStorageOptions): void {
   const entry = getAuthEntry(serverName, options) ?? {};
+
   if (serverUrl && entry.serverUrl !== serverUrl) {
     delete entry.tokens;
     delete entry.clientInfo;
     delete entry.codeVerifier;
   }
+
   entry.oauthState = state;
   saveAuthEntry(serverName, entry, serverUrl, options);
 }
@@ -638,6 +760,7 @@ export function updateOAuthState(serverName: string, state: string, serverUrl?: 
  */
 export function getOAuthState(serverName: string, options?: AuthStorageOptions): string | undefined {
   const entry = getAuthEntry(serverName, options);
+
   return entry?.oauthState;
 }
 
@@ -646,6 +769,7 @@ export function getOAuthState(serverName: string, options?: AuthStorageOptions):
  */
 export function clearOAuthState(serverName: string, options?: AuthStorageOptions): void {
   const entry = getAuthEntry(serverName, options);
+
   if (entry) {
     delete entry.oauthState;
     saveAuthEntry(serverName, entry, undefined, options);
@@ -658,8 +782,15 @@ export function clearOAuthState(serverName: string, options?: AuthStorageOptions
  */
 export function isTokenExpired(serverName: string, options?: AuthStorageOptions): boolean | null {
   const entry = getAuthEntry(serverName, options);
-  if (!entry?.tokens) return null;
-  if (!entry.tokens.expiresAt) return false;
+
+  if (!entry?.tokens) {
+    return null;
+  }
+
+  if (!entry.tokens.expiresAt) {
+    return false;
+  }
+
   return entry.tokens.expiresAt < Date.now() / 1000;
 }
 
@@ -668,6 +799,7 @@ export function isTokenExpired(serverName: string, options?: AuthStorageOptions)
  */
 export function hasStoredTokens(serverName: string, options?: AuthStorageOptions): boolean {
   const entry = getAuthEntry(serverName, options);
+
   return !!entry?.tokens;
 }
 
@@ -683,6 +815,7 @@ export function clearAllCredentials(serverName: string, options?: AuthStorageOpt
  */
 export function clearClientInfo(serverName: string, options?: AuthStorageOptions): void {
   const entry = getAuthEntry(serverName, options);
+
   if (entry) {
     delete entry.clientInfo;
     saveAuthEntry(serverName, entry, undefined, options);
@@ -694,6 +827,7 @@ export function clearClientInfo(serverName: string, options?: AuthStorageOptions
  */
 export function clearTokens(serverName: string, options?: AuthStorageOptions): void {
   const entry = getAuthEntry(serverName, options);
+
   if (entry) {
     delete entry.tokens;
     saveAuthEntry(serverName, entry, undefined, options);

@@ -5,5 +5,7 @@
  * factory from `lib/`.
  */
 
-export { default } from "./lib/index.ts";
+import extension from "./lib/index.ts";
+
+export default extension;
 export * from "./lib/index.ts";

@@ -67,6 +67,7 @@ export function summarizeUiSessionResult(uiSession: UiSessionRuntime | null): Ui
 
   if (!uiSession.windowOpen) {
     const action = uiSession.reused ? "Updated the suppressed MCP UI session." : "MCP UI window was suppressed.";
+
     return {
       message: `${action} Open manually: ${uiSession.url}`,
       uiOpen: false,
@@ -104,10 +105,10 @@ function withStreamEnvelope(
   const envelope = rawEnvelope && typeof rawEnvelope === "object" && !Array.isArray(rawEnvelope)
     ? { ...rawEnvelope as Record<string, unknown> }
     : {
-        frameType: "final",
-        phase: "settled",
-        status: result.isError ? "error" : "ok",
-      };
+      frameType: "final",
+      phase: "settled",
+      status: result.isError ? "error" : "ok",
+    };
 
   structuredContent[UI_STREAM_STRUCTURED_CONTENT_KEY] = {
     ...envelope,
@@ -123,13 +124,21 @@ function withStreamEnvelope(
 
 async function openInBrowser(state: McpExtensionState, url: string, signal: AbortSignal): Promise<void> {
   throwIfAborted(signal);
+
   try {
     await state.openBrowser(url);
     throwIfAborted(signal);
   } catch (error) {
-    if (isAbortError(error, signal)) throw error;
+    if (isAbortError(error, signal)) {
+      throw error;
+    }
+
     const message = error instanceof Error ? error.message : String(error);
-    if (state.owner?.isActive() === false) return;
+
+    if (state.owner?.isActive() === false) {
+      return;
+    }
+
     state.ui?.notify(`MCP UI browser open failed: ${message}`, "warning");
     state.ui?.notify(`Open manually: ${url}`, "info");
   }
@@ -148,6 +157,7 @@ export async function maybeStartUiSession(
 
   try {
     throwIfAborted(runtimeSignal);
+
     if (
       state.uiServer &&
       state.uiServer.serverName === request.serverName &&
@@ -170,8 +180,14 @@ export async function maybeStartUiSession(
 
       if (streamToken) {
         state.manager.registerUiStreamListener(streamToken, (serverName, notification) => {
-          if (!active || state.uiServer !== existingHandle) return;
-          if (serverName !== request.serverName) return;
+          if (!active || state.uiServer !== existingHandle) {
+            return;
+          }
+
+          if (serverName !== request.serverName) {
+            return;
+          }
+
           nextStreamSequence += 1;
           existingHandle.sendResultPatch(
             withStreamEnvelope(notification.result as CallToolResult, streamId, nextStreamSequence),
@@ -192,17 +208,26 @@ export async function maybeStartUiSession(
         windowOpen: existingHandle.windowOpen ?? true,
         isActive: () => active && state.uiServer === existingHandle,
         sendToolResult: (result: CallToolResult) => {
-          if (!active || state.uiServer !== existingHandle) return;
+          if (!active || state.uiServer !== existingHandle) {
+            return;
+          }
+
           nextStreamSequence += 1;
           existingHandle.sendToolResult(withStreamEnvelope(result, streamId, nextStreamSequence));
         },
         sendResultPatch: (result: CallToolResult) => {
-          if (!active || state.uiServer !== existingHandle) return;
+          if (!active || state.uiServer !== existingHandle) {
+            return;
+          }
+
           nextStreamSequence += 1;
           existingHandle.sendResultPatch(withStreamEnvelope(result, streamId, nextStreamSequence));
         },
         sendToolCancelled: (reason: string) => {
-          if (!active || state.uiServer !== existingHandle) return;
+          if (!active || state.uiServer !== existingHandle) {
+            return;
+          }
+
           nextStreamSequence += 1;
           existingHandle.sendToolResult(
             withStreamEnvelope(
@@ -227,12 +252,14 @@ export async function maybeStartUiSession(
       signal: runtimeSignal,
       onNeedsAuth: request.onNeedsAuth,
     });
+
     throwIfAborted(runtimeSignal);
 
     if (state.uiServer) {
       state.uiServer.close("replaced");
       state.uiServer = null;
     }
+
     if (activeGlimpseWindow) {
       activeGlimpseWindow.close();
       activeGlimpseWindow = null;
@@ -243,13 +270,13 @@ export async function maybeStartUiSession(
     const streamToken = streamMode ? randomUUID() : undefined;
     const hostContext: UiHostContext | undefined = streamMode && streamId
       ? {
-          [UI_STREAM_HOST_CONTEXT_KEY]: {
-            mode: streamMode,
-            streamId,
-            intermediateResultPatches: streamMode === "stream-first",
-            partialInput: false,
-          },
-        }
+        [UI_STREAM_HOST_CONTEXT_KEY]: {
+          mode: streamMode,
+          streamId,
+          intermediateResultPatches: streamMode === "stream-first",
+          partialInput: false,
+        },
+      }
       : undefined;
 
     let active = true;
@@ -275,6 +302,7 @@ export async function maybeStartUiSession(
 
       onMessage: (params: UiMessageParams) => {
         const prompt = extractUiPromptText(params);
+
         if (prompt) {
           if (state.sendMessage) {
             state.sendMessage(
@@ -291,8 +319,10 @@ export async function maybeStartUiSession(
         } else if (params.type === "intent" || params.intent) {
           const intent = params.intent ?? "";
           const intentParams = params.params;
+
           if (intent && state.sendMessage) {
             const paramsStr = intentParams ? ` ${JSON.stringify(intentParams)}` : "";
+
             state.sendMessage(
               {
                 customType: "mcp-ui-intent",
@@ -306,6 +336,7 @@ export async function maybeStartUiSession(
           }
         } else if (params.type === "notify" || params.message) {
           const text = params.message ?? "";
+
           if (text && state.ui) {
             state.ui.notify(`[${request.serverName}] ${text}`, "info");
           }
@@ -356,6 +387,7 @@ export async function maybeStartUiSession(
           }
 
           state.uiServer = null;
+
           if (activeGlimpseWindow) {
             activeGlimpseWindow.close();
             activeGlimpseWindow = null;
@@ -373,8 +405,14 @@ export async function maybeStartUiSession(
 
     if (streamToken) {
       state.manager.registerUiStreamListener(streamToken, (serverName, notification) => {
-        if (!active || state.uiServer !== handle) return;
-        if (serverName !== request.serverName) return;
+        if (!active || state.uiServer !== handle) {
+          return;
+        }
+
+        if (serverName !== request.serverName) {
+          return;
+        }
+
         nextStreamSequence += 1;
         handle.sendResultPatch(withStreamEnvelope(notification.result as CallToolResult, streamId, nextStreamSequence));
       });
@@ -406,14 +444,18 @@ export async function maybeStartUiSession(
             width: 1000,
             height: 800,
             onClosed: () => {
-              if (active) handle.close("glimpse-closed");
+              if (active) {
+                handle.close("glimpse-closed");
+              }
             },
           });
+
           if (state.owner?.isActive() === false || runtimeSignal.aborted) {
             glimpseWindow.close();
             throwIfAborted(runtimeSignal);
             throw new Error("MCP Glimpse window became stale before registration");
           }
+
           activeGlimpseWindow = glimpseWindow;
           viewer = "glimpse";
         } catch (error) {
@@ -445,17 +487,26 @@ export async function maybeStartUiSession(
       windowOpen,
       isActive: () => active && state.uiServer === handle,
       sendToolResult: (result: CallToolResult) => {
-        if (!active || state.uiServer !== handle) return;
+        if (!active || state.uiServer !== handle) {
+          return;
+        }
+
         nextStreamSequence += 1;
         handle.sendToolResult(withStreamEnvelope(result, streamId, nextStreamSequence));
       },
       sendResultPatch: (result: CallToolResult) => {
-        if (!active || state.uiServer !== handle) return;
+        if (!active || state.uiServer !== handle) {
+          return;
+        }
+
         nextStreamSequence += 1;
         handle.sendResultPatch(withStreamEnvelope(result, streamId, nextStreamSequence));
       },
       sendToolCancelled: (reason: string) => {
-        if (!active || state.uiServer !== handle) return;
+        if (!active || state.uiServer !== handle) {
+          return;
+        }
+
         handle.sendToolCancelled(reason);
       },
       close: (reason?: string) => {
@@ -465,13 +516,18 @@ export async function maybeStartUiSession(
       },
     };
   } catch (error) {
-    if (error instanceof UrlElicitationRequiredError || isAbortError(error, runtimeSignal)) throw error;
+    if (error instanceof UrlElicitationRequiredError || isAbortError(error, runtimeSignal)) {
+      throw error;
+    }
+
     const message = error instanceof Error ? error.message : String(error);
+
     log.error("Failed to start UI session", error instanceof Error ? error : undefined);
     state.ui?.notify(
       `MCP UI unavailable for ${request.toolName} (${request.serverName}): ${message}`,
       "warning",
     );
+
     return null;
   }
 }

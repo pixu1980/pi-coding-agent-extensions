@@ -12,6 +12,7 @@ export function transformMcpContent(content: McpContent[]): ContentBlock[] {
     if (c.type === "text") {
       return { type: "text" as const, text: c.text ?? "" };
     }
+
     if (c.type === "image") {
       return {
         type: "image" as const,
@@ -19,28 +20,34 @@ export function transformMcpContent(content: McpContent[]): ContentBlock[] {
         mimeType: c.mimeType ?? "image/png",
       };
     }
+
     if (c.type === "resource") {
       const resourceUri = c.resource?.uri ?? "(no URI)";
       const resourceContent = c.resource?.text ?? (c.resource ? JSON.stringify(c.resource) : "(no content)");
+
       return {
         type: "text" as const,
         text: `[Resource: ${resourceUri}]\n${resourceContent}`,
       };
     }
+
     if (c.type === "resource_link") {
       const linkName = c.name ?? c.uri ?? "unknown";
       const linkUri = c.uri ?? "(no URI)";
+
       return {
         type: "text" as const,
         text: `[Resource Link: ${linkName}]\nURI: ${linkUri}`,
       };
     }
+
     if (c.type === "audio") {
       return {
         type: "text" as const,
         text: `[Audio content: ${c.mimeType ?? "audio/*"}]`,
       };
     }
+
     return { type: "text" as const, text: JSON.stringify(c) };
   });
 }
@@ -51,7 +58,10 @@ export function transformMcpContent(content: McpContent[]): ContentBlock[] {
  */
 export function resolveMcpResultContent(result: Record<string, unknown>): ContentBlock[] {
   const blocks = transformMcpContent((Array.isArray(result.content) ? result.content : []) as McpContent[]);
-  if (blocks.length > 0) return blocks;
+
+  if (blocks.length > 0) {
+    return blocks;
+  }
 
   if (result.structuredContent !== undefined && result.structuredContent !== null) {
     return [{ type: "text" as const, text: stringifyStructuredContent(result.structuredContent) }];

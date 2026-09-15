@@ -27,6 +27,7 @@ const LIB = fileURLToPath(new URL("../lib/", import.meta.url));
 const cores = availableParallelism();
 const loadOneMinute = loadavg()[0];
 const spawnStart = performance.now();
+
 await new Promise((resolve) => execFile(process.execPath, ["--version"], () => resolve()));
 console.log(
   `machine: loadavg(1m)=${loadOneMinute.toFixed(1)} cores=${cores} ` +
@@ -35,15 +36,18 @@ console.log(
 
 async function timed(label, spec) {
   const start = performance.now();
+
   await import(spec);
+
   return { label, ms: performance.now() - start };
 }
 
-// 1 — whole barrel in a fresh process (cold tsx compile of the graph).
+// 1, whole barrel in a fresh process (cold tsx compile of the graph).
 const barrel = await timed("barrel (index.ts)", `${LIB}index.ts`);
+
 console.log(`barrel import: ${barrel.ms.toFixed(1)}ms`);
 
-// 2 — panels: the heavy one must stay cold after the barrel (= lazy). A
+// 2, panels: the heavy one must stay cold after the barrel (= lazy). A
 // regression that makes it eager would drop this to ~0ms. A panel whose
 // exclusive subtree is small or shared with the barrel (marginal < 50ms) is
 // fine either way: the startup graph paid nothing for it.
@@ -51,15 +55,21 @@ const HEAVY_PANELS = new Map([
   ["_mcp-panel.ts", "heavy interactive panel (must stay lazy)"],
   ["_mcp-setup-panel.ts", "setup panel (small shared subtree; informational)"],
 ]);
+
 for (const [module, note] of HEAVY_PANELS) {
   const entry = await timed(module, `${LIB}${module}`);
   const lazy = entry.ms >= 50;
-  const verdict = note.includes("informational") ? "(informational)" : lazy ? "(lazy, not in startup graph)" : "(CACHED — EAGER REGRESSION!)";
+  const verdict = note.includes("informational") ? "(informational)" : lazy ? "(lazy, not in startup graph)" : "(CACHED, EAGER REGRESSION!)";
+
   console.log(`${entry.label}: ${entry.ms.toFixed(1)}ms ${verdict} ${note}`);
-  if (!note.includes("informational") && !lazy) process.exitCode = 1;
+
+  if (!note.includes("informational") && !lazy) {
+    process.exitCode = 1;
+  }
 }
 
-// 3 — ui-server subtree: document its cost, gate stays informational.
+// 3, ui-server subtree: document its cost, gate stays informational.
 const uiServer = await timed("_ui-server.ts subtree", `${LIB}_ui-server.ts`);
+
 console.log(`_ui-server.ts subtree: ${uiServer.ms.toFixed(1)}ms (reached only via ui-session at first ui tool call)`);
 console.log(process.exitCode === 1 ? "gate failed: a panel module is eager at startup" : "all gates pass");

@@ -48,6 +48,7 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
       --warn: #fbbf24;
       --bad: #f87171;
     }
+
     @media (prefers-color-scheme: light) {
       :root {
         --bg: #f6f7fb;
@@ -87,7 +88,7 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
 <body>
   <header>
     <div class="title">
-      <span class="server">MCP · <span id="server-name"></span></span>
+      <span class="server">MCP - <span id="server-name"></span></span>
       <span class="tool" id="tool-name"></span>
       <span class="badge">Sandboxed</span>
     </div>
@@ -149,10 +150,12 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
       });
 
       const body = await response.json().catch(() => ({ ok: false, error: "Invalid JSON response" }));
+
       if (!response.ok || !body.ok) {
         const message = body.error || ("HTTP " + response.status);
         throw new Error(message);
       }
+
       return body.result ?? {};
     };
 
@@ -170,18 +173,23 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
     bridge.oncalltool = async (params) => {
       if (!consentGranted) {
         const accepted = window.confirm("Allow this UI to call server tools for this session?");
+
         if (!accepted) {
           await post("/proxy/ui/consent", { approved: false }).catch(() => {});
+
           return {
             isError: true,
             content: [{ type: "text", text: "Tool call denied by user." }],
           };
         }
+
         await post("/proxy/ui/consent", { approved: true });
+
         if (CACHE_TOOL_CONSENT) {
           consentGranted = true;
         }
       }
+
       const result = await post("/proxy/tools/call", params);
       // Notify agent about the tool call
       await post("/proxy/ui/message", {
@@ -189,6 +197,7 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
         intent: "call_tool",
         params: { tool: params.name, arguments: params.arguments, isError: result.isError }
       }).catch(() => {});
+
       return result;
     };
 
@@ -199,14 +208,22 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
     // These bypass the AppBridge protocol but are used by some MCP UI implementations
     window.addEventListener("message", async (event) => {
       const data = event.data;
-      if (!data || typeof data !== "object") return;
+
+      if (!data || typeof data !== "object") {
+        return;
+      }
       
       // Skip AppBridge protocol messages (handled by bridge)
-      if (data.jsonrpc || (typeof data.method === "string" && (data.method.startsWith("app/") || data.method.startsWith("host/")))) return;
+      if (data.jsonrpc || (typeof data.method === "string" && (data.method.startsWith("app/") || data.method.startsWith("host/")))) {
+        return;
+      }
       
       // Handle raw UI action messages
       const msgType = data.type;
-      if (typeof msgType !== "string") return;
+
+      if (typeof msgType !== "string") {
+        return;
+      }
       
       if (msgType === "notify" || msgType === "prompt" || msgType === "intent" || msgType === "message") {
         // Standard MCP-UI types - preserve their semantics
@@ -228,6 +245,7 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
     bridge.onrequestdisplaymode = async (params) => post("/proxy/ui/request-display-mode", params);
     bridge.onopenlink = async (params) => {
       const result = await post("/proxy/ui/open-link", params);
+
       if (!result.isError) {
         window.open(params.url, "_blank", "noopener,noreferrer");
         // Notify agent about the link open
@@ -237,6 +255,7 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
           params: { url: params.url }
         }).catch(() => {});
       }
+
       return result;
     };
 
@@ -244,13 +263,15 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
       if (streamMode !== "stream-first") {
         bridge.sendToolInput({ arguments: TOOL_ARGS });
       }
-      setStatus(streamMode === "stream-first" ? "Streaming…" : "Connected");
+
+      setStatus(streamMode === "stream-first" ? "Streaming..." : "Connected");
     };
 
     bridge.onsizechange = ({ width, height }) => {
       if (typeof width === "number" && width > 0) {
         iframe.style.minWidth = Math.min(width, window.innerWidth - 24) + "px";
       }
+
       if (typeof height === "number" && height > 0) {
         iframe.style.height = Math.max(height, 320) + "px";
       }
@@ -290,7 +311,7 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
         showError("Failed to forward tool result: " + String(error));
       }
     });
-    eventSource.addEventListener("tool-cancelled", (event) => {
+    eventSource.addEventListener("tool-canceled", (event) => {
       try {
         bridge.sendToolCancelled(JSON.parse(event.data));
       } catch (error) {
@@ -310,7 +331,9 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
     eventSource.addEventListener("host-context", (event) => {
       try {
         bridge.setHostContext(JSON.parse(event.data));
-      } catch {}
+      } catch {
+        // A malformed frame is ignored; the next context frame replaces it.
+      }
     });
     eventSource.addEventListener("session-complete", async () => {
       await bridge.teardownResource({}).catch(() => {});
@@ -328,10 +351,16 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
     const complete = async (reason) => {
       try {
         await post("/proxy/ui/complete", { reason });
-      } catch {}
+      } catch {
+        // Best effort: the host may already have torn the session down.
+      }
+
       try {
         await bridge.teardownResource({});
-      } catch {}
+      } catch {
+        // Best effort: the bridge may already be closed.
+      }
+
       clearInterval(heartbeat);
       eventSource.close();
       window.close();
@@ -354,7 +383,9 @@ export function buildHostHtmlTemplate(input: HostHtmlTemplateInput): string {
 }
 
 export function buildCspMetaContent(csp: UiResourceCsp | undefined): string | undefined {
-  if (!csp) return undefined;
+  if (!csp) {
+    return undefined;
+  }
 
   const resourceDomains = sanitizeCspDomains(csp.resourceDomains);
   const connectDomains = sanitizeCspDomains(csp.connectDomains);
@@ -385,7 +416,9 @@ function toDirective(name: string, trustedSources: string[], domains: string[]):
 }
 
 function sanitizeCspDomains(domains: unknown): string[] {
-  if (!Array.isArray(domains)) return [];
+  if (!Array.isArray(domains)) {
+    return [];
+  }
 
   return [...new Set(domains.filter(
     (domain): domain is string =>
@@ -400,26 +433,26 @@ function sanitizeCspDomains(domains: unknown): string[] {
 
 function safeInlineJSON(value: unknown): string {
   return JSON.stringify(value)
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026")
-    .replace(/\u2028/g, "\\u2028")
-    .replace(/\u2029/g, "\\u2029");
+    .replaceAll('<', "\\u003c")
+    .replaceAll('>', "\\u003e")
+    .replaceAll('&', "\\u0026")
+    .replaceAll('\u2028', "\\u2028")
+    .replaceAll('\u2029', "\\u2029");
 }
 
 function escapeHtml(value: string): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replaceAll('&', "&amp;")
+    .replaceAll('<', "&lt;")
+    .replaceAll('>', "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll('\'', "&#39;");
 }
 
 function escapeHtmlAttribute(value: string): string {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replaceAll('&', "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll('<', "&lt;")
+    .replaceAll('>', "&gt;");
 }

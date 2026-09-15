@@ -13,9 +13,18 @@ export class ConsentManager {
   }
 
   requiresPrompt(serverName: string): boolean {
-    if (this.mode === "never") return false;
-    if (this.deniedServers.has(serverName)) return true;
-    if (this.mode === "always") return true;
+    if (this.mode === "never") {
+      return false;
+    }
+
+    if (this.deniedServers.has(serverName)) {
+      return true;
+    }
+
+    if (this.mode === "always") {
+      return true;
+    }
+
     return !this.approvedServers.has(serverName);
   }
 
@@ -30,6 +39,7 @@ export class ConsentManager {
     if (approved) {
       this.approvedServers.add(serverName);
       this.log.debug("Consent granted", { server: serverName });
+
       return;
     }
 
@@ -38,13 +48,18 @@ export class ConsentManager {
   }
 
   ensureApproved(serverName: string): void {
-    if (this.mode === "never") return;
+    if (this.mode === "never") {
+      return;
+    }
+
     if (this.deniedServers.has(serverName)) {
       throw new ConsentError(serverName, { denied: true });
     }
+
     if (!this.approvedServers.has(serverName)) {
       throw new ConsentError(serverName, { requiresApproval: true });
     }
+
     if (this.mode === "always") {
       this.approvedServers.delete(serverName);
     }
@@ -55,8 +70,10 @@ export class ConsentManager {
       this.approvedServers.delete(serverName);
       this.deniedServers.delete(serverName);
       this.log.debug("Cleared consent for server", { server: serverName });
+
       return;
     }
+
     this.approvedServers.clear();
     this.deniedServers.clear();
     this.log.debug("Cleared all consent records");

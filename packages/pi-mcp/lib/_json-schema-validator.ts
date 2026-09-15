@@ -9,7 +9,7 @@ import type {
 } from "@modelcontextprotocol/sdk/validation/types.js";
 
 // ajv-formats types target its bundled ajv; the runtime accepts both instances.
-const addFormats = addFormatsImport as unknown as (instance: Ajv) => void;
+const addFormats = addFormatsImport as (instance: Ajv) => void;
 
 type SchemaDialect =
   | { status: "unstamped" }
@@ -27,6 +27,7 @@ function schemaDialect(schema: JsonSchemaType): SchemaDialect {
   if (!("$schema" in schema) || typeof schema.$schema !== "string") {
     return { status: "unstamped" };
   }
+
   return {
     status: "stamped",
     uri: schema.$schema.endsWith("#") ? schema.$schema.slice(0, -1) : schema.$schema,
@@ -40,15 +41,20 @@ export function createJsonSchemaValidator(): JsonSchemaValidatorProvider {
   return {
     getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T> {
       const dialect = schemaDialect(schema);
+
       if (dialect.status === "unstamped" || DRAFT_2020_12_SCHEMA_URIS.has(dialect.uri)) {
         draft2020Validator ??= (() => {
-          const Ajv2020 = Ajv2020Import as unknown as typeof Ajv;
+          const Ajv2020 = Ajv2020Import as typeof Ajv;
           const ajv = new Ajv2020({ strict: false, allErrors: true });
+
           addFormats(ajv);
+
           return new AjvJsonSchemaValidator(ajv);
         })();
+
         return draft2020Validator.getValidator<T>(schema);
       }
+
       if (!DRAFT_07_SCHEMA_URIS.has(dialect.uri)) {
         throw new Error(`Unsupported JSON Schema dialect: ${dialect.uri}`);
       }
@@ -60,9 +66,12 @@ export function createJsonSchemaValidator(): JsonSchemaValidatorProvider {
           validateSchema: false,
           allErrors: true,
         });
+
         addFormats(ajv);
+
         return new AjvJsonSchemaValidator(ajv);
       })();
+
       return draft07Validator.getValidator<T>(schema);
     },
   };

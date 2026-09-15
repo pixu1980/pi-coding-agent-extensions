@@ -22,7 +22,7 @@ comes first and gates everything else.
 
 | Order | Step | Finding | Why it is here |
 | ----- | ---- | ------- | -------------- |
-| 0.1 | Step 7 | OSS-07 | A dirty tree aborts the release path and makes every package look release-worthy. Nothing else can be committed cleanly until this lands. |
+| 0.1 | Step 7 | OSS-07 | Done. A dirty tree aborted the release path and made every package look release-worthy; it landed in its own commit, the tree is clean and the release path runs again. |
 | 0.2 | Step 9 | OSS-09 | The contribution gate must exist and pass before it can be written into CONTRIBUTING.md. Step 2 and Step 11 depend on it. |
 | 0.3 | Step 16 | OSS-16 | Cheap, and it repairs the release output and package metadata that the later steps rely on as a signal. |
 
@@ -63,7 +63,7 @@ already proved work.
 | Order | Step | Finding | Why it is here |
 | ----- | ---- | ------- | -------------- |
 | 4.1 | Step 8 | OSS-08 | The pnpm-only policy is documented in CONTRIBUTING.md, so it follows Step 2. Its guard test is independent and can land earlier. |
-| 4.2 | Step 10 | OSS-10 | Unfilled placeholders in three per-package workspace files, which stay per-package: standalone projects by design. |
+| 4.2 | Step 10 | OSS-10 | Promoted to high: the placeholders are not valid booleans, so pnpm fails typecheck and test in pi-ask, pi-path-picker and pi-web. The files stay per-package, because they are standalone projects by design. |
 | 4.3 | Step 11 | OSS-11 | Needs the pinned tooling baseline from Step 9 before a build script can be committed. |
 | 4.4 | Step 13 | OSS-13 | Italian prose in three repository-owned files. Independent of every other step. |
 
@@ -152,12 +152,12 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **6.3**: Add a Funding section to GOVERNANCE.md defining the maintainer and donor boundary: who decides when a donor request conflicts with maintainer judgment, and that the answer is the maintainer.
   - [ ] **6.4**: Add a funding pointer to README.md and keep it below the install instructions so the README does not read as a solicitation.
   - [ ] **6.5**: Gate: the Sponsor button appears on the repository, and FUNDING.md is linked from both README.md and GOVERNANCE.md.
-- [ ] **Step 7 - OSS-07 (high)**: The intentional dependency bump is uncommitted, so the tree is dirty: the release path refuses to run and all 8 packages are detected as release-worthy.
-  - [ ] **7.1**: Confirm that the deletion of packages/pi-path-picker/package-lock.json and packages/pi-reasoning/package-lock.json is part of the intended npm-to-pnpm cleanup, and keep it in the commit rather than restoring the files.
-  - [ ] **7.2**: Keep the `packageManager` field out of every package.json. That is the intended shape and it is what the pix `pkg-no-corepack` guardrail requires, so verify no manifest reintroduces it or a corepack hook.
-  - [ ] **7.3**: Review the dependency bump for behavior, not just version numbers: typebox 1.3.9 -> 1.3.31, tsx 4.23.1 -> 4.23.13, @types/node ^26.1.2 -> 26.6.0, commit-and-tag-version -> 13.2.1, and the peer range @earendil-works/pi-coding-agent >=0.83.0 -> >=0.85.1.
-  - [ ] **7.4**: Commit the bump as its own conventional commit with a scope, for example chore(deps): bump pi, typebox and tooling, before any release step runs.
-  - [ ] **7.5**: Gate: git status --porcelain is empty, pnpm test and pnpm test:all still pass, and pnpm release:dry reports the affected packages only.
+- [x] **Step 7 - OSS-07 (high)**: The intentional dependency bump was uncommitted, so the tree was dirty: the release path refused to run and all 8 packages were detected as release-worthy.
+  - [x] **7.1**: Confirmed that the deletion of packages/pi-path-picker/package-lock.json and packages/pi-reasoning/package-lock.json is the intended npm-to-pnpm cleanup. Both stayed deleted and the deletion landed in the commit.
+  - [x] **7.2**: Verified that no manifest reintroduces the `packageManager` field or a `workspaces` field. The pnpm-only shape holds across all 9 manifests.
+  - [x] **7.3**: Reviewed the bump for behavior and not only for version numbers: typebox 1.3.9 -> 1.3.31, tsx 4.23.1 -> 4.23.13, @types/node to 26.6.0, commit-and-tag-version to 13.2.1, and the peer range @earendil-works/pi-coding-agent from >=0.83.0 to >=0.85.1. That review surfaced two defects the plan did not know about: every per-package lockfile had gone stale against the bumped manifests (OSS-19), and the 72-hour cooldown was being bypassed by exemptions pnpm wrote itself (OSS-20).
+  - [x] **7.4**: Committed as chore(deps): bump the pi toolchain, typebox and the release tooling, together with the regenerated lockfiles, the removed cooldown and ADR 012.
+  - [x] **7.5**: Gate met: git status --porcelain is empty, pnpm test reports 18 pass 0 fail, pnpm test:all reports 8 ok 0 failed, and pnpm install --frozen-lockfile succeeds in all eight packages.
 - [ ] **Step 8 - OSS-08 (medium)**: The pnpm-only policy is undocumented and unenforced: two npm package-lock.json files had already crept into what are standalone pnpm packages, and nothing stops the next contributor from adding one.
   - [ ] **8.1**: Add a guard test under test/ that fails when any tracked path matches `**/package-lock.json`, when any package.json declares a `packageManager` field, or when any package.json declares `workspaces`. This half is independent and can land immediately.
   - [ ] **8.2**: Document the topology in CONTRIBUTING.md: each package under packages/ is a standalone pnpm project with its own pnpm-lock.yaml and pnpm-workspace.yaml, and the root is a script runner whose pnpm-workspace.yaml keeps `packages: []` on purpose. Install and test with pnpm inside the package being changed.
@@ -170,11 +170,12 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **9.3**: Replace the lint script placeholder with the real invocation and add a lint:fix counterpart, so the rule set is reproducible by a contributor rather than reconstructed from a handoff document.
   - [ ] **9.4**: Document the format and lint commands as part of the contribution gate in CONTRIBUTING.md, and record why no CI runs them yet so the manual step is explicit rather than implied.
   - [ ] **9.5**: Gate: pnpm format and pnpm lint both exit 0 on a clean checkout, and a deliberately malformed file makes pnpm lint exit non-zero.
-- [ ] **Step 10 - OSS-10 (medium)**: Three packages carry unfilled template placeholders as configuration values, so their build-script policy silently does nothing.
+- [ ] **Step 10 - OSS-10 (high)**: Three packages carry unfilled template placeholders as allowBuilds values, which are not valid booleans, so pnpm refuses to run and fails pnpm typecheck and pnpm test in pi-ask, pi-path-picker and pi-web with ERR_PNPM_IGNORED_BUILDS.
   - [ ] **10.1**: Replace the placeholder values in the three allowBuilds blocks with explicit booleans, matching the pi-cursor precedent which declares false for @google/genai, esbuild and protobufjs and explains why in a comment.
   - [ ] **10.2**: Leave the blocks in their own package files, which is where a standalone pnpm project declares them, and make the three sets identical to each other and explicit.
   - [ ] **10.3**: Add a guard to test/ that fails when any tracked yaml or json file contains the literal 'set this to true or false', so a placeholder cannot survive a commit again.
-  - [ ] **10.4**: Gate: grep -rn 'set this to true or false' --exclude-dir=node_modules . returns only the handoff document reference, and the new guard test passes.
+  - [ ] **10.4**: Prove the fix on the command that actually fails, not on a dry-run install: pnpm typecheck inside packages/pi-web exits 1 before the change with ERR_PNPM_IGNORED_BUILDS naming @google/genai, esbuild and protobufjs, and exits 0 after it, matching packages/pi-cursor which already declares false.
+  - [ ] **10.5**: Gate: grep -rn 'set this to true or false' --exclude-dir=node_modules . returns only the handoff document reference, pnpm typecheck exits 0 in pi-ask, pi-path-picker and pi-web, and the new guard test passes.
 - [ ] **Step 11 - OSS-11 (medium)**: pi-mcp publishes a 295 KB minified bundle that no script in the repository builds, so neither a contributor nor a security reviewer can review what ships or reproduce it.
   - [ ] **11.1**: Identify what produces _app-bridge.bundle.js and commit the build script, with its bundler pinned as a root devDependency, so the artifact has a reproducible origin.
   - [ ] **11.2**: Either check in the TypeScript source of the bundle next to its output, or vendor the upstream package version explicitly and record the provenance in a comment header naming the exact upstream package and version.
@@ -212,7 +213,7 @@ Step 17.2. It is not a gap this plan closes.
 - [ ] **Step 17 - OSS-17 (info)**: Accepted risk, recorded by maintainer decision on this run: the repository has no CI, so 0 of 8 packages carry provenance attestations and releases are published from a developer machine with a personal npm credential.
   - [ ] **17.1**: Write an ADR under docs/adr/ recording the decision to publish locally without CI, the residual supply-chain exposure it accepts, and the trigger that would reopen it such as a second maintainer or a reported compromise.
   - [ ] **17.2**: State the exposure in SECURITY.md so a consumer can weigh it, including that no release is provenance-attested and that tags are lightweight and unsigned.
-  - [ ] **17.3**: Record the manual compensations that do exist, so the accepted risk is bounded and auditable: the 3-day minimumReleaseAge cooldown in .npmrc, the per-package test suites, and the maintainer's 2FA.
+  - [ ] **17.3**: Record the manual compensations that do exist, so the accepted risk is bounded and auditable: exact pinned versions in every manifest, a lockfile and a test suite per package, and the maintainer's 2FA. The dependency cooldown is deliberately not among them, because ADR 012 removed it for the opposite reason.
   - [ ] **17.4**: Gate: the ADR is indexed in docs/adr/ADR.md, SECURITY.md states the exposure, and no workflow file is added.
 - [ ] **Step 18 - OSS-18 (info)**: Accepted risk, recorded by maintainer decision on this run: dependency updates have no automation because .github/dependabot.yml was removed, and dependabot pull request #2 has been open since 2026-09-11.
   - [ ] **18.1**: Close or land dependabot pull request #2 deliberately and record the reason on the pull request, so it stops being an unexplained open item on a repository whose only open issue is that pull request.

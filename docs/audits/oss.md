@@ -498,7 +498,22 @@ allowBuilds:
 
 12 placeholder lines across `pi-ask`, `pi-path-picker` and `pi-web`.
 `pnpm install --lockfile-only --dry-run` in `pi-ask` exits 0, so the misconfigured values are not
-rejected.
+rejected by the resolver.
+
+**Correction, measured during the OSS-01 run.** The dry-run above exits 0, and that measurement led
+this audit to conclude the values pass silently. The conclusion was wrong: a dry-run exercises the
+resolver, not the ignored-builds gate. The command that fails is the one the packages document.
+
+```console
+$ cd packages/pi-web && pnpm typecheck ; echo "EXIT=$?"
+[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: @google/genai@1.52.0, esbuild@0.28.1, protobufjs@7.6.5
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+EXIT=1
+```
+
+A placeholder string is not a boolean decision, so pnpm does not read the build scripts as declined
+and fails the command instead. `packages/pi-cursor`, which declares `false` for the same three
+packages, passes.
 
 ## 10. Supply chain and release surface
 
@@ -534,7 +549,8 @@ $ git for-each-ref refs/tags --format='%(refname:short) %(objecttype)' | head -3
 
 All tags are lightweight (`commit`), none is annotated and signed.
 
-Cooldown and local supply-chain settings, which are configured:
+Cooldown and local supply-chain settings as they stood during this run. The cooldown below was
+removed later in the same session, and the reason is recorded in ADR 012:
 
 ```console
 $ cat .npmrc

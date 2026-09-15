@@ -32,6 +32,12 @@ import {
   renderResponsive,
 } from "../lib/_template.ts";
 import { getGitStatus, invalidateGitCache } from "../lib/_git.ts";
+import { formatEmojiText, getEffortEmoji, formatEffortLevel, estWidth } from "../lib/_helpers.ts";
+// Cross-package drift guard source: the heart palette and the optical
+// separator rule are owned by pi-reasoning; pi-statusline only mirrors them
+// (see getEffortEmoji / formatEffortLevel JSDoc).
+import { ALL_THINKING_LEVELS, LEVEL_EMOJI } from "../../pi-reasoning/lib/_constants.ts";
+import { formatLevelLabel } from "../../pi-reasoning/lib/_levels.ts";
 import { loadSettings, saveSettings } from "../lib/_settings-ui.ts";
 import { PRESET_TEMPLATES, DEFAULT_SETTINGS } from "../lib/_types.ts";
 import { visibleWidth } from "@earendil-works/pi-tui";
@@ -76,6 +82,65 @@ test("gradient: wraps text with color and reset", () => {
   assert.ok(out.startsWith("\x1b["));
   assert.ok(out.endsWith("\x1b[0m"));
   assert.ok(out.includes("50%"));
+});
+
+// ── Unit: canonical emoji label rendering ─────────────────────────────────
+//
+// Regression guard: the statusline footer rendered `❤️ high` (one space)
+// while pi-reasoning rendered `❤️  high` (two), so the same thinking level
+// looked different depending on where it appeared.
+
+test("formatEmojiText: one emoji, two spaces, then the text", () => {
+  assert.equal(formatEmojiText("🧠", "auto"), "🧠  auto");
+  assert.equal(formatEmojiText("❤️", "high"), "❤️  high");
+});
+
+// ── Unit: effort emoji palette (drift guard) ─────────────────────────────────
+//
+// The heart palette is owned by pi-reasoning (`LEVEL_EMOJI`). pi-statusline
+// mirrors it; this test fails on the first mismatch so the two surfaces
+// (footer + reasoning status item) can never disagree again.
+
+test("getEffortEmoji: mirrors pi-reasoning LEVEL_EMOJI for every level", () => {
+  assert.deepEqual(Object.keys(LEVEL_EMOJI).sort(), [...ALL_THINKING_LEVELS].sort());
+  for (const level of ALL_THINKING_LEVELS) {
+    assert.equal(getEffortEmoji(level), LEVEL_EMOJI[level], `palette drift on level ${level}`);
+  }
+});
+
+test("formatEffortLevel: identical output to pi-reasoning formatLevelLabel for every level", () => {
+  for (const level of ALL_THINKING_LEVELS) {
+    assert.equal(formatEffortLevel(level), formatLevelLabel(level), `label drift on level ${level}`);
+  }
+});
+
+test("formatEffortLevel: separator per level (high/xhigh 2, rest 1)", () => {
+  assert.equal(formatEffortLevel("off"), "⚪ off");
+  assert.equal(formatEffortLevel("minimal"), "💚 minimal");
+  assert.equal(formatEffortLevel("low"), "💛 low");
+  assert.equal(formatEffortLevel("medium"), "🧡 medium");
+  assert.equal(formatEffortLevel("high"), "❤️  high");
+  assert.equal(formatEffortLevel("xhigh"), "❤️‍🔥  xhigh");
+  assert.equal(formatEffortLevel("max"), "🔥 max");
+});
+
+// ── Unit: width estimation (grapheme parity) ────────────────────────────────
+//
+// Regression guard: the old code-point loop measured the xhigh emoji
+// `❤️‍🔥` (four code points, one double-width glyph) as 5 cells instead of
+// 2, so xhigh footer lines padded 3 cells short and narrow terminals took
+// the truncate branch for lines that fit. estWidth must agree cell-for-cell
+// with pi-tui's visibleWidth, which is what truncateToWidth enforces.
+
+test("estWidth: agrees with pi-tui visibleWidth on joined emoji and ANSI", () => {
+  assert.equal(estWidth("❤️  high"), visibleWidth("❤️  high"));
+  assert.equal(estWidth("❤️‍🔥  xhigh"), 9);
+  assert.equal(estWidth("❤️‍🔥  xhigh"), visibleWidth("❤️‍🔥  xhigh"));
+  // The delegation also keeps ZWJ sequences correct (old loop: 5, real: 2).
+  assert.equal(estWidth("❤️‍🔥  xhigh"), visibleWidth("❤️‍🔥  xhigh"));
+  assert.equal(estWidth("⚪  off"), visibleWidth("⚪  off"));
+  assert.equal(estWidth("\x1b[38;2;140;140;140m❤️  high\x1b[0m"), visibleWidth("❤️  high"));
+  assert.equal(estWidth("plain ascii"), 11);
 });
 
 // ── Unit: template validation & resolution ────────────────────────

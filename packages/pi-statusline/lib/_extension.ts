@@ -31,7 +31,7 @@ import {
   validateTemplate,
 } from "./_template.ts";
 import { loadSettings, saveSettings, openSettingsPanel } from "./_settings-ui.ts";
-import { getProjectPath, getEffortLabel, getEffortEmoji, estWidth, invalidateProjectPathCache, getProjectPathStats } from "./_helpers.ts";
+import { getProjectPath, getEffortLabel, formatEffortLevel, estWidth, invalidateProjectPathCache, getProjectPathStats } from "./_helpers.ts";
 import { getMcpInfo, getMcpStats } from "./_mcp.ts";
 
 // ── Module-level state ─────────────────────────────────────────
@@ -149,9 +149,8 @@ function createFooter(ctx: ExtensionContext) {
         try {
           const mcp = getMcpInfo();
           const effort = ctx.thinkingLevel || "high";
-          const effortEmoji = getEffortEmoji(effort);
 
-          const leftRaw = `🔌 MCP: ${mcp.total} servers enabled (${mcp.connected} connected) ${effortEmoji} ${effort}`;
+          const leftRaw = `🔌 MCP: ${mcp.total} servers enabled (${mcp.connected} connected) ${formatEffortLevel(effort)}`;
           const left = theme.fg("dim", leftRaw);
 
           const modelObj = ctx.model;
@@ -275,7 +274,7 @@ export default function (pi: ExtensionAPI): void {
       const provider = (modelObj as any)?.provider ?? "?";
       const modelName = modelObj?.name ?? (modelObj as any)?.id ?? "?";
       ctx.ui.notify(
-        `${line}\n🔌 MCP: ${mcp.total} servers enabled (${mcp.connected} connected) ❤️ ${effort}` +
+        `${line}\n🔌 MCP: ${mcp.total} servers enabled (${mcp.connected} connected) ${formatEffortLevel(effort)}` +
           `  |  (${provider}) ${modelName} • ${effort}`,
         "info",
       );

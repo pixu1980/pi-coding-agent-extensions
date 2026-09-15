@@ -135,7 +135,39 @@ test("footer render: shows mcp server count and provider/model", async () => {
   assert.ok(lines[0].includes("1 servers enabled"), "mcp server count in footer");
   assert.ok(lines[0].includes("claude-opus-4"), "model name in footer");
   assert.ok(lines[0].includes("anthropic"), "provider in footer");
+  // Regression guard: the footer used to render `❤️ high` (one space) while
+  // pi-reasoning rendered `❤️  high` (two), so the same level looked different
+  // depending on where it appeared. Canonical form is emoji + two spaces.
+  assert.ok(lines[0].includes("❤️  high"), "footer keeps the canonical two-space effort render");
   component.dispose();
+});
+
+test("footer render: separator per level (high/xhigh 2, rest 1)", async () => {
+  const cases = {
+    off: "⚪ off",
+    minimal: "💚 minimal",
+    low: "💛 low",
+    medium: "🧡 medium",
+    high: "❤️  high",
+    xhigh: "❤️‍🔥  xhigh",
+    max: "🔥 max",
+  };
+  for (const [level, expected] of Object.entries(cases)) {
+    const { pi, emit } = createMockPi();
+    statuslineExtension(pi);
+    const ctx = createMockCtx({ model: makeModel("anthropic", "claude-opus-4"), thinkingLevel: level });
+    await emit("session_start", {}, ctx);
+
+    const footer = ctx.ui._uiCalls.find(([c]) => c === "setFooter");
+    const tui = { requestRender() {}, terminal: { rows: 30 } };
+    const component = footer[1](tui, makeTheme(), { onBranchChange: () => () => {} });
+    const lines = component.render(120);
+    assert.ok(lines[0].includes(expected), `footer shows ${expected}`);
+    // The old code-point width loop measured `❤️‍🔥` as 5 cells instead of 2,
+    // so xhigh footers padded short of the terminal width.
+    assert.equal(visibleWidth(lines[0]), 120, `${level} footer must fill the width exactly`);
+    component.dispose();
+  }
 });
 
 test("footer render: never exceeds width (no overflow crash)", async () => {

@@ -1,7 +1,7 @@
 /**
  * pi-statusline - internal helpers (private module)
  *
- * Pure helpers for the status line: effort labels/emojis, display width
+ * Shared helpers for the status line: effort labels/emojis, display width
  * estimation and project path resolution.
  */
 
@@ -9,6 +9,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { execFile } from "node:child_process";
 import { realpath } from "node:fs/promises";
+import { visibleWidth } from "@earendil-works/pi-tui";
 
 export function getEffortLabel(level: string): string {
   switch (level) {
@@ -23,37 +24,72 @@ export function getEffortLabel(level: string): string {
   }
 }
 
+/**
+ * Canonical emoji-prefixed render: one emoji, two spaces, then the text.
+ *
+ * Mirrors pi-reasoning's `formatEmojiText` so the same thinking level cannot
+ * render as `❤️ high` in the statusline footer and `❤️  high` in the
+ * reasoning status item. Keep the two-space separator here.
+ */
+export function formatEmojiText(emoji: string, text: string): string {
+  return `${emoji}  ${text}`;
+}
+
+/**
+ * Emoji for a thinking level, used by the footer and the /statusline notify.
+ *
+ * The heart palette is the single source of truth and lives in
+ * pi-reasoning (`LEVEL_EMOJI`); this mirrors it intentionally because the
+ * two packages are published independently and cannot import each other at
+ * runtime. Keep the two maps identical - the `_unit` drift guard fails the
+ * suite on the first mismatch.
+ *
+ * @param level - pi thinking level (off, minimal, low, medium, high, xhigh, max)
+ * @returns Emoji; unknown levels fall back to the 🧠 brain
+ */
 export function getEffortEmoji(level: string): string {
   switch (level) {
-    case "off": return "💤";
-    case "minimal": return "💡";
-    case "low": return "🔹";
-    case "medium": return "🔶";
+    case "off": return "⚪";
+    case "minimal": return "💚";
+    case "low": return "💛";
+    case "medium": return "🧡";
     case "high": return "❤️";
-    case "xhigh": return "🔥";
-    case "max": return "🚀";
-    default: return "❤️";
+    case "xhigh": return "❤️‍🔥";
+    case "max": return "🔥";
+    default: return "🧠";
   }
+}
+
+/**
+ * Canonical "emoji + level" render with per-level spacing: one space for
+ * `off`/`minimal`/`low`/`medium`/`max`, two spaces for `high`/`xhigh`.
+ *
+ * Mirrors pi-reasoning's `formatLevelLabel` (same rule, same single-space
+ * levels - see `SINGLE_SPACE_LEVELS` there, the single source of truth);
+ * the two packages are published independently and cannot import each other
+ * at runtime. The `_unit` drift guard compares the two outputs for every
+ * level and fails the suite on the first mismatch.
+ *
+ * @param level - pi thinking level (off, minimal, low, medium, high, xhigh, max)
+ * @returns Emoji, level-dependent separator, then the level
+ */
+export function formatEffortLevel(level: string): string {
+  const sep = level === "high" || level === "xhigh" ? "  " : " ";
+
+  return `${getEffortEmoji(level)}${sep}${level}`;
 }
 
 // ── Width estimator ───────────────────────────────────────────
-
-function stripAnsi(s: string): string {
-  // eslint-disable-next-line no-control-regex
-  return s.replace(/\x1b\[[0-9;]*m/g, "");
-}
+//
+// estWidth delegates to pi-tui's grapheme-aware visibleWidth so the measure
+// always agrees with what the terminal (and truncateToWidth) renders. The
+// previous code-point loop miscounted joined emoji: `❤️‍🔥` is four code
+// points (❤ + VS16 + ZWJ + 🔥) but one double-width glyph, so xhigh footer
+// lines measured 3 cells too wide, the right block shifted left, and narrow
+// terminals took the truncate branch for lines that actually fit.
 
 export function estWidth(s: string): number {
-  let w = 0;
-  for (const ch of stripAnsi(s)) {
-    const cp = ch.codePointAt(0) ?? 0;
-    if (cp > 0x1100 && (cp < 0x1160 || (cp >= 0x2e80 && cp <= 0xa4cf) || (cp >= 0xac00 && cp <= 0xd7a3) || (cp >= 0xf900 && cp <= 0xfaff) || (cp >= 0xfe30 && cp <= 0xfe6f) || (cp >= 0xff01 && cp <= 0xff60) || (cp >= 0xffe0 && cp <= 0xffe6) || (cp >= 0x1f300 && cp <= 0x1f9ff) || (cp >= 0x1fa00 && cp <= 0x1fa6f))) {
-      w += 2;
-    } else {
-      w += 1;
-    }
-  }
-  return w;
+  return visibleWidth(s);
 }
 
 // ── Project path ──────────────────────────────────────────────

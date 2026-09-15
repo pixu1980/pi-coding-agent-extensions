@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.15](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.14...@pixu1980/pi-sessions@0.1.15) (2026-09-15)
+
+### Features
+
+* **pi-cursor:** keep local agents working on a Free Cursor plan ([2202763](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2202763d399ff26d0523fe495f9eb44e21070127))
 ## [0.1.14](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.13...@pixu1980/pi-sessions@0.1.14) (2026-09-15)
 
 ### Features

@@ -230,7 +230,10 @@ export default async function (pi: ExtensionAPI): Promise<void> {
     );
   }
 
-  if (discovery.note) {
+  // A Free plan cannot read the Cloud Agent catalog, and the local catalog
+  // covers it. That is a plan limitation, not a fault, so it stays off the
+  // startup banner and shows up only on an explicit `/cursor-models` refresh.
+  if (discovery.note && !discovery.quiet) {
     process.stderr.write(`pi-cursor: ${discovery.note}\n`);
   }
 }

@@ -655,6 +655,12 @@ export interface DiscoverCatalogResult {
   source: "live" | "cache" | "fallback";
   /** Scrubbed, human-readable reason when the source is not `live`. */
   note?: string;
+  /**
+	 * `true` when the note explains a Cursor plan limitation rather than a
+	 * fault: a Free plan cannot read the Cloud Agent catalog, and the local one
+	 * still runs. Startup stays silent and only `/cursor-models` reports it.
+	 */
+  quiet?: boolean;
 }
 
 function cacheKeyForCacheOverride(options: { cachePath?: string; ttlMs?: number; now?: number }) {
@@ -732,6 +738,18 @@ function errorField(error: unknown, field: string): unknown {
 }
 
 /**
+ * True when discovery was refused because the Cursor plan cannot read the Cloud
+ * Agent catalog. That is a plan limitation, not a broken key or a broken
+ * network, so callers keep it off the startup banner.
+ *
+ * @param error - Failure thrown by the Cursor SDK.
+ * @returns Whether the failure is a `plan_required` refusal.
+ */
+export function isPlanBlockedError(error: unknown): boolean {
+  return errorField(error, "code") === "plan_required" || errorField(error, "status") === 403;
+}
+
+/**
  * Turn a thrown discovery error into an actionable, scrubbed note.
  *
  * The SDK funnels almost every unmapped failure into `UnknownAgentError`, so
@@ -756,9 +774,8 @@ export function describeDiscoveryFailure(error: unknown, apiKey?: string): strin
     .filter((part): part is string => part !== undefined)
     .join(", ");
   const detail = `${name}: ${message}${suffix ? ` (${suffix})` : ""}`;
-  const planBlocked = code === "plan_required" || status === 403;
 
-  if (planBlocked) {
+  if (isPlanBlockedError(error)) {
     return (
       `Cursor model discovery failed (${detail}). The Cloud Agent model catalog needs a paid Cursor plan. ` +
 			"pi-cursor keeps its local catalog, including Auto (model `default`), so local agents still run."
@@ -838,6 +855,7 @@ async function runDiscovery(options: DiscoverCatalogOptions, offline: boolean): 
       metadata: registerCatalog(FALLBACK_CURSOR_MODELS),
       source: "fallback",
       note: describeDiscoveryFailure(error, options.apiKey),
+      ...(isPlanBlockedError(error) ? { quiet: true } : {}),
     };
   }
 }

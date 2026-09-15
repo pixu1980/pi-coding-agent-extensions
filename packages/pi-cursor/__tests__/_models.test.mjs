@@ -268,6 +268,7 @@ describe("discoverCursorCatalog", () => {
 
       assert.equal(result.source, "fallback");
       assert.match(result.note, /discovery failed/);
+      assert.equal(result.quiet, undefined);
     } finally {
       cache.cleanup();
     }
@@ -299,6 +300,7 @@ describe("discoverCursorCatalog", () => {
       assert.match(result.note, /socket hang up/);
       assert.match(result.note, /code=internal/);
       assert.match(result.note, /status=500/);
+      assert.equal(result.quiet, undefined, "a real fault must still reach stderr");
     } finally {
       cache.cleanup();
     }
@@ -324,6 +326,7 @@ describe("discoverCursorCatalog", () => {
       assert.match(result.note, /plan_required/);
       assert.match(result.note, /paid Cursor plan/);
       assert.match(result.note, /default/);
+      assert.equal(result.quiet, true, "a Free-plan limitation is not a startup error");
     } finally {
       cache.cleanup();
     }

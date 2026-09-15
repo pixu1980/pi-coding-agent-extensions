@@ -88,9 +88,12 @@ plan. pi-cursor still works there:
   startup pi-cursor therefore exports `CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON` (the
   SDK's own override) with the catalog it resolved, so validation happens
   in-process and never blocks a local run.
-- **Startup note.** A failed discovery is reported as one line naming the real
-  error — `UnknownAgentError: [plan_required] … (code=plan_required, status=403)`
-  — instead of the bare SDK error class.
+- **Quiet startup.** A `plan_required` refusal is the *expected* answer on a
+  Free plan, so it prints nothing: the local catalog is kept and pi starts
+  normally. Run `/cursor-models` for the refusal on an explicit refresh —
+  `UnknownAgentError: [plan_required] … (code=plan_required, status=403)`. Any
+  other discovery failure still prints one startup line naming the real error
+  instead of the bare SDK error class.
 
 Named models and the cloud endpoints need a paid Cursor plan; Auto is
 available on every plan.

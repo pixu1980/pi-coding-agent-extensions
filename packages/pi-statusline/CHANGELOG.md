@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.12](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.11...@pixu1980/pi-statusline@0.1.12) (2026-09-15)
+
+### Features
+
+* **path-picker:** fix suggestions list ([34ebdca](https://github.com/pixu1980/pi-coding-agent-extensions/commit/34ebdca83b18a349f083e3a26ff61dc221f8bb58))
+
+### Bug Fixes
+
+* **release:** release only packages with real changes since last tag ([6a6e21c](https://github.com/pixu1980/pi-coding-agent-extensions/commit/6a6e21c1cc89977be027cb9bd65d3720e5f9837c))
 ## [0.1.11](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.10...@pixu1980/pi-statusline@0.1.11) (2026-08-25)
 
 ### Features

@@ -20,12 +20,14 @@ import {
   resolveCommandSecret,
   resolveCommandSecretsRecord,
 } from "../lib/_utils.ts";
-import { computeServerHash, parseDirectToolSelectors, getMissingConfiguredDirectToolServers } from "../lib/_metadata-cache.ts";
+import { computeServerHash, parseDirectToolSelectors, getMissingConfiguredDirectToolServers, loadMetadataCache, saveMetadataCache, getMetadataCacheStats,
+} from "../lib/_metadata-cache.ts";
 import { formatSchema, findToolByName } from "../lib/_tool-metadata.ts";
 import { createJsonSchemaValidator } from "../lib/_json-schema-validator.ts";
 import { McpUiError, ServerError, ConsentError } from "../lib/_errors.ts";
 import { formatToolName, formatPromptCommandName } from "../lib/_types.ts";
 import { isInstantHelpResult } from "../lib/_prompts.ts";
+import { loadNpxCache, saveNpxCacheEntry, getNpxCacheStats } from "../lib/_npx-resolver.ts";
 
 // ── abort.ts ──────────────────────────────────────────────────────
 
@@ -118,41 +120,97 @@ test("toStringRecord / interpolateEnvRecord: shape coercion", () => {
 
 // ── utils.ts: command secrets ─────────────────────────────────────
 
-test("resolveCommandSecret: plain values are env-interpolated", () => {
+test("resolveCommandSecret: plain values are env-interpolated", async () => {
   process.env.PI_MCP_TEST_VAR = "plain";
-  assert.equal(resolveCommandSecret("token-${PI_MCP_TEST_VAR}", "x"), "token-plain");
+  assert.equal(await resolveCommandSecret("token-${PI_MCP_TEST_VAR}", "x"), "token-plain");
   delete process.env.PI_MCP_TEST_VAR;
 });
 
-test("resolveCommandSecret: !! escapes command execution", () => {
-  assert.equal(resolveCommandSecret("!!echo hi", "x"), "!echo hi");
+test("resolveCommandSecret: !! escapes command execution", async () => {
+  assert.equal(await resolveCommandSecret("!!echo hi", "x"), "!echo hi");
 });
 
-test("resolveCommandSecret: ! runs a command and trims stdout", () => {
-  assert.equal(resolveCommandSecret("!printf ' secret '", "x"), "secret");
+test("resolveCommandSecret: ! runs a command and trims stdout", async () => {
+  assert.equal(await resolveCommandSecret("!printf ' secret '", "x"), "secret");
 });
 
-test("resolveCommandSecret: failing command throws with context", () => {
-  assert.throws(() => resolveCommandSecret("!exit 3", "server X token"), /Failed to resolve server X token/);
+test("resolveCommandSecret: failing command throws with context", async () => {
+  await assert.rejects(resolveCommandSecret("!exit 3", "server X token"), /Failed to resolve server X token/);
 });
 
-test("resolveCommandSecret: empty output throws", () => {
-  assert.throws(() => resolveCommandSecret("!true", "x"), /empty output/);
+test("resolveCommandSecret: empty output throws", async () => {
+  await assert.rejects(resolveCommandSecret("!true", "x"), /empty output/);
 });
 
-test("resolveCommandSecret: undefined input → undefined", () => {
-  assert.equal(resolveCommandSecret(undefined, "x"), undefined);
+test("resolveCommandSecret: undefined input → undefined", async () => {
+  assert.equal(await resolveCommandSecret(undefined, "x"), undefined);
 });
 
-test("resolveCommandSecretsRecord: undefined input → undefined, resolves entries", () => {
-  assert.equal(resolveCommandSecretsRecord(undefined, () => "x"), undefined);
+test("resolveCommandSecretsRecord: undefined input → undefined, resolves entries", async () => {
+  assert.equal(await resolveCommandSecretsRecord(undefined, () => "x"), undefined);
   process.env.PI_MCP_TEST_VAR = "v";
-  const out = resolveCommandSecretsRecord({ a: "${PI_MCP_TEST_VAR}", b: "!printf bee" }, (k) => `key ${k}`);
+  const out = await resolveCommandSecretsRecord({ a: "${PI_MCP_TEST_VAR}", b: "!printf bee" }, (k) => `key ${k}`);
   assert.deepEqual(out, { a: "v", b: "bee" });
   delete process.env.PI_MCP_TEST_VAR;
 });
 
+test("resolveCommandSecret: slow command does not block the event loop", async () => {
+  let heartbeatTicks = 0;
+  const heartbeat = setInterval(() => {
+    heartbeatTicks++;
+  }, 100);
+  try {
+    // A 1.2s command must not freeze timers: the heartbeat keeps firing
+    // while the secret resolves in the background.
+    assert.equal(await resolveCommandSecret("!sleep 1.2; printf done", "x"), "done");
+  } finally {
+    clearInterval(heartbeat);
+  }
+  assert.ok(heartbeatTicks >= 2, `heartbeat should tick during a 1.2s command (got ${heartbeatTicks})`);
+});
+
 // ── metadata-cache.ts ─────────────────────────────────────────────
+
+test("metadata cache: save then load returns merged content (atomic write)", () => {
+  saveMetadataCache({ version: 1, servers: { s1: { configHash: "a", tools: [], resources: [], cachedAt: 1 } } });
+  const loaded = loadMetadataCache();
+  assert.ok(loaded?.servers?.["s1"], "saved entry must be readable back");
+  // A second save merges instead of clobbering.
+  saveMetadataCache({ version: 1, servers: { s2: { configHash: "b", tools: [], resources: [], cachedAt: 2 } } });
+  const merged = loadMetadataCache();
+  assert.ok(merged?.servers?.["s1"], "first entry survives merge");
+  assert.ok(merged?.servers?.["s2"], "second entry present after merge");
+});
+
+test("metadata cache: unchanged file is read only once thanks to mtime read-through", () => {
+  saveMetadataCache({ version: 1, servers: { s1: { configHash: "a", tools: [], resources: [], cachedAt: 1 } } });
+  const before = getMetadataCacheStats();
+  loadMetadataCache();
+  loadMetadataCache();
+  loadMetadataCache();
+  const after = getMetadataCacheStats();
+  assert.equal(after.fileReads - before.fileReads, 1, "exactly one file read across repeated loads");
+  assert.ok(after.loads > after.fileReads, "subsequent loads served from memory");
+});
+
+// ── npx-resolver cache ────────────────────────────────────────────
+
+test("npx cache: read-through served from memory, invalidated on save", () => {
+  saveNpxCacheEntry("k1", { resolvedBin: "/tmp/bin1", resolvedAt: Date.now(), isJs: true });
+  const before = getNpxCacheStats();
+  loadNpxCache();
+  loadNpxCache();
+  loadNpxCache();
+  let after = getNpxCacheStats();
+  assert.equal(after.fileReads - before.fileReads, 1, "exactly one file read across repeated loads");
+  assert.ok(after.memoryHits >= 2, "subsequent loads served from memory");
+
+  // A save invalidates the memory copy: the next load re-reads the merged file.
+  saveNpxCacheEntry("k2", { resolvedBin: "/tmp/bin2", resolvedAt: Date.now(), isJs: false });
+  after = getNpxCacheStats();
+  loadNpxCache();
+  assert.equal(getNpxCacheStats().fileReads - after.fileReads, 1, "save must invalidate the read-through copy");
+});
 
 test("computeServerHash: deterministic and sensitive to identity fields", () => {
   const def = { command: "npx", args: ["-y", "server"], env: { FOO: "${X}" } };

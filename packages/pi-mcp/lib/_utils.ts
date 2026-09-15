@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { spawnSync } from "node:child_process";
+import { exec } from "node:child_process";
 import { homedir, platform } from "node:os";
 import { join } from "node:path";
 import type { McpConfig, ServerEntry } from "./_types.ts";
@@ -78,6 +78,23 @@ function getMissingEnvVars(value: string): string[] {
   return [...missing];
 }
 
+/**
+ * Coalesce render requests through a microtask: any number of synchronous
+ * calls within one tick collapse into a single requestRender, so a burst of
+ * state events produces one frame instead of N. Returns the schedule fn.
+ */
+export function createRenderCoalescer(requestRender: () => void): () => void {
+  let scheduled = false;
+  return () => {
+    if (scheduled) return;
+    scheduled = true;
+    queueMicrotask(() => {
+      scheduled = false;
+      requestRender();
+    });
+  };
+}
+
 export function toStringRecord(value: unknown): Record<string, string> | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
 
@@ -104,49 +121,102 @@ export function interpolateEnvRecord(values: Record<string, string> | undefined)
 
 const COMMAND_SECRET_TIMEOUT_MS = 10_000;
 const COMMAND_SECRET_MAX_OUTPUT_BYTES = 1024 * 1024;
+const COMMAND_SECRET_CONCURRENCY = 4; // bounded fan-out; never input-driven
 
-/** Resolve a secret value, executing only a single leading `!` command marker. */
-export function resolveCommandSecret(value: string | undefined, context: string): string | undefined {
+interface SecretMetrics {
+  count: number;
+  totalMs: number;
+  lastMs: number;
+}
+
+const secretMetrics: SecretMetrics = { count: 0, totalMs: 0, lastMs: 0 };
+
+/** Read-only snapshot of command-secret resolution times (PERF-02 metric). */
+export function getSecretMetrics(): SecretMetrics {
+  return { ...secretMetrics };
+}
+
+/**
+ * Run a secret command without a shell injection hazard from the marker;
+ * resolves stdout (untrimmed). Async so a hung command never freezes the
+ * event loop; timeout kills the child and maps to the same error shapes the
+ * old spawnSync path produced.
+ */
+function execCommandSecret(command: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const started = performance.now();
+    exec(
+      command,
+      {
+        encoding: "utf8",
+        timeout: COMMAND_SECRET_TIMEOUT_MS,
+        maxBuffer: COMMAND_SECRET_MAX_OUTPUT_BYTES,
+        windowsHide: true,
+      },
+      (error, stdout) => {
+        secretMetrics.count++;
+        secretMetrics.totalMs += performance.now() - started;
+        secretMetrics.lastMs = performance.now() - started;
+        if (error) {
+          const code = (error as NodeJS.ErrnoException).code;
+          const killedByTimeout = error.killed && (error.signal === "SIGTERM" || error.signal === "SIGKILL");
+          const reason = killedByTimeout || code === "ETIMEDOUT"
+            ? "command timed out after 10 seconds"
+            : code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" || code === "ENOBUFS"
+              ? "command output exceeded 1 MiB"
+              : typeof code === "number"
+                ? `command exited with code ${code}`
+                : "command failed to start";
+          reject(new Error(reason));
+          return;
+        }
+        resolve(String(stdout));
+      },
+    );
+  });
+}
+
+/**
+ * Async resolve of a secret value, executing only a single leading `!`
+ * command marker. Never blocks the event loop; matches the previous
+ * spawnSync error contract (timeout, output cap, nonzero exit, empty output).
+ */
+export async function resolveCommandSecret(value: string | undefined, context: string): Promise<string | undefined> {
   if (value === undefined) return undefined;
   if (value.startsWith("!!")) return interpolateEnvVars(value.slice(1));
   if (!value.startsWith("!")) return interpolateEnvVars(value);
 
-  const result = spawnSync(value.slice(1), {
-    shell: true,
-    encoding: "utf8",
-    timeout: COMMAND_SECRET_TIMEOUT_MS,
-    maxBuffer: COMMAND_SECRET_MAX_OUTPUT_BYTES,
-    stdio: ["ignore", "pipe", "ignore"],
-    windowsHide: true,
-  });
-  if (result.error) {
-    const code = (result.error as NodeJS.ErrnoException).code;
-    const reason = code === "ETIMEDOUT"
-      ? "command timed out after 10 seconds"
-      : code === "ENOBUFS"
-        ? "command output exceeded 1 MiB"
-        : "command failed to start";
+  try {
+    const stdout = await execCommandSecret(value.slice(1));
+    const resolved = stdout.trim();
+    if (!resolved) throw new Error("command returned empty output");
+    return resolved;
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to resolve ${context}: ${reason}`);
   }
-  if (result.status !== 0) {
-    throw new Error(`Failed to resolve ${context}: command exited with code ${result.status ?? "unknown"}`);
-  }
-
-  const resolved = result.stdout.trim();
-  if (!resolved) throw new Error(`Failed to resolve ${context}: command returned empty output`);
-  return resolved;
 }
 
 /** Resolve command markers in a configured record without mutating the input. */
-export function resolveCommandSecretsRecord(
+/**
+ * Resolve every entry in a secret record. Async; command entries fan out at
+ * most COMMAND_SECRET_CONCURRENCY at a time and preserve input order.
+ * Returns undefined only when the whole record is undefined.
+ */
+export async function resolveCommandSecretsRecord(
   values: Record<string, string> | undefined,
   context: (key: string) => string,
-): Record<string, string> | undefined {
+): Promise<Record<string, string> | undefined> {
   if (!values) return undefined;
 
+  const entries = Object.entries(values);
+  const resolvedEntries = await parallelLimit(entries, COMMAND_SECRET_CONCURRENCY, async ([key, value]) => {
+    const next = await resolveCommandSecret(value, context(key));
+    return [key, next] as const;
+  });
+
   const resolved: Record<string, string> = {};
-  for (const [key, value] of Object.entries(values)) {
-    const next = resolveCommandSecret(value, context(key));
+  for (const [key, next] of resolvedEntries) {
     if (next !== undefined) resolved[key] = next;
   }
   return resolved;

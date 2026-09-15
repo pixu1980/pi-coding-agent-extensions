@@ -54,7 +54,7 @@ export async function resolveNpxBinary(
 
   const packageSpec = parsePackageSpec(parsed.packageSpec);
   const cacheKey = JSON.stringify([command, ...args]);
-  const cache = loadCache();
+  const cache = loadNpxCache();
   const cached = cache?.entries?.[cacheKey];
 
   if (
@@ -68,7 +68,7 @@ export async function resolveNpxBinary(
 
   const resolved = resolveFromNpmCache(parsed.packageSpec, parsed.binName);
   if (resolved) {
-    saveCacheEntry(cacheKey, resolved);
+    saveNpxCacheEntry(cacheKey, resolved);
     return { binPath: resolved.resolvedBin, extraArgs: parsed.extraArgs, isJs: resolved.isJs };
   }
 
@@ -76,7 +76,7 @@ export async function resolveNpxBinary(
   await forceNpxCache(parsed.packageSpec, signal);
   const resolvedAfterInstall = resolveFromNpmCache(parsed.packageSpec, parsed.binName);
   if (resolvedAfterInstall) {
-    saveCacheEntry(cacheKey, resolvedAfterInstall);
+    saveNpxCacheEntry(cacheKey, resolvedAfterInstall);
     return { binPath: resolvedAfterInstall.resolvedBin, extraArgs: parsed.extraArgs, isJs: resolvedAfterInstall.isJs };
   }
 
@@ -432,21 +432,71 @@ function getNpxCachePath(): string {
   return getAgentPath("mcp-npx-cache.json");
 }
 
-function loadCache(): NpxCache | null {
-  const cachePath = getNpxCachePath();
-  if (!existsSync(cachePath)) return null;
+// ── Read-through memory cache (PERF-05) ──────────────────────────
+// loadNpxCache re-reads the merged JSONL on every resolve; a memory copy
+// keyed by { mtimeMs, size } amortizes it to one real read per identity
+// change. TTL rationale lives in the entries themselves (CACHE_TTL_MS per
+// resolvedAt); the identity cache only mirrors the file on disk.
+
+interface NpxCacheStats {
+  loads: number;
+  fileReads: number;
+  memoryHits: number;
+}
+
+const npxCacheStats: NpxCacheStats = { loads: 0, fileReads: 0, memoryHits: 0 };
+let npxMemoryCache: { identity: { mtimeMs: number; size: number } | null; data: NpxCache | null } | null = null;
+
+export function getNpxCacheStats(): NpxCacheStats {
+  return { ...npxCacheStats };
+}
+
+function npxIdentityOf(path: string): { mtimeMs: number; size: number } | null {
   try {
-    const raw = JSON.parse(readFileSync(cachePath, "utf-8"));
-    if (!raw || typeof raw !== "object") return null;
-    if (raw.version !== CACHE_VERSION) return null;
-    if (!raw.entries || typeof raw.entries !== "object") return null;
-    return raw as NpxCache;
+    const stat = statSync(path);
+    return { mtimeMs: stat.mtimeMs, size: stat.size };
   } catch {
     return null;
   }
 }
 
-function saveCacheEntry(key: string, entry: NpxCacheEntry): void {
+export function loadNpxCache(): NpxCache | null {
+  const cachePath = getNpxCachePath();
+  npxCacheStats.loads++;
+  const identity = npxIdentityOf(cachePath);
+  if (!identity) {
+    npxMemoryCache = null;
+    return null;
+  }
+  if (npxMemoryCache && npxMemoryCache.identity &&
+      npxMemoryCache.identity.mtimeMs === identity.mtimeMs &&
+      npxMemoryCache.identity.size === identity.size) {
+    npxCacheStats.memoryHits++;
+    return npxMemoryCache.data;
+  }
+  npxCacheStats.fileReads++;
+  let raw: string | null = null;
+  try {
+    raw = readFileSync(cachePath, "utf-8");
+  } catch {
+    npxMemoryCache = { identity, data: null };
+    return null;
+  }
+  let parsed: unknown = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    npxMemoryCache = { identity, data: null };
+    return null;
+  }
+  const data = (parsed && typeof parsed === "object" && (parsed as NpxCache).version === CACHE_VERSION && (parsed as NpxCache).entries)
+    ? (parsed as NpxCache)
+    : null;
+  npxMemoryCache = { identity, data };
+  return data ? { ...data, entries: { ...data.entries } } : null;
+}
+
+export function saveNpxCacheEntry(key: string, entry: NpxCacheEntry): void {
   const cachePath = getNpxCachePath();
   const dir = dirname(cachePath);
   mkdirSync(dir, { recursive: true });
@@ -467,6 +517,8 @@ function saveCacheEntry(key: string, entry: NpxCacheEntry): void {
   const tmpPath = `${cachePath}.${process.pid}.tmp`;
   writeFileSync(tmpPath, JSON.stringify(merged, null, 2), "utf-8");
   renameSync(tmpPath, cachePath);
+  // The file changed under us: drop the read-through copy.
+  npxMemoryCache = null;
 }
 
 function safeRealpath(path: string): string {

@@ -1,5 +1,5 @@
 // metadata-cache.ts - Persistent MCP metadata cache
-import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { getAgentPath } from "./_agent-dir.ts";
 import { createHash } from "node:crypto";
@@ -32,6 +32,56 @@ import {
 const CACHE_VERSION = 1;
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+// ── Read-through memory cache (PERF-03) ──────────────────────────
+// loadMetadataCache runs on several per-session hot paths (tool surface
+// sync, prompt registration, panel open, connect flows). Each call used to
+// readFileSync + JSON.parse the whole file. A statSync is orders of
+// magnitude cheaper, so reads are cached in memory keyed by { mtimeMs,
+// size }; saveMetadataCache invalidates the entry so merged writes are
+// always re-read fresh. Correctness is keyed on the file identity, not on
+// wall-clock TTL, so no value ever goes stale.
+
+interface CacheFileIdentity {
+  mtimeMs: number;
+  size: number;
+}
+
+interface MetadataCacheStats {
+  loads: number;
+  fileReads: number;
+  memoryHits: number;
+}
+
+const stats: MetadataCacheStats = { loads: 0, fileReads: 0, memoryHits: 0 };
+let memoryCache: { identity: CacheFileIdentity | null; data: MetadataCache | null } | null = null;
+
+export function getMetadataCacheStats(): MetadataCacheStats {
+  return { ...stats };
+}
+
+function identityOf(path: string): CacheFileIdentity | null {
+  try {
+    const stat = statSync(path);
+    return { mtimeMs: stat.mtimeMs, size: stat.size };
+  } catch {
+    return null;
+  }
+}
+
+function decodeCache(raw: string): MetadataCache | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const candidate = parsed as MetadataCache;
+  if (candidate.version !== CACHE_VERSION) return null;
+  if (!candidate.servers || typeof candidate.servers !== "object") return null;
+  return candidate;
+}
+
 export type { CachedPrompt, CachedResource, CachedTool, MetadataCache, ServerCacheEntry } from "./_types.ts";
 
 export function getMetadataCachePath(): string {
@@ -40,16 +90,36 @@ export function getMetadataCachePath(): string {
 
 export function loadMetadataCache(): MetadataCache | null {
   const cachePath = getMetadataCachePath();
-  if (!existsSync(cachePath)) return null;
-  try {
-    const raw = JSON.parse(readFileSync(cachePath, "utf-8"));
-    if (!raw || typeof raw !== "object") return null;
-    if (raw.version !== CACHE_VERSION) return null;
-    if (!raw.servers || typeof raw.servers !== "object") return null;
-    return raw as MetadataCache;
-  } catch {
+  stats.loads++;
+
+  // No file → drop any cached copy and report none.
+  const identity = identityOf(cachePath);
+  if (!identity) {
+    memoryCache = null;
     return null;
   }
+
+  // Same identity as last real read → serve from memory, zero file reads.
+  if (memoryCache && memoryCache.identity &&
+      memoryCache.identity.mtimeMs === identity.mtimeMs &&
+      memoryCache.identity.size === identity.size) {
+    stats.memoryHits++;
+    return memoryCache.data;
+  }
+
+  stats.fileReads++;
+  let raw: string | null = null;
+  try {
+    raw = readFileSync(cachePath, "utf-8");
+  } catch {
+    memoryCache = { identity, data: null };
+    return null;
+  }
+  const data = decodeCache(raw);
+  // Store the canonical object; hand out a shallow copy so no caller can
+  // poison the in-memory copy by mutating the servers map.
+  memoryCache = { identity, data };
+  return data ? { ...data, servers: { ...data.servers } } : null;
 }
 
 export function saveMetadataCache(cache: MetadataCache): void {
@@ -75,6 +145,9 @@ export function saveMetadataCache(cache: MetadataCache): void {
   const tmpPath = `${cachePath}.${process.pid}.tmp`;
   writeFileSync(tmpPath, JSON.stringify(merged, null, 2), "utf-8");
   renameSync(tmpPath, cachePath);
+  // The file changed under us: drop the read-through copy so the next load
+  // re-reads the merged content. Identity is not known until the next stat.
+  memoryCache = null;
 }
 
 export function computeServerHash(definition: ServerEntry): string {

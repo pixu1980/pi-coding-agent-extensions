@@ -47,6 +47,7 @@ test("getAvailableLevels: explicit map entries win, null excludes, xhigh/max nee
       max: "max",           // explicit → available
     },
   };
+
   assert.deepEqual(getAvailableLevels(model), ["off", "low", "medium", "high", "xhigh", "max"]);
 });
 
@@ -57,6 +58,7 @@ test("getAvailableLevels: all null → empty (no level reachable)", () => {
       off: null, minimal: null, low: null, medium: null, high: null,
     },
   };
+
   assert.deepEqual(getAvailableLevels(model), []);
 });
 
@@ -68,6 +70,7 @@ test("resolveThinkingLevel: returns requested when available", () => {
 
 test("resolveThinkingLevel: rounds up to next available level", () => {
   const available = ["off", "minimal", "medium", "xhigh"];
+
   assert.equal(resolveThinkingLevel("low", available), "medium");
 });
 
@@ -85,11 +88,13 @@ test("resolveThinkingLevel: empty available → undefined", () => {
 test("buildReasoningMenuOptions: lists available levels + auto", () => {
   const options = buildReasoningMenuOptions({ reasoning: true });
   const values = options.map((o) => o.value);
+
   assert.deepEqual(values, ["off", "minimal", "low", "medium", "high", "auto"]);
 });
 
 test("buildReasoningMenuOptions: non-reasoning model → off + auto", () => {
   const options = buildReasoningMenuOptions({ reasoning: false });
+
   assert.deepEqual(options.map((o) => o.value), ["off", "auto"]);
 });
 
@@ -114,8 +119,10 @@ test("formatLevelLabel: separator per level (high/xhigh 2, rest 1)", () => {
     xhigh: "❤️‍🔥  xhigh",
     max: "🔥 max",
   };
+
   for (const level of ALL_THINKING_LEVELS) {
     const label = formatLevelLabel(level);
+
     assert.equal(label, expected[level]);
     assertLevelLabel(label, level);
   }
@@ -128,8 +135,10 @@ test("formatReasoningLevelChange: level mentions keep the optical separator", ()
   // `max` requested on a model that can only reach `high` → rounded notice:
   // applied `high` keeps two spaces, the `max` mention takes one.
   const rounded = formatReasoningLevelChange("max", "high");
+
   assert.match(rounded, /\(rounded, your choice was /);
   const requestedMention = rounded.slice(rounded.indexOf("your choice was ") + "your choice was ".length);
+
   assertLevelLabel(requestedMention.slice(0, requestedMention.indexOf(")")), "max");
 });
 
@@ -138,9 +147,13 @@ test("buildReasoningMenuOptions: every label uses the optical separator", () => 
     reasoning: true,
     thinkingLevelMap: { xhigh: "max", max: "max" },
   });
+
   for (const option of options) {
-    if (option.value === "auto") assertCanonicalLabel(option.label);
-    else assertLevelLabel(option.label, option.value);
+    if (option.value === "auto") {
+      assertCanonicalLabel(option.label);
+    } else {
+      assertLevelLabel(option.label, option.value);
+    }
   }
 });
 
@@ -156,6 +169,7 @@ test("DEFAULT_MODEL_MAP: specific patterns precede broad ones (first match wins)
   // gpt-4o-mini must resolve to "low" (specific) not gpt-4o → "medium" (broad)
   const specific = DEFAULT_MODEL_MAP.find((e) => e.pattern === "gpt-4o-mini");
   const broad = DEFAULT_MODEL_MAP.find((e) => e.pattern === "gpt-4o");
+
   assert.ok(specific && broad, "expected entries present");
   assert.ok(
     DEFAULT_MODEL_MAP.indexOf(specific) < DEFAULT_MODEL_MAP.indexOf(broad),

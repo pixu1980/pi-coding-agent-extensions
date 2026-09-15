@@ -35,6 +35,7 @@ export function createReasoningAutocompleteProvider(
 
       // Intercept ONLY "/reasoning " or "/effort " followed by optional prefix
       const match = textBeforeCursor.match(/^\/(?:reasoning|effort)\s+(.*)$/);
+
       if (match) {
         const userPrefix = match[1] ?? "";
         const menuOptions = buildReasoningMenuOptions(getCurrentModel());
@@ -45,9 +46,12 @@ export function createReasoningAutocompleteProvider(
           ? allOptions.filter((opt) => opt.value.startsWith(lowerPrefix))
           : menuOptions;
 
-        if (filtered.length === 0) return null;
+        if (filtered.length === 0) {
+          return null;
+        }
 
         const currentModel = getCurrentModel();
+
         return {
           prefix: userPrefix,
           items: filtered.map((opt) => ({
@@ -75,12 +79,15 @@ export function createReasoningAutocompleteProvider(
       if (current.applyCompletion) {
         return current.applyCompletion(lines, cursorLine, cursorCol, item, prefix);
       }
+
       // Fallback: simple replacement
       const currentLine = lines[cursorLine] ?? "";
       const before = currentLine.slice(0, cursorCol - prefix.length);
       const after = currentLine.slice(cursorCol);
       const newLines = [...lines];
+
       newLines[cursorLine] = before + item.value + " " + after;
+
       return {
         lines: newLines,
         cursorLine,
@@ -90,14 +97,17 @@ export function createReasoningAutocompleteProvider(
 
     shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
       const currentLine = lines[cursorLine] ?? "";
+
       // Allow forced refreshes (for example Tab) for /reasoning and /effort too.
       if (currentLine.match(/^\/(?:reasoning|effort)\s/)) {
         return true;
       }
+
       // Delegate to wrapped provider for everything else
       if (current.shouldTriggerFileCompletion) {
         return current.shouldTriggerFileCompletion(lines, cursorLine, cursorCol);
       }
+
       return true;
     },
   };

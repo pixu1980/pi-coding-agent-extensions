@@ -1,7 +1,7 @@
 /**
  * pi-reasoning - shared test helpers
  *
- * The extension renders every emoji-labelled string through one formatter:
+ * The extension renders every emoji-labeled string through one formatter:
  * `emoji + two spaces + text`. Tests assert that shape directly instead of
  * comparing against hard-coded literals, so a regression in the separator is
  * caught no matter which surface produced the string.
@@ -19,7 +19,9 @@ const LEADING_EMOJI = /^(?:\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_
  */
 export function spacesAfterEmoji(label) {
   const match = label.match(LEADING_EMOJI);
+
   assert.ok(match, `expected a leading emoji in ${JSON.stringify(label)}`);
+
   return label.slice(match[0].length).match(/^ */)[0].length;
 }
 
@@ -39,6 +41,7 @@ export function assertCanonicalLabel(label) {
  */
 export function assertLevelLabel(label, level) {
   const expected = SINGLE_SPACE_LEVELS.has(level) ? 1 : 2;
+
   assert.equal(
     spacesAfterEmoji(label),
     expected,

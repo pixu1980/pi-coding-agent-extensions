@@ -20,12 +20,21 @@ import type { ThinkingLevel, ReasoningModelCapabilities } from "./_constants.ts"
  * - `xhigh` and `max` require an explicit string value
  */
 export function getAvailableLevels(model?: ReasoningModelCapabilities): ThinkingLevel[] {
-  if (!model?.reasoning) return ["off"];
+  if (!model?.reasoning) {
+    return ["off"];
+  }
 
   return ALL_THINKING_LEVELS.filter((level) => {
     const mapped = model.thinkingLevelMap?.[level];
-    if (mapped === null) return false;
-    if (mapped !== undefined) return true;
+
+    if (mapped === null) {
+      return false;
+    }
+
+    if (mapped !== undefined) {
+      return true;
+    }
+
     return STANDARD_THINKING_LEVELS.includes(level);
   });
 }
@@ -38,10 +47,8 @@ export function getAvailableLevels(model?: ReasoningModelCapabilities): Thinking
  * which compensates the separator per level so the visual gap looks the
  * same everywhere.
  *
- * History: the surfaces used to disagree (menu `❤️  high` vs notification
- * `❤️ high`), so the same level looked different depending on where it
- * appeared. Every emoji-labelled string goes through these two helpers so
- * they cannot drift apart again.
+ * Every emoji-labeled string goes through these two helpers, so a level's
+ * separator cannot differ between the menu and the notification.
  */
 export function formatEmojiText(emoji: string, text: string): string {
   return `${emoji}  ${text}`;
@@ -94,10 +101,16 @@ export function resolveThinkingLevel(
   requested: ThinkingLevel,
   available: readonly ThinkingLevel[],
 ): ThinkingLevel | undefined {
-  if (available.length === 0) return undefined;
-  if (available.includes(requested)) return requested;
+  if (available.length === 0) {
+    return undefined;
+  }
+
+  if (available.includes(requested)) {
+    return requested;
+  }
 
   const requestedIndex = ALL_THINKING_LEVELS.indexOf(requested);
+
   return available.find((level) => ALL_THINKING_LEVELS.indexOf(level) > requestedIndex)
     ?? available[available.length - 1];
 }
@@ -106,5 +119,6 @@ export function formatReasoningLevelChange(requested: ThinkingLevel, applied: Th
   const rounded = requested === applied
     ? ""
     : ` (rounded, your choice was ${formatLevelLabel(requested)})`;
+
   return `Reasoning level → ${formatLevelLabel(applied)}${rounded}`;
 }

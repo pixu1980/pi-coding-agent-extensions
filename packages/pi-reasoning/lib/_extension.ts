@@ -36,8 +36,10 @@ export default function (pi: ExtensionAPI): void {
   pi.on("session_start", async (_event, ctx) => {
     const currentLevel = pi.getThinkingLevel();
     const model = ctx.model;
+
     currentModel = model;
     const modelLabel = model ? `${model.provider}/${model.id}` : "no model";
+
     ctx.ui.setStatus(STATUS_KEY, formatLevelLabel(currentLevel));
     ctx.ui.notify(
       formatEmojiText("🧠", `pi-reasoning loaded - ${formatLevelLabel(currentLevel)} (${modelLabel})`),
@@ -58,12 +60,17 @@ export default function (pi: ExtensionAPI): void {
 
   function findLevelForModel(provider: string, modelId: string): ThinkingLevel | null {
     const lowerId = modelId.toLowerCase();
+
     for (const entry of modelMap) {
-      if (entry.providers && !entry.providers.includes(provider)) continue;
+      if (entry.providers && !entry.providers.includes(provider)) {
+        continue;
+      }
+
       if (lowerId.includes(entry.pattern.toLowerCase())) {
         return entry.level;
       }
     }
+
     return null;
   }
 
@@ -71,9 +78,18 @@ export default function (pi: ExtensionAPI): void {
     const lower = modelId.toLowerCase();
     const hasWord = (word: string) => new RegExp(`\\b${word}\\b`).test(lower);
 
-    if (hasWord("nano")) return "off";
-    if (hasWord("mini") || hasWord("flash") || hasWord("haiku") || hasWord("small")) return "low";
-    if (hasWord("large") || hasWord("pro") || hasWord("sonnet") || hasWord("opus")) return "high";
+    if (hasWord("nano")) {
+      return "off";
+    }
+
+    if (hasWord("mini") || hasWord("flash") || hasWord("haiku") || hasWord("small")) {
+      return "low";
+    }
+
+    if (hasWord("large") || hasWord("pro") || hasWord("sonnet") || hasWord("opus")) {
+      return "high";
+    }
+
     return "medium";
   }
 
@@ -81,9 +97,12 @@ export default function (pi: ExtensionAPI): void {
 
   pi.on("model_select", async (event, ctx) => {
     const { model, source } = event;
+
     currentModel = model;
 
-    if (source === "restore") return;
+    if (source === "restore") {
+      return;
+    }
 
     const modelLabel = model.id.length > 20
       ? model.id.slice(0, 17) + "..."
@@ -91,6 +110,7 @@ export default function (pi: ExtensionAPI): void {
 
     if (!model.reasoning) {
       ctx.ui.setStatus(STATUS_KEY, formatEmojiText("⚪", modelLabel));
+
       return;
     }
 
@@ -98,13 +118,16 @@ export default function (pi: ExtensionAPI): void {
     const level = mapped ?? guessLevel(model.id);
 
     const safeLevel = resolveThinkingLevel(level, getAvailableLevels(model));
+
     if (!safeLevel) {
       ctx.ui.setStatus(STATUS_KEY, formatEmojiText("🧠", modelLabel));
+
       return;
     }
 
     pi.setThinkingLevel(safeLevel);
     const emoji = LEVEL_EMOJI[safeLevel] ?? "🧠";
+
     ctx.ui.setStatus(STATUS_KEY, formatEmojiText(emoji, modelLabel));
   });
 
@@ -139,7 +162,7 @@ export default function (pi: ExtensionAPI): void {
       ];
       const options = normalizedPrefix
         ? [...menuOptions, ...typedOnlyCommands].filter((option) =>
-            option.value.startsWith(normalizedPrefix))
+          option.value.startsWith(normalizedPrefix))
         : menuOptions;
 
       return options.length > 0 ? options : null;
@@ -156,7 +179,10 @@ export default function (pi: ExtensionAPI): void {
           `🧠  Reasoning level - ${modelLabel}`,
           options.map((option) => option.label),
         );
-        if (!choice) return;
+
+        if (!choice) {
+          return;
+        }
 
         const selected = options.find((option) => option.label === choice)!;
 
@@ -165,19 +191,24 @@ export default function (pi: ExtensionAPI): void {
         } else {
           const chosen = selected.value as ThinkingLevel;
           const applied = resolveThinkingLevel(chosen, getAvailableLevels(ctx.model));
+
           if (!applied) {
             ctx.ui.notify("No reasoning level is available for this model", "warning");
+
             return;
           }
+
           pi.setThinkingLevel(applied);
           ctx.ui.notify(formatReasoningLevelChange(chosen, applied), "info");
         }
+
         return;
       }
 
       // ── Auto ──
       if (trimmed === "auto" || trimmed === "automatic") {
         handleAuto(ctx);
+
         return;
       }
 
@@ -185,6 +216,7 @@ export default function (pi: ExtensionAPI): void {
       if (trimmed === "reset") {
         modelMap = [...DEFAULT_MODEL_MAP];
         ctx.ui.notify("Model map reset to defaults", "info");
+
         return;
       }
 
@@ -194,24 +226,31 @@ export default function (pi: ExtensionAPI): void {
           (e) =>
             `  ${e.pattern.padEnd(24)} → ${e.level.padEnd(8)}${e.providers ? ` [${e.providers.join(", ")}]` : ""}`,
         );
+
         ctx.ui.notify(
           `🗺️  Active mappings (${modelMap.length}):\n${lines.join("\n")}`,
           "info",
         );
+
         return;
       }
 
       // ── Set specific level ──
       const available = getAvailableLevels(ctx.model);
+
       if ((ALL_THINKING_LEVELS as readonly string[]).includes(trimmed)) {
         const requested = trimmed as ThinkingLevel;
         const applied = resolveThinkingLevel(requested, available);
+
         if (!applied) {
           ctx.ui.notify("No reasoning level is available for this model", "warning");
+
           return;
         }
+
         pi.setThinkingLevel(applied);
         ctx.ui.notify(formatReasoningLevelChange(requested, applied), "info");
+
         return;
       }
 
@@ -229,26 +268,33 @@ export default function (pi: ExtensionAPI): void {
 
   function handleAuto(ctx: { model?: typeof currentModel; ui: { notify: (msg: string, type?: "error" | "info" | "warning") => void } }): void {
     const model = ctx.model;
+
     if (!model) {
       ctx.ui.notify("No model currently selected", "warning");
+
       return;
     }
+
     if (!model?.reasoning) {
       ctx.ui.notify(`Model ${model.id} does not support reasoning`, "info");
+
       return;
     }
 
     const mapped = findLevelForModel(model.provider, model.id);
     const level = mapped ?? guessLevel(model.id);
     const safeLevel = resolveThinkingLevel(level, getAvailableLevels(model));
+
     if (!safeLevel) {
       ctx.ui.notify("No reasoning level is available for this model", "warning");
+
       return;
     }
 
     const note = safeLevel !== level
       ? ` (rounded, your choice was ${formatLevelLabel(level)})`
       : "";
+
     pi.setThinkingLevel(safeLevel);
     ctx.ui.notify(
       `Auto-reasoning → ${formatLevelLabel(safeLevel)}${note} (${model.provider}/${model.id})`,

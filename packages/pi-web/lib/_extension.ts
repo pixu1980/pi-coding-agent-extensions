@@ -20,11 +20,13 @@ export default function piWebExtension(pi: ExtensionAPI) {
   // Rebuild the page cache from the current session branch on reload/restore.
   pi.on("session_start", (_event, ctx) => {
     const entries: unknown[] = [];
+
     for (const entry of ctx.sessionManager.getBranch()) {
       if (entry.type === "custom" && entry.customType === ENTRY_TYPE) {
         entries.push(entry);
       }
     }
+
     restorePages(entries);
   });
 
@@ -37,6 +39,7 @@ export default function piWebExtension(pi: ExtensionAPI) {
       contentType: page.contentType,
       fetchedAt: page.fetchedAt,
     };
+
     storePage(stored);
     pi.appendEntry(ENTRY_TYPE, stored);
   }
@@ -72,6 +75,7 @@ export default function piWebExtension(pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, _signal, onUpdate): Promise<AgentToolResult<Record<string, unknown>>> {
       const urlList = params.urls?.length ? params.urls : params.url ? [params.url] : [];
+
       if (urlList.length === 0) {
         return {
           content: [{ type: "text", text: "Error: provide a url or a urls array." }],
@@ -92,20 +96,25 @@ export default function piWebExtension(pi: ExtensionAPI) {
         concurrency: config.concurrency,
       });
 
-      for (const page of pages) persist(page);
+      for (const page of pages) {
+        persist(page);
+      }
 
       const successful = pages.filter((page) => !page.error).length;
 
       if (urlList.length === 1) {
         const page = pages[0];
+
         if (page.error) {
           return {
             content: [{ type: "text", text: `Error: ${page.error}` }],
             details: { url: page.url, error: page.error, id: page.id },
           };
         }
+
         const maxChars = params.maxChars ?? config.maxChars;
         const { text, truncated, totalChars } = formatFetchResult(page, { maxChars });
+
         return {
           content: [{ type: "text", text }],
           details: { id: page.id, url: page.url, title: page.title, totalChars, truncated, successful: 1 },
@@ -113,6 +122,7 @@ export default function piWebExtension(pi: ExtensionAPI) {
       }
 
       const totalChars = pages.reduce((sum, page) => sum + page.content.length, 0);
+
       return {
         content: [{ type: "text", text: formatMultiFetchSummary(pages, totalChars) }],
         details: { ids: pages.map((page) => page.id), successful, totalChars, urlCount: urlList.length },
@@ -133,16 +143,20 @@ export default function piWebExtension(pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params): Promise<AgentToolResult<Record<string, unknown>>> {
       const slice = readSlice(params.id, params.offset ?? 0, params.limit ?? config.maxChars);
+
       if (slice.error) {
         return {
           content: [{ type: "text", text: `Error: ${slice.error}` }],
           details: { error: slice.error },
         };
       }
+
       let text = slice.text;
+
       if (!slice.end) {
         text += `\n\n---\n[${slice.nextOffset} of ${slice.totalChars} chars. Use pi_web_read({ id: "${params.id}", offset: ${slice.nextOffset} }) to continue.]`;
       }
+
       return {
         content: [{ type: "text", text }],
         details: {

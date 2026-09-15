@@ -1,6 +1,6 @@
 /**
- * Core fetch pipeline: URL → validated → fetched (with timeout, byte cap,
- * manual redirects re-validated per hop) → Markdown (or plain text).
+ * Core fetch pipeline: URL -> validated -> fetched (with timeout, byte cap,
+ * manual redirects re-validated per hop) -> Markdown (or plain text).
  */
 import { generateId, Semaphore } from "./_utils.ts";
 import { validateTargetHost } from "./_ssrf.ts";
@@ -43,8 +43,12 @@ function errorMessage(err: unknown): string {
 }
 
 function isAbortError(err: unknown): boolean {
-  if (err instanceof DOMException && err.name === "AbortError") return true;
+  if (err instanceof DOMException && err.name === "AbortError") {
+    return true;
+  }
+
   const message = errorMessage(err).toLowerCase();
+
   return message.includes("abort") || message.includes("timeout");
 }
 
@@ -57,9 +61,14 @@ function extractTextTitle(text: string, url: string): string {
     .split("\n")
     .map((line) => line.trim())
     .find((line) => line.length > 0);
-  if (firstLine && firstLine.length < 120) return firstLine;
+
+  if (firstLine && firstLine.length < 120) {
+    return firstLine;
+  }
+
   try {
     const parsed = new URL(url);
+
     return parsed.pathname.split("/").filter(Boolean).pop() ?? parsed.hostname;
   } catch {
     return url;
@@ -81,7 +90,11 @@ function decoderFor(contentTypeHeader: string | null): TextDecoder {
     "utf-16le": "utf-16le",
   };
   const name = candidates[charset];
-  if (!name) return new TextDecoder();
+
+  if (!name) {
+    return new TextDecoder();
+  }
+
   try {
     return new TextDecoder(name);
   } catch {
@@ -90,25 +103,37 @@ function decoderFor(contentTypeHeader: string | null): TextDecoder {
 }
 
 async function readBodyCapped(res: Response, maxBytes: number, contentTypeHeader: string | null): Promise<string> {
-  if (!res.body) return "";
+  if (!res.body) {
+    return "";
+  }
+
   const reader = res.body.getReader();
   const chunks: Buffer[] = [];
   let total = 0;
+
   try {
     for (;;) {
       const { done, value } = await reader.read();
-      if (done) break;
+
+      if (done) {
+        break;
+      }
+
       total += value.byteLength;
+
       if (total > maxBytes) {
         await reader.cancel();
         throw new Error("Response too large");
       }
+
       chunks.push(Buffer.from(value));
     }
   } finally {
     reader.releaseLock();
   }
+
   const decoder = decoderFor(contentTypeHeader);
+
   return decoder.decode(Buffer.concat(chunks));
 }
 
@@ -134,11 +159,13 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
     let parsed: URL;
+
     try {
       parsed = new URL(currentUrl);
     } catch {
       return errPage(id, currentUrl, "Invalid URL: must be an absolute http(s) URL", fetchedAt);
     }
+
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return errPage(id, currentUrl, "Unsupported protocol: only http(s) URLs can be fetched", fetchedAt);
     }
@@ -146,14 +173,17 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
     // Node's URL.hostname keeps IPv6 brackets ([::1]) - strip them before validation.
     const hostname = parsed.hostname.replace(/^\[(.*)\]$/, "$1");
     const validation = await validateTargetHost(hostname, allowRanges);
+
     if (validation.blocked) {
       return errPage(id, currentUrl, validation.reason ?? "Address blocked", fetchedAt);
     }
 
     let res: Response;
+
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
+
       try {
         res = await fetch(currentUrl, {
           redirect: "manual",
@@ -171,6 +201,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
       const reason = isAbortError(err)
         ? `Request timed out after ${timeoutMs}ms`
         : `Network error: ${errorMessage(err)}`;
+
       return errPage(id, currentUrl, reason, fetchedAt);
     }
 
@@ -178,16 +209,20 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
 
     if (status === 301 || status === 302 || status === 303 || status === 307 || status === 308) {
       const location = res.headers.get("location");
+
       await drain(res);
+
       if (!location) {
         return errPage(id, currentUrl, `Redirect (${status}) without Location header`, fetchedAt);
       }
+
       currentUrl = new URL(location, currentUrl).toString();
       continue;
     }
 
     if (status >= 400) {
       await drain(res);
+
       return errPage(id, currentUrl, `HTTP ${status} ${res.statusText}`, fetchedAt);
     }
 
@@ -203,10 +238,12 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
 
     if (!isHtml && !isText) {
       await drain(res);
+
       return errPage(id, currentUrl, `Unsupported content type: ${contentType}`, fetchedAt);
     }
 
     let body: string;
+
     try {
       body = await readBodyCapped(res, maxResponseBytes, contentTypeHeader);
     } catch (err) {
@@ -215,6 +252,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
         : errorMessage(err).toLowerCase().includes("too large")
           ? `Response too large (exceeds ${maxResponseBytes} bytes limit)`
           : `Read error: ${errorMessage(err)}`;
+
       return errPage(id, currentUrl, reason, fetchedAt);
     }
 
@@ -225,6 +263,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
 
     if (isHtml) {
       const result = htmlToMarkdown(body, raw);
+
       title = result.title;
       content = result.markdown;
       lowQuality = result.lowQuality;
@@ -244,5 +283,6 @@ export async function fetchPages(
 ): Promise<FetchedPage[]> {
   const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
   const semaphore = new Semaphore(concurrency);
+
   return Promise.all(urls.map((url) => semaphore.run(() => fetchPage(url, options))));
 }

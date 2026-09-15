@@ -40,19 +40,37 @@ const DEFAULTS: PiWebConfig = {
 
 export function loadConfig(): PiWebConfig {
   const config: PiWebConfig = { ...DEFAULTS, allowRanges: [...DEFAULTS.allowRanges] };
+
   try {
     const raw = readFileSync(join(homedir(), ".pi", "pi-web.json"), "utf8");
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (typeof parsed.userAgent === "string") config.userAgent = parsed.userAgent;
-    if (typeof parsed.timeoutMs === "number") config.timeoutMs = parsed.timeoutMs;
-    if (typeof parsed.maxResponseBytes === "number") config.maxResponseBytes = parsed.maxResponseBytes;
-    if (typeof parsed.maxChars === "number") config.maxChars = parsed.maxChars;
-    if (typeof parsed.concurrency === "number") config.concurrency = parsed.concurrency;
+
+    if (typeof parsed.userAgent === "string") {
+      config.userAgent = parsed.userAgent;
+    }
+
+    if (typeof parsed.timeoutMs === "number") {
+      config.timeoutMs = parsed.timeoutMs;
+    }
+
+    if (typeof parsed.maxResponseBytes === "number") {
+      config.maxResponseBytes = parsed.maxResponseBytes;
+    }
+
+    if (typeof parsed.maxChars === "number") {
+      config.maxChars = parsed.maxChars;
+    }
+
+    if (typeof parsed.concurrency === "number") {
+      config.concurrency = parsed.concurrency;
+    }
+
     if (Array.isArray(parsed.allowRanges)) {
       config.allowRanges = parsed.allowRanges.filter((entry): entry is string => typeof entry === "string");
     }
   } catch {
-    // no config file (or unreadable) → defaults
+    // no config file (or unreadable) -> defaults
   }
+
   return config;
 }

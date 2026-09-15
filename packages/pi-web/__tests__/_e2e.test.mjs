@@ -27,9 +27,11 @@ import { createMockPi, createMockCtx } from "../../../test/harness.mjs";
 
 async function startServer(handler) {
   const server = http.createServer(handler);
+
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
+
   return {
     server,
     url: `http://127.0.0.1:${address.port}`,
@@ -55,12 +57,14 @@ const PAGE = `<!DOCTYPE html>
 async function withHomeAllowlist(fn) {
   const originalHome = process.env.HOME;
   const dir = mkdtempSync(join(tmpdir(), "pi-web-home-"));
+
   mkdirSync(join(dir, ".pi"), { recursive: true });
   writeFileSync(
     join(dir, ".pi", "pi-web.json"),
     JSON.stringify({ allowRanges: ["127.0.0.1", "::1"], maxChars: 500 }),
   );
   process.env.HOME = dir;
+
   try {
     return await fn();
   } finally {
@@ -72,6 +76,7 @@ async function withHomeAllowlist(fn) {
 
 test("registers pi_web_fetch and pi_web_read tools + session_start", () => {
   const { pi, tools, handlers } = createMockPi();
+
   piWebExtension(pi);
   assert.ok(tools.has("pi_web_fetch"));
   assert.ok(tools.has("pi_web_read"));
@@ -82,18 +87,22 @@ test("registers pi_web_fetch and pi_web_read tools + session_start", () => {
 
 // ── pi_web_fetch: error paths ─────────────────────────────────────
 
-test("pi_web_fetch: no url → error result", async () => {
+test("pi_web_fetch: no url -> error result", async () => {
   const { pi, tools } = createMockPi();
+
   piWebExtension(pi);
   const result = await tools.get("pi_web_fetch").execute("id", {});
+
   assert.match(result.content[0].text, /Error: provide a url/);
   assert.equal(result.details.error, "no url");
 });
 
-test("pi_web_fetch: unsupported protocol → SSRF guard error", async () => {
+test("pi_web_fetch: unsupported protocol -> SSRF guard error", async () => {
   const { pi, tools } = createMockPi();
+
   piWebExtension(pi);
   const result = await tools.get("pi_web_fetch").execute("id", { url: "ftp://example.com/file" });
+
   assert.ok(result.details.error, "must return an error detail");
   assert.match(result.content[0].text, /Error/);
 });
@@ -105,17 +114,21 @@ test("pi_web_fetch: fetches a page, persists it and appends a session entry", as
     res.writeHead(200, { "content-type": "text/html" });
     res.end(PAGE);
   });
+
   try {
     await withHomeAllowlist(async () => {
       const { pi, tools, calls } = createMockPi();
+
       piWebExtension(pi);
       const result = await tools.get("pi_web_fetch").execute("id", { url: `${srv.url}/page` });
+
       assert.ok(result.content[0].text.includes("E2E Article"), "markdown contains the title");
       assert.ok(result.content[0].text.includes("Source:"), "metadata includes source");
       assert.equal(result.details.truncated, false);
       assert.equal(result.details.successful, 1);
       // persisted for pi_web_read (stored content is the markdown body)
       const slice = readSlice(result.details.id, 0, 500);
+
       assert.ok(slice.text.includes("Some fetchable content."));
       // session entry appended
       assert.ok(calls.appendEntry.some(([type]) => type === "pi-web-page"));
@@ -130,11 +143,14 @@ test("pi_web_fetch: multiple URLs produce a multi-fetch summary", async () => {
     res.writeHead(200, { "content-type": "text/html" });
     res.end(PAGE);
   });
+
   try {
     await withHomeAllowlist(async () => {
       const { pi, tools } = createMockPi();
+
       piWebExtension(pi);
       const result = await tools.get("pi_web_fetch").execute("id", { urls: [`${srv.url}/a`, `${srv.url}/b`] });
+
       assert.equal(result.details.urlCount, 2);
       assert.equal(result.details.successful, 2);
       assert.match(result.content[0].text, /fetched/i);
@@ -150,11 +166,14 @@ test("pi_web_fetch: single URL failure surfaces the page error", async () => {
     res.writeHead(500);
     res.end("boom");
   });
+
   try {
     await withHomeAllowlist(async () => {
       const { pi, tools } = createMockPi();
+
       piWebExtension(pi);
       const result = await tools.get("pi_web_fetch").execute("id", { url: `${srv.url}/err` });
+
       assert.match(result.content[0].text, /Error/);
       assert.ok(result.details.error);
     });
@@ -167,6 +186,7 @@ test("pi_web_fetch: single URL failure surfaces the page error", async () => {
 
 test("pi_web_read: reads a stored page and slice hints", async () => {
   const { pi, tools } = createMockPi();
+
   piWebExtension(pi);
   clearPages();
   storePage({
@@ -178,6 +198,7 @@ test("pi_web_read: reads a stored page and slice hints", async () => {
     fetchedAt: Date.now(),
   });
   const result = await tools.get("pi_web_read").execute("id", { id: "p1", limit: 100 });
+
   assert.ok(result.content[0].text.startsWith("x".repeat(100)), "first slice is exactly 100 chars");
   assert.ok(result.content[0].text.includes("pi_web_read({ id: \"p1\""), "slice hint included when truncated");
   assert.equal(result.details.end, false);
@@ -186,18 +207,22 @@ test("pi_web_read: reads a stored page and slice hints", async () => {
 
 test("pi_web_read: last slice marks end without hint", async () => {
   const { pi, tools } = createMockPi();
+
   piWebExtension(pi);
   clearPages();
   storePage({ id: "p2", url: "https://example.com", title: "T", content: "short", contentType: "text/markdown", fetchedAt: Date.now() });
   const result = await tools.get("pi_web_read").execute("id", { id: "p2", offset: 0, limit: 100 });
+
   assert.equal(result.details.end, true);
   assert.ok(!result.content[0].text.includes("pi_web_read({ id:"), "no hint at end");
 });
 
-test("pi_web_read: unknown id → error", async () => {
+test("pi_web_read: unknown id -> error", async () => {
   const { pi, tools } = createMockPi();
+
   piWebExtension(pi);
   const result = await tools.get("pi_web_read").execute("id", { id: "nope" });
+
   assert.match(result.content[0].text, /Error/);
   assert.ok(result.details.error);
 });
@@ -206,12 +231,15 @@ test("pi_web_read: unknown id → error", async () => {
 
 test("session_start: restores pages from the session branch", async () => {
   const { pi, emit } = createMockPi();
+
   piWebExtension(pi);
   clearPages();
   const stored = { id: "restored-1", url: "https://example.com/x", title: "Restored", content: "hello from a previous session", contentType: "text/markdown", fetchedAt: Date.now() };
   const branch = [{ type: "custom", customType: "pi-web-page", data: stored }];
   const ctx = createMockCtx({ sessionManager: { getBranch: () => branch, getEntries: () => [] } });
+
   await emit("session_start", {}, ctx);
   const slice = readSlice("restored-1", 0, 100);
+
   assert.equal(slice.text, "hello from a previous session");
 });

@@ -27,10 +27,13 @@ export function formatFetchResult(page: FormatPage, options: { maxChars: number 
   const truncated = totalChars > options.maxChars;
 
   let text = `# ${page.title || page.url}\n\n`;
+
   text += `> Source: ${page.url} · Fetched: ${new Date(page.fetchedAt).toISOString()} · ${totalChars} chars`;
+
   if (page.lowQuality) {
-    text += " · ⚠ low-quality extraction (page may be JS-rendered)";
+    text += " - ⚠ low-quality extraction (page may be JS-rendered)";
   }
+
   text += "\n\n---\n\n";
 
   if (truncated) {
@@ -45,6 +48,7 @@ export function formatFetchResult(page: FormatPage, options: { maxChars: number 
 
 export function formatMultiFetchSummary(pages: FormatPage[], totalChars: number): string {
   let text = "## Fetched URLs\n\n";
+
   for (const page of pages) {
     if (page.error) {
       text += `- ${page.title || page.url}: Error - ${page.error}\n`;
@@ -52,6 +56,8 @@ export function formatMultiFetchSummary(pages: FormatPage[], totalChars: number)
       text += `- ${page.title || page.url} (${page.content.length} chars)\n`;
     }
   }
+
   text += `\n---\nEach page is stored and can be read in slices with pi_web_read({ id: "<id>", offset: 0 }).`;
+
   return text;
 }

@@ -7,7 +7,7 @@ export function generateId(): string {
 }
 
 /**
- * Minimal promise-based semaphore used to cap concurrent URL fetches.
+ * Minimal promise-based semaphore that caps concurrent URL fetches.
  */
 export class Semaphore {
   private active = 0;
@@ -18,8 +18,10 @@ export class Semaphore {
   async acquire(): Promise<void> {
     if (this.active < this.max) {
       this.active++;
+
       return;
     }
+
     await new Promise<void>((resolve) => {
       this.queue.push(resolve);
     });
@@ -29,11 +31,15 @@ export class Semaphore {
   release(): void {
     this.active--;
     const next = this.queue.shift();
-    if (next) next();
+
+    if (next) {
+      next();
+    }
   }
 
   async run<T>(fn: () => Promise<T>): Promise<T> {
     await this.acquire();
+
     try {
       return await fn();
     } finally {

@@ -28,7 +28,12 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ensureNpmAuthentication, standardVersionCommand, changedFilesSinceTag } from './release-helpers.mjs';
+import {
+  changedFilesSinceTag,
+  ensureNpmAuthentication,
+  releaseSummaryLines,
+  standardVersionCommand,
+} from './release-helpers.mjs';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -103,6 +108,7 @@ const packages = readdirSync(PACKAGES_DIR, { withFileTypes: true })
   .map((d) => d.name);
 
 let released = 0;
+let wouldRelease = 0;
 let skipped = 0;
 
 for (const pkg of packages) {
@@ -177,6 +183,7 @@ for (const pkg of packages) {
     console.log(`   [dry-run] commit-and-tag-version --tag-prefix "${name}@"`);
     execIn(pkgPath, standardVersionCommand(ROOT, name, true, isFirstRelease), { stdio: 'inherit' });
     console.log(`   [dry-run] npm publish --access public (skipped)`);
+    wouldRelease++;
   } else {
     try {
       // Bump + tag
@@ -200,8 +207,7 @@ for (const pkg of packages) {
 }
 
 console.log('\n═══════════════════════════════════════════');
-console.log(`  Summary:`);
-console.log(`  • released:     ${released}`);
-console.log(`  • skipped:      ${skipped}`);
-console.log(`  • total pkgs:   ${packages.length}`);
+console.log(
+  releaseSummaryLines({ released, wouldRelease, skipped, total: packages.length, dryRun: isDryRun }).join('\n')
+);
 console.log('═══════════════════════════════════════════\n');

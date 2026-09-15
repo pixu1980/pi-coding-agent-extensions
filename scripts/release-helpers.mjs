@@ -65,10 +65,36 @@ export function isReleaseTriggerFile(relPath) {
   return !/\/CHANGELOG\.md$/.test(relPath);
 }
 
+/**
+ * Builds the commit-and-tag-version invocation for one package.
+ *
+ * @param {string} root repository root, where the binary is installed
+ * @param {string} packageName package name, used as the tag prefix
+ * @param {boolean} dryRun simulate the release instead of writing it
+ * @param {boolean} [firstRelease] omit the version bump for a package with no tag yet
+ * @returns {string} the command to run from the package directory
+ */
 export function standardVersionCommand(root, packageName, dryRun, firstRelease = false) {
   const executable = join(root, 'node_modules', '.bin', 'commit-and-tag-version');
   const mode = dryRun ? '--dry-run' : '--no-verify';
   const firstReleaseFlag = firstRelease ? '--first-release ' : '';
 
   return `"${executable}" ${firstReleaseFlag}${mode} --tag-prefix "${packageName}@"`;
+}
+
+/**
+ * The closing summary of a release run.
+ *
+ * A dry run never reaches the publish step, so it cannot report the `released`
+ * counter: doing so made every dry run claim it had released nothing, even when
+ * it had just decided to release the whole monorepo. The two counts are passed
+ * in separately and only the one matching the mode is printed.
+ *
+ * @param {{ released: number, wouldRelease: number, skipped: number, total: number, dryRun: boolean }} counts
+ * @returns {string[]} lines, ready to be logged one by one
+ */
+export function releaseSummaryLines({ released, wouldRelease, skipped, total, dryRun }) {
+  const headline = dryRun ? `would release: ${wouldRelease}` : `released:     ${released}`;
+
+  return ['  Summary:', `  - ${headline}`, `  - skipped:      ${skipped}`, `  - total pkgs:   ${total}`];
 }

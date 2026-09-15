@@ -10,6 +10,7 @@ import {
   changedFilesSinceTag,
   ensureNpmAuthentication,
   isReleaseTriggerFile,
+  releaseSummaryLines,
   standardVersionCommand,
 } from '../scripts/release-helpers.mjs';
 
@@ -86,6 +87,32 @@ test('publishes packages locally from the release process', () => {
 
   assert.match(source, /execIn\(pkgPath, `npm publish --access public`/);
   assert.doesNotMatch(source, /GitHub Actions/);
+});
+
+test('a dry run reports how many packages it would release', () => {
+  const summary = releaseSummaryLines({
+    released: 0,
+    wouldRelease: 3,
+    skipped: 1,
+    total: 8,
+    dryRun: true,
+  }).join('\n');
+
+  assert.match(summary, /would release: 3/);
+  assert.doesNotMatch(summary, /released: {5}0/);
+});
+
+test('a real run reports how many packages it released', () => {
+  const summary = releaseSummaryLines({
+    released: 3,
+    wouldRelease: 0,
+    skipped: 1,
+    total: 8,
+    dryRun: false,
+  }).join('\n');
+
+  assert.match(summary, /released: {5}3/);
+  assert.doesNotMatch(summary, /would release/);
 });
 
 // ── changedFilesSinceTag ───────────────────────────────────────────────

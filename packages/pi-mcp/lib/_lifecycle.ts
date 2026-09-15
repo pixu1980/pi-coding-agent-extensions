@@ -2,10 +2,28 @@ import { isServerDisabled, type ServerDefinition } from "./_types.ts";
 import type { McpServerManager } from "./_server-manager.ts";
 import { hasPendingAuth } from "./_mcp-auth-flow.ts";
 import { logger } from "./_logger.ts";
-import { formatTerminalError, sanitizeTerminalText } from "./_utils.ts";
+import { formatTerminalError, parallelLimit, sanitizeTerminalText } from "./_utils.ts";
 
 export type ReconnectCallback = (serverName: string) => void;
 export type ReconnectFailureCallback = (serverName: string, error: unknown) => void;
+
+export interface LifecycleOptions {
+  /** Per-attempt connect timeout; the connection attempt is aborted after this. */
+  connectTimeoutMs?: number;
+  /** Exponential backoff base after a failed attempt. */
+  backoffBaseMs?: number;
+  /** Backoff cap (the base doubles with jitter up to here). */
+  backoffMaxMs?: number;
+  /** Max concurrent reconnect attempts per health pass. */
+  reconnectLimit?: number;
+}
+
+const DEFAULT_LIFECYCLE_OPTIONS: Required<LifecycleOptions> = {
+  connectTimeoutMs: 20_000,
+  backoffBaseMs: 1_000,
+  backoffMaxMs: 60_000,
+  reconnectLimit: 4,
+};
 
 export class McpLifecycleManager {
   private keepAliveServers = new Map<string, ServerDefinition>();
@@ -25,7 +43,17 @@ export class McpLifecycleManager {
   constructor(
     private readonly manager: McpServerManager,
     private readonly hasPendingAuthForServer = hasPendingAuth,
+    private readonly options: LifecycleOptions = {},
   ) {}
+
+  private get opt(): Required<LifecycleOptions> {
+    return { ...DEFAULT_LIFECYCLE_OPTIONS, ...this.options };
+  }
+
+  // Reconnect backpressure: per-server next-allowed attempt and failure
+  // count for jittered exponential backoff.
+  private nextAttemptByName = new Map<string, number>();
+  private failCountByName = new Map<string, number>();
 
   setReconnectCallback(callback: ReconnectCallback): void {
     this.onReconnect = callback;
@@ -85,29 +113,51 @@ export class McpLifecycleManager {
     this.healthCheckInterval.unref();
   }
 
-  private async checkConnections(signal?: AbortSignal): Promise<void> {
+  /**
+   * Run one health pass now: reconnect every keep-alive server that is
+   * disconnected. Reconnects run concurrently (bounded by reconnectLimit),
+   * each attempt has its own timeout, and failures back off with jitter so
+   * one hung server never delays the others. Public so a pass can be
+   * triggered on demand (and tested); the interval also calls it.
+   */
+  async checkConnections(signal?: AbortSignal): Promise<void> {
     if (this.stopped || signal?.aborted) return;
-    for (const [name, definition] of this.keepAliveServers) {
-      if (isServerDisabled(definition)) continue;
+    const options = this.opt;
+    const now = Date.now();
+    const candidates = [...this.keepAliveServers.entries()].filter(([name, definition]) => {
+      if (isServerDisabled(definition)) return false;
+      if ((this.nextAttemptByName.get(name) ?? 0) > now) return false; // backing off
       const connection = this.manager.getConnection(name);
-      if (!connection || connection.status !== "connected") {
-        if (this.hasPendingAuthForServer(name)) {
-          logger.debug(`Skipping reconnect for ${name} while OAuth authorization is pending`);
-          continue;
-        }
-        try {
-          await this.manager.connect(name, definition, signal);
-          if (this.stopped || signal?.aborted) return;
-          logger.debug(`Reconnected to ${name}`);
-          this.onReconnect?.(name);
-        } catch (error) {
-          if (this.stopped || signal?.aborted) return;
-          this.onReconnectFailure?.(name, error);
-          const message = error instanceof Error ? error.message : String(error);
-          console.error(`MCP: Failed to reconnect to ${name}: ${sanitizeTerminalText(message)}`);
-        }
+      return !connection || connection.status !== "connected";
+    });
+
+    await parallelLimit(candidates, options.reconnectLimit, async ([name, definition]) => {
+      if (this.stopped || signal?.aborted) return;
+      if (this.hasPendingAuthForServer(name)) {
+        logger.debug(`Skipping reconnect for ${name} while OAuth authorization is pending`);
+        return;
       }
-    }
+      try {
+        await this.connectWithTimeout(name, definition, signal, options.connectTimeoutMs);
+        if (this.stopped || signal?.aborted) return;
+        logger.debug(`Reconnected to ${name}`);
+        this.nextAttemptByName.delete(name);
+        this.failCountByName.delete(name);
+        this.onReconnect?.(name);
+      } catch (error) {
+        if (this.stopped || signal?.aborted) return;
+        const failures = (this.failCountByName.get(name) ?? 0) + 1;
+        this.failCountByName.set(name, failures);
+        // Exponential backoff with jitter: base * 2^(failures-1), capped,
+        // scaled by 0.5..1 to avoid thundering herds.
+        const capped = Math.min(options.backoffBaseMs * 2 ** (failures - 1), options.backoffMaxMs);
+        const jittered = capped * (0.5 + Math.random() * 0.5);
+        this.nextAttemptByName.set(name, Date.now() + jittered);
+        this.onReconnectFailure?.(name, error);
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`MCP: Failed to reconnect to ${name}: ${sanitizeTerminalText(message)}`);
+      }
+    });
 
     for (const [name] of this.allServers) {
       if (this.keepAliveServers.has(name)) continue;
@@ -118,6 +168,39 @@ export class McpLifecycleManager {
         this.onIdleShutdown?.(name);
       }
     }
+  }
+
+  /**
+   * Connect with a per-attempt timeout; the attempt is aborted via a child
+   * controller when it times out, and the health signal cancels it too.
+   */
+  private connectWithTimeout(
+    name: string,
+    definition: ServerDefinition,
+    signal: AbortSignal | undefined,
+    timeoutMs: number,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const controller = new AbortController();
+      const onAbort = () => controller.abort();
+      signal?.addEventListener("abort", onAbort, { once: true });
+      const timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error(`MCP: reconnect to ${name} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+      timer.unref();
+      this.manager.connect(name, definition, controller.signal)
+        .then(() => {
+          clearTimeout(timer);
+          signal?.removeEventListener("abort", onAbort);
+          resolve();
+        })
+        .catch((error) => {
+          clearTimeout(timer);
+          signal?.removeEventListener("abort", onAbort);
+          reject(error);
+        });
+    });
   }
 
   private getIdleTimeout(name: string): number {

@@ -1,5 +1,6 @@
 import { matchesKey, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
 import { createPanelKeys, type PanelKeybindings, type PanelKeys } from "./_panel-keys.ts";
+import { createRenderCoalescer } from "./_utils.ts";
 import type { ImportKind } from "./_types.ts";
 import type { ConfigWritePreview, McpDiscoverySummary } from "./_config.ts";
 import type { McpOnboardingState } from "./_onboarding-state.ts";
@@ -102,7 +103,9 @@ export class McpSetupPanel {
     tui: { requestRender(): void },
     private done: () => void,
   ) {
-    this.tui = tui;
+    // Coalesce renders: a burst of state changes within one tick produces a
+    // single requestRender instead of one per event (PERF-06).
+    this.tui = { requestRender: createRenderCoalescer(() => tui.requestRender()) };
     this.keys = createPanelKeys(options.keybindings);
     this.screen = options.mode;
     for (const entry of discovery.imports) {

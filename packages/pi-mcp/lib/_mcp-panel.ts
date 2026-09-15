@@ -4,7 +4,7 @@ import { createPanelKeys, type PanelKeybindings, type PanelKeys } from "./_panel
 import { isServerDisabled, isToolAllowed } from "./_types.ts";
 import type { McpConfig, McpPanelCallbacks, McpPanelResult, ServerProvenance, ToolPrefix } from "./_types.ts";
 import { resourceNameToToolName } from "./_resource-tools.ts";
-import { sanitizeTerminalText, stripOscSequences } from "./_utils.ts";
+import { createRenderCoalescer, sanitizeTerminalText, stripOscSequences } from "./_utils.ts";
 import type { MetadataCache, ServerCacheEntry, CachedTool } from "./_metadata-cache.ts";
 
 interface PanelTheme {
@@ -177,7 +177,9 @@ class McpPanel {
     private done: (result: McpPanelResult) => void,
     options: { noticeLines?: string[]; authOnly?: boolean; keybindings?: PanelKeybindings } = {},
   ) {
-    this.tui = tui;
+    // Coalesce renders: a burst of state changes within one tick produces a
+    // single requestRender instead of one per event (PERF-06).
+    this.tui = { requestRender: createRenderCoalescer(() => tui.requestRender()) };
     this.noticeLines = options.noticeLines ?? [];
     this.authOnly = options.authOnly === true;
     this.keys = createPanelKeys(options.keybindings);

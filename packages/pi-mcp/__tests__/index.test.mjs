@@ -7,3 +7,4 @@
 
 import "./_unit.test.mjs";
 import "./_e2e.test.mjs";
+import "./_lifecycle.test.mjs";

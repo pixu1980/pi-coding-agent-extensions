@@ -1,0 +1,89 @@
+# DISCLOSURE — pi-cursor (@pixu1980/pi-cursor)
+
+## Purpose
+
+pi-cursor registers a `cursor` model provider in the pi coding agent. It lets a
+user run Cursor's own agents from pi using the user's own Cursor API key.
+
+## Credential handling
+
+| Property | Guarantee |
+| --- | --- |
+| Where the key is read from | pi's credential store (`/login cursor` → `~/.pi/agent/auth.json`) or `CURSOR_API_KEY` |
+| Where the key is written | **Nowhere by this extension.** pi owns the auth file. pi-cursor contains no filesystem write that touches a credential. |
+| Where the key is sent | `api2.cursor.sh` and `api.cursor.com` only, as `Authorization: Bearer …` |
+| Before `/login` | `resolve()` hands pi a non-secret placeholder so the Cursor models stay visible in the picker. The stream path normalises it away, so no request is ever issued with it (asserted by test). |
+| Where the key is logged | Nowhere. Every string that can reach the transcript, an error message, or stderr passes through `scrubSecrets` first. `/cursor-key` prints a masked label, never the value. |
+| Cached key material | None. The model catalog cache holds model metadata and a timestamp; unlike upstream `pi-cursor-sdk` it stores **no key fingerprint**. |
+| The Cursor SDK's own auth file (`~/.cursor/sdk/auth.json`) | Never read, never written. pi is the single source of truth. |
+
+## Outbound surface
+
+pi-cursor ships **no HTTP client of its own**: no `fetch`, no `http`/`https`
+request, no third-party networking package. This is enforced by a source-level
+test that fails the build if any file under `lib/` or `index.ts` gains `fetch(`,
+`http`/`https` `.request`, `net.connect`, `tls.connect`, `WebSocket`,
+`EventSource`, `undici`, `axios`, or a `child_process` call, and by a test that
+rejects any URL literal whose host is not in the allowlist.
+
+Every request on the wire is issued by the Cursor SDK, from three call sites the
+extension drives: `Cursor.models.list()` (model discovery), `Agent.create()`
+(one local agent per pi session), and `agent.send()` (one run per turn).
+
+| Host | Service | Payload |
+| --- | --- | --- |
+| `api2.cursor.sh` | `auth/exchange_user_api_key` | The API key, as the bearer credential |
+| `api2.cursor.sh` | `agent_service_connect`, `chat`, tool executors | Your prompt, your working directory's files as the agent reads/edits them |
+| `api2.cursor.sh` | `aiserver.v1.AnalyticsService.TrackEvents` / `BootstrapStatsig` | Anonymous SDK counters: `surface`, `sdk_version`, `os_platform`, `os_arch`, run/duration/error-code fields |
+| `api.cursor.com` | `GET /v1/models` | Nothing but the bearer credential |
+
+Both hosts are Cursor-owned. There is no third-party analytics or crash
+reporting in the path.
+
+### Notes on the Cursor SDK's own behaviour
+
+Verified against `@cursor/sdk@1.0.27` by static analysis of the published
+bundle:
+
+- Its vendored Statsig client (`@statsig/js-client@3.31.0`) is constructed with
+  `preventAllNetworkTraffic: true`, `disableLogging: true`,
+  `disableStorage: true`, and is fed from Cursor's own `BootstrapStatsig` RPC.
+  The `statsigapi.net`, `featureassets.org`, `api.statsigcdn.com` and
+  `prodregistryv2.org` endpoints are compiled into the library but are **not**
+  reachable in this configuration.
+- It reports run counters to Cursor's backend with the API key as the bearer
+  token. No prompt, file content, or credential is part of those payloads.
+- Upstream `pi-cursor-sdk` calls `api.cursor.com/v1/agents/{id}/usage`
+  separately. pi-cursor does not: it reads usage from the run it already has.
+
+## Guards
+
+1. **Backend-override refusal.** The SDK honours `CURSOR_BACKEND_URL`. If it is
+   set to anything outside the allowlist, pi-cursor refuses to resolve the API
+   key at all, so nothing is sent. `PI_CURSOR_ALLOW_BACKEND_OVERRIDE=1` is the
+   explicit opt-out for self-hosted Cursor-compatible stacks.
+2. **Secret scrubbing.** Every model output delta, activity trace line, error
+   message and diagnostic is scrubbed before it is emitted.
+3. **Bounded activity trace.** Tool activity is summarised (command, path,
+   pattern) and capped, so file bodies are not copied into the session log.
+
+## Deliberate non-goals
+
+| Not implemented | Why |
+| --- | --- |
+| Cloud agents (`cloud.env`, `autoCreatePR`, …) | Uploads your repository to Cursor's cloud. Local agents only. |
+| MCP tool bridge over loopback HTTP | Exposes pi's tools to the agent through a local server. Not needed: the Cursor agent has its own tools. |
+| Usage reporting request | Redundant; the run already reports usage. |
+| Custom telemetry, crash reporting, analytics | None. |
+| `~/.cursor/sdk/auth.json` | pi owns credentials; a second copy is an unnecessary secret at rest. |
+
+## Consequences the user should know
+
+- The Cursor agent executes shell commands and edits files **itself**. pi's tool
+  approval layer does not intercept them; the agent runs with pi's process
+  permissions.
+- Cursor's SDK reports anonymous run counters to Cursor's backend. This cannot be
+  disabled from the client. It is Cursor-bound, carries no user content, and is
+  disclosed here rather than hidden.
+- pi-cursor adds no guarantee about what Cursor does with the data sent to it;
+  that is governed by Cursor's own terms.

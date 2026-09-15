@@ -1,0 +1,75 @@
+{
+  "name": "@pixu1980/pi-cursor",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Cursor API key provider for pi.dev - run Cursor local agents from pi using your own Cursor API key, stored only on your machine, with an audited egress surface (Cursor endpoints only)",
+  "type": "module",
+  "author": "Emiliano 'pixu1980' Pisu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixu1980/pi-coding-agent-extensions.git",
+    "directory": "packages/pi-cursor"
+  },
+  "homepage": "https://github.com/pixu1980/pi-coding-agent-extensions/tree/main/packages/pi-cursor#readme",
+  "bugs": {
+    "url": "https://github.com/pixu1980/pi-coding-agent-extensions/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "cursor",
+    "cursor-sdk",
+    "api-key",
+    "provider"
+  ],
+  "files": [
+    "index.ts",
+    "lib/**",
+    "README.md",
+    "DISCLOSURE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "test": "node --import tsx --test __tests__/index.test.mjs",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "release": "node ../../scripts/release.mjs",
+    "release:dry": "node ../../scripts/release.mjs --dry-run"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "dependencies": {
+    "@cursor/sdk": "1.0.27"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": ">=0.83.0"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": {
+      "optional": true
+    },
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "0.83.0",
+    "@earendil-works/pi-coding-agent": "0.83.0",
+    "@types/node": "^26.1.2",
+    "commit-and-tag-version": "13.1.2",
+    "tsx": "4.23.1",
+    "typescript": "^7.0.2"
+  }
+}

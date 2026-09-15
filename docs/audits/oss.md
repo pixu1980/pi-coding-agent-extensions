@@ -685,6 +685,131 @@ Out of scope, read solely to resolve the scope string:
 - Open Source Guides, `https://opensource.guide/leadership-and-governance/` - decision-making
   models and role ladders.
 
+## 15. Style gate measurements (OSS-09 remediation)
+
+Taken while wiring the style gate. The commands below were run in the repository
+root against the pinned tooling.
+
+The toolchain the previous session used cannot run on this repository:
+
+```console
+$ curl -s https://registry.npmjs.org/typescript-eslint | ... dist-tags latest
+typescript-eslint@8.70.0
+  peer eslint:      ^8.57.0 || ^9.0.0 || ^10.0.0
+  peer typescript:  >=4.8.4 <6.1.0
+
+$ grep typescript packages/*/package.json
+packages/pi-ask/package.json:      "typescript": "7.0.2"
+packages/pi-cursor/package.json:   "typescript": "7.0.2"
+packages/pi-mcp/package.json:      "typescript": "7.0.2"
+packages/pi-web/package.json:      "typescript": "7.0.2"
+```
+
+No published release of typescript-eslint declares support for TypeScript 7, so the
+ESLint rule set lives on only as a description in a handoff document.
+
+Prettier against the repository's own `.prettierrc`, before the reformat:
+
+```console
+$ pnpm dlx prettier@3.9.6 --check "packages/*/lib/**/*.ts" "packages/*/index.ts" \
+    "packages/*/__tests__/**/*.mjs" "scripts/*.mjs" "test/*.mjs"
+[warn] Code style issues found in 162 files. Run Prettier with --write to fix.
+
+$ pnpm dlx prettier@3.9.6 --config <singleQuote: false> --check <same globs>
+[warn] Code style issues found in 121 files. Run Prettier with --write to fix.
+```
+
+Aligning the quote style recovers 41 files because the committed code uses double
+quotes while `.prettierrc` asks for single, and the remaining 121 differences are
+normalizations no option controls, such as splitting `let r = 0, g = 0, b = 0;`.
+No configuration reconciles the two, so the reformat was the only way to make the
+declared style and the committed style agree.
+
+Biome, on the same 170 files, first run with the recommended set and no scope:
+
+```console
+$ biome lint .
+Found 32 errors. Found 109 warnings. Found 57 infos.
+by rule: useTemplate 49, noNonNullAssertion 36, noControlCharactersInRegex 23,
+         useOptionalChain 22, noUnusedVariables 10, noUnusedImports 9,
+         noUnusedFunctionParameters 8, noTemplateCurlyInString 7,
+         useLiteralKeys 4, noBannedTypes 4, noExplicitAny 4, ...
+```
+
+Two of those rules flag deliberate behavior, verified against the source rather than
+assumed: `noControlCharactersInRegex` fires on `/(?:\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-Z\\-_])/g`
+in `packages/pi-mcp/lib/_utils.ts`, an ANSI escape stripper, and `noTemplateCurlyInString`
+fires on `packages/pi-mcp/lib/_utils.ts:451`, `template.replaceAll("${server}", serverName)`,
+where the placeholder is the value being matched rather than an interpolation.
+
+Two defects of the tooling were measured while building the configuration:
+
+```console
+$ biome lint .          # biome.json without an explicit exclusion
+Checked 196 files. Found 490 errors. Found 1237 warnings.
+$ ... | per-file breakdown
+   1475  packages/pi-mcp/lib/_app-bridge.bundle.js
+```
+
+Excluding that one minified artifact (which OSS-11 covers) takes the run from 1,818
+diagnostics to 170 files and 1 informational notice.
+
+```console
+$ biome lint .          # biome.json containing // comments
+Checked 196 files. Found 508 errors. Found 1237 warnings.
+```
+
+Biome 2.5.13 silently ignores the entire `rules` block when `biome.json` contains
+comments and falls back to its defaults, so the file is kept comment-free. The same
+version also prints a deprecation notice for `recommended` and asks for `preset`, but
+`preset` is not accepted yet: using it fails to parse the rules block and produces the
+same fallback. Both are recorded here rather than worked around silently.
+
+After the reformat and with the ratchet configuration in place:
+
+```console
+$ biome lint .
+Checked 170 files in 306ms. No fixes applied.
+Found 1 info.          # the recommended-to-preset deprecation notice
+exit 0
+
+$ pnpm format:check ; echo $?
+0
+$ pnpm test    -> tests 20 | pass 20 | fail 0
+$ pnpm test:all -> 8 ok, 0 falliti
+```
+
+The size of the deferred backlog, measured with the disabled rules re-enabled through
+a temporary configuration in the repository root:
+
+```console
+$ biome lint --config-path biome.backlog.json .
+  49  lint/style/useTemplate
+  36  lint/style/noNonNullAssertion
+  22  lint/complexity/useOptionalChain
+  10  lint/correctness/noUnusedVariables
+   9  lint/correctness/noUnusedImports
+   8  lint/correctness/noUnusedFunctionParameters
+   4  lint/complexity/useLiteralKeys
+   4  lint/complexity/noBannedTypes
+   4  lint/suspicious/noExplicitAny
+   3  lint/style/useConst
+   3  lint/complexity/noUselessSwitchCase
+   3  lint/correctness/noUnusedPrivateClassMembers
+   3  lint/suspicious/noAssignInExpressions
+   2  lint/correctness/noUnsafeFinally
+   2  lint/suspicious/noDuplicateObjectKeys
+   1  lint/suspicious/noImplicitAnyLet
+   1  lint/style/useImportType
+   1  lint/suspicious/noShadowRestrictedNames
+   1  lint/suspicious/noPrototypeBuiltins
+   1  lint/suspicious/noGlobalIsNan
+  ---- total: 167
+```
+
+Both `noDuplicateObjectKeys` hits are in `test/harness.mjs` and report a property
+overwritten by a later member with the same name.
+
 ## Out of scope observations
 
 - Scope resolution required reading `pix-galaxy-mcp` template sources; no finding is reported

@@ -23,7 +23,7 @@ comes first and gates everything else.
 | Order | Step | Finding | Why it is here |
 | ----- | ---- | ------- | -------------- |
 | 0.1 | Step 7 | OSS-07 | Done. A dirty tree aborted the release path and made every package look release-worthy; it landed in its own commit, the tree is clean and the release path runs again. |
-| 0.2 | Step 9 | OSS-09 | The contribution gate must exist and pass before it can be written into CONTRIBUTING.md. Step 2 and Step 11 depend on it. |
+| 0.2 | Step 9 | OSS-09 | Done. The gate exists, both commands exit 0, and a test proves the linter is not a placeholder. Step 2 still owes the contributor-facing documentation of it. |
 | 0.3 | Step 16 | OSS-16 | Cheap, and it repairs the release output and package metadata that the later steps rely on as a signal. |
 
 ### Phase 1 - Legal and trust floor
@@ -65,7 +65,8 @@ already proved work.
 | 4.1 | Step 8 | OSS-08 | The pnpm-only policy is documented in CONTRIBUTING.md, so it follows Step 2. Its guard test is independent and can land earlier. |
 | 4.2 | Step 10 | OSS-10 | Promoted to high: the placeholders are not valid booleans, so pnpm fails typecheck and test in pi-ask, pi-path-picker and pi-web. The files stay per-package, because they are standalone projects by design. |
 | 4.3 | Step 11 | OSS-11 | Needs the pinned tooling baseline from Step 9 before a build script can be committed. |
-| 4.4 | Step 13 | OSS-13 | Italian prose in three repository-owned files. Independent of every other step. |
+| 4.4 | Step 13 | OSS-13 | Italian prose in two remaining repository-owned files; .npmrc was translated when the cooldown was removed. |
+| 4.5 | Step 19 | OSS-21 | The 167 diagnostics behind the twenty disabled Biome rules. Correctness defects first, style last, and the disabled list shrinks as each count reaches zero. |
 
 ### Dependency table
 
@@ -89,6 +90,7 @@ already proved work.
 | 16 | OSS-16 | 7 | - |
 | 17 | OSS-17 | 4 | 5 |
 | 18 | OSS-18 | 2, 7 | - |
+| 19 | OSS-21 | - | - |
 
 Critical path: 7 -> 2 -> 5 -> 12. That is the longest chain and it ends with the release
 cadence a contributor can finally plan around.
@@ -164,12 +166,12 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **8.3**: State in the same section why the per-package `overrides` and `allowBuilds` blocks differ between packages, so the divergence reads as a decision, meaning each package declares only the dependencies it needs, instead of as drift.
   - [ ] **8.4**: Add a short note to scripts/test-all.mjs explaining that it iterates packages/ by design because the root is not a workspace, so a future contributor does not turn it into a workspace command.
   - [ ] **8.5**: Gate: the guard test fails when a package-lock.json appears in a package or a `packageManager` field is added, and passes on the clean tree; pnpm test:all still reports 8 ok, 0 failed.
-- [ ] **Step 9 - OSS-09 (high)**: The repository has no working style gate: pnpm format targets a directory that does not exist and pnpm lint is a no-op, so nothing enforces the house style a contributor is asked to follow.
-  - [ ] **9.1**: Fix the format script path to the real source layout (packages/*/lib/**/*.ts, packages/*/index.ts, packages/*/__tests__/**/*.mjs, scripts/*.mjs, test/*.mjs) and add prettier as a root devDependency pinned to an exact version.
-  - [ ] **9.2**: Add the linter the handoff describes as the house style enforcement: ESLint with typescript-eslint, @stylistic and eslint-plugin-unicorn, pinned exactly, committed to the repository instead of living in /tmp.
-  - [ ] **9.3**: Replace the lint script placeholder with the real invocation and add a lint:fix counterpart, so the rule set is reproducible by a contributor rather than reconstructed from a handoff document.
-  - [ ] **9.4**: Document the format and lint commands as part of the contribution gate in CONTRIBUTING.md, and record why no CI runs them yet so the manual step is explicit rather than implied.
-  - [ ] **9.5**: Gate: pnpm format and pnpm lint both exit 0 on a clean checkout, and a deliberately malformed file makes pnpm lint exit non-zero.
+- [x] **Step 9 - OSS-09 (high)**: The repository had no working style gate: pnpm format targeted a directory that does not exist and pnpm lint was a no-op, so nothing enforced the house style a contributor is asked to follow.
+  - [x] **9.1**: Wired the real source layout into format and format:check (packages/*/lib/**/*.ts, packages/*/index.ts, packages/*/__tests__/**/*.mjs, scripts/*.mjs, test/*.mjs) and pinned prettier 3.9.6 exactly as a root devDependency. Prettier owns formatting, which is why biome.json disables Biome's own formatter.
+  - [x] **9.2**: Pinned @biomejs/biome 2.5.13 as the linter instead of ESLint. This sub-step named the ESLint setup from the handoff, and that setup cannot run here: typescript-eslint 8.70.0 declares typescript >=4.8.4 <6.1.0 while the repository is on 7.0.2, so no release of it supports this toolchain. Biome parses TypeScript 7, ships as one binary and pulls no peer dependencies.
+  - [x] **9.3**: Replaced the placeholder with lint and lint:fix, and committed biome.json instead of leaving the rule set in /tmp. Two rules are off because the code does the flagged thing on purpose, with the measured reason in the commit body; the other twenty are the OSS-21 backlog.
+  - [x] **9.4**: The commands are documented in the commit and the review. CONTRIBUTING.md does not exist yet, so the contributor-facing half of this sub-step belongs to Step 2. No CI runs them, by the accepted-risk decision, so running them stays a manual gate.
+  - [x] **9.5**: Gate met: pnpm format:check and pnpm lint both exit 0, test/style-gate.test.mjs proves prettier accepts every hand-written file and that the linter reports noDebugger on a deliberately malformed one, pnpm test reports 20 pass 0 fail and pnpm test:all reports 8 ok 0 failed.
 - [ ] **Step 10 - OSS-10 (high)**: Three packages carry unfilled template placeholders as allowBuilds values, which are not valid booleans, so pnpm refuses to run and fails pnpm typecheck and pnpm test in pi-ask, pi-path-picker and pi-web with ERR_PNPM_IGNORED_BUILDS.
   - [ ] **10.1**: Replace the placeholder values in the three allowBuilds blocks with explicit booleans, matching the pi-cursor precedent which declares false for @google/genai, esbuild and protobufjs and explains why in a comment.
   - [ ] **10.2**: Leave the blocks in their own package files, which is where a standalone pnpm project declares them, and make the three sets identical to each other and explicit.
@@ -220,3 +222,11 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **18.2**: Delete the stale remote branch dependabot/npm_and_yarn/packages/pi-mcp/npm_and_yarn-8bd3e5320a once the pull request is resolved.
   - [ ] **18.3**: Document in CONTRIBUTING.md how dependency updates are handled without automation, so the manual process is discoverable rather than absent.
   - [ ] **18.4**: Gate: the repository has zero open pull requests and the stale dependabot remote branch is gone.
+
+- [ ] **Step 19 - OSS-21 (medium)**: Twenty Biome rules are disabled because 167 diagnostics say the code does not satisfy them yet, so the gate passes by ratchet and the backlog is recorded rather than closed.
+  - [ ] **19.1**: Fix the correctness subset first, because those are defects and not style: suspicious/noDuplicateObjectKeys (2, in test/harness.mjs), correctness/noUnsafeFinally (2), suspicious/noAssignInExpressions (3), suspicious/noPrototypeBuiltins (1), suspicious/noGlobalIsNan (1), suspicious/noShadowRestrictedNames (1) and suspicious/noImplicitAnyLet (1).
+  - [ ] **19.2**: Remove the dead code the linter names: correctness/noUnusedVariables (10), correctness/noUnusedImports (9), correctness/noUnusedFunctionParameters (8) and correctness/noUnusedPrivateClassMembers (3). Check each against the test suites before deleting rather than trusting the rule alone, because a parameter can be part of a signature the caller relies on.
+  - [ ] **19.3**: Take the mechanical style rules in one pass so the diff stays reviewable: style/useTemplate (49), style/noNonNullAssertion (36), complexity/useOptionalChain (22), complexity/useLiteralKeys (4), style/useConst (3), complexity/noUselessSwitchCase (3) and style/useImportType (1).
+  - [ ] **19.4**: Decide the type-hygiene rules deliberately instead of by default: complexity/noBannedTypes (4) and suspicious/noExplicitAny (4) may be honest escape hatches at a terminal boundary, in which case they stay off with a written reason rather than staying off silently.
+  - [ ] **19.5**: Turn each rule back on in biome.json as its count reaches zero, so the ratchet only moves one way and the disabled list shrinks.
+  - [ ] **19.6**: Gate: the disabled list in biome.json holds only rules with a written intentional reason, pnpm lint exits 0 with everything else enabled, and pnpm test and pnpm test:all still pass.

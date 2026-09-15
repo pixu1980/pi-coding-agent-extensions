@@ -47,8 +47,8 @@
     ]
   },
   "peerDependencies": {
-    "@earendil-works/pi-coding-agent": ">=0.83.0",
-    "@earendil-works/pi-tui": ">=0.83.0",
+    "@earendil-works/pi-coding-agent": ">=0.85.1",
+    "@earendil-works/pi-tui": ">=0.85.1",
     "typebox": "*"
   },
   "peerDependenciesMeta": {
@@ -60,9 +60,9 @@
     }
   },
   "devDependencies": {
-    "@types/node": "^26.1.2",
-    "commit-and-tag-version": "13.1.2",
-    "tsx": "4.23.1",
-    "typescript": "^7.0.2"
+    "@types/node": "26.6.0",
+    "commit-and-tag-version": "13.2.1",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
   }
 }

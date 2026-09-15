@@ -2,7 +2,6 @@
   "name": "pi-coding-agent-extensions",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@11.18.0",
   "description": "Monorepo for pi.dev extensions, themes, and packages",
   "license": "MIT",
   "repository": {
@@ -23,6 +22,6 @@
     "test:coverage": "node scripts/test-all.mjs --coverage"
   },
   "devDependencies": {
-    "commit-and-tag-version": "^13.1.2"
+    "commit-and-tag-version": "13.2.1"
   }
 }

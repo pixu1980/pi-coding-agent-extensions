@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.7](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.6...@pixu1980/pi-web@0.1.7) (2026-09-15)
+
+### Features
+
+* **path-picker:** fix suggestions list ([34ebdca](https://github.com/pixu1980/pi-coding-agent-extensions/commit/34ebdca83b18a349f083e3a26ff61dc221f8bb58))
+* **pi-ask:** complete paths in the ask and interview editors ([98b2264](https://github.com/pixu1980/pi-coding-agent-extensions/commit/98b226437a9f5f2d951f6f2f063bcd94374093ee))
+* **pi-cursor:** add Cursor API key provider extension ([74e9d5e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/74e9d5ef12ba335fad4cd4853d8c2e0db8f16736))
+* **pi-cursor:** keep local agents working on a Free Cursor plan ([2202763](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2202763d399ff26d0523fe495f9eb44e21070127))
+* **pi-path-picker:** publish the autocomplete provider over the event bus ([c0ea384](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c0ea384b4afc52bcf0e53a4502fd18ca32683286))
+* **pi-reasoning:** share the /effort menu and derive level labels from one rule ([c66dfc0](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c66dfc093afa9ee73ce95ec46a8aeecca0483464))
+
+### Bug Fixes
+
+* **pi-statusline:** match pi-reasoning's effort emoji and measure width by grapheme ([763ef16](https://github.com/pixu1980/pi-coding-agent-extensions/commit/763ef169381641ad336237167bbf4085f45215d9))
+* **release:** release only packages with real changes since last tag ([6a6e21c](https://github.com/pixu1980/pi-coding-agent-extensions/commit/6a6e21c1cc89977be027cb9bd65d3720e5f9837c))
 ## [0.1.6](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.5...@pixu1980/pi-web@0.1.6) (2026-08-25)
 
 ### Features

@@ -70,6 +70,7 @@ test("fmtTokens: <1k plain, k suffix, M suffix", () => {
 test("gradientColor: clamps to 0..1 and emits ANSI true color", () => {
   const green = gradientColor(0);
   const red = gradientColor(1);
+
   assert.match(green, /^\x1b\[38;2;\d+;\d+;\d+m$/);
   assert.match(red, /^\x1b\[38;2;\d+;\d+;\d+m$/);
   // clamping: out-of-range values behave like the boundary
@@ -79,6 +80,7 @@ test("gradientColor: clamps to 0..1 and emits ANSI true color", () => {
 
 test("gradient: wraps text with color and reset", () => {
   const out = gradient("50%", 0.5);
+
   assert.ok(out.startsWith("\x1b["));
   assert.ok(out.endsWith("\x1b[0m"));
   assert.ok(out.includes("50%"));
@@ -103,6 +105,7 @@ test("formatEmojiText: one emoji, two spaces, then the text", () => {
 
 test("getEffortEmoji: mirrors pi-reasoning LEVEL_EMOJI for every level", () => {
   assert.deepEqual(Object.keys(LEVEL_EMOJI).sort(), [...ALL_THINKING_LEVELS].sort());
+
   for (const level of ALL_THINKING_LEVELS) {
     assert.equal(getEffortEmoji(level), LEVEL_EMOJI[level], `palette drift on level ${level}`);
   }
@@ -151,6 +154,7 @@ test("validateTemplate: accepts known tokens", () => {
 
 test("validateTemplate: rejects unknown tokens with message", () => {
   const err = validateTemplate("{bogus}");
+
   assert.ok(err && err.includes("bogus"));
   assert.ok(err && err.includes("Valid:"));
 });
@@ -175,14 +179,17 @@ test("resolveTemplate: custom format uses custom template, falls back to preset-
 
 test("compileTemplate: valid template returns a function, invalid returns error string", () => {
   const fn = compileTemplate("{project} {model}");
+
   assert.equal(typeof fn, "function");
   const err = compileTemplate("{nope}");
+
   assert.equal(typeof err, "string");
 });
 
 test("renderStatusLine: renders required tokens", () => {
   const compiled = compileTemplate("P:{project}|M:{model}");
   const line = renderStatusLine(DATA, compiled);
+
   assert.ok(line.includes("my-app"));
   assert.ok(line.includes("claude-opus-4"));
 });
@@ -190,6 +197,7 @@ test("renderStatusLine: renders required tokens", () => {
 test("renderStatusLine: git status tokens render ahead/behind/dirty", () => {
   const compiled = compileTemplate("{git_status}");
   const line = renderStatusLine(DATA, compiled);
+
   assert.ok(line.includes("⇡3"));
   assert.ok(line.includes("⇣1"));
   assert.ok(line.includes("!2"));
@@ -198,6 +206,7 @@ test("renderStatusLine: git status tokens render ahead/behind/dirty", () => {
 test("renderStatusLine: no git → optional tokens disappear and decorators are cleaned", () => {
   const compiled = compileTemplate("P: {project} › B: {branch} S: {git_status}");
   const line = renderStatusLine({ ...DATA, git: null, hasGit: false }, compiled);
+
   assert.ok(line.includes("my-app"));
   assert.ok(!line.includes("feature/x"));
   assert.ok(!line.includes("()"), "empty parens must be removed");
@@ -206,6 +215,7 @@ test("renderStatusLine: no git → optional tokens disappear and decorators are 
 test("renderStatusLine: context token formats used/total (pct)", () => {
   const compiled = compileTemplate("{context}");
   const line = renderStatusLine(DATA, compiled);
+
   assert.ok(line.includes("901k"));
   assert.ok(line.includes("1.0M"));
   assert.ok(line.includes("90%"));
@@ -214,6 +224,7 @@ test("renderStatusLine: context token formats used/total (pct)", () => {
 test("renderStatusLine: individual context tokens", () => {
   const compiled = compileTemplate("{context_used}|{context_total}|{context_pct}");
   const line = renderStatusLine(DATA, compiled);
+
   // context_pct is gradient-colored, so compare token values rather than a contiguous string
   assert.ok(line.includes("901k"));
   assert.ok(line.includes("1.0M"));
@@ -223,17 +234,19 @@ test("renderStatusLine: individual context tokens", () => {
 test("renderStatusLine: unknown-but-valid optional token empty when no git", () => {
   const compiled = compileTemplate("[{git_dirty}] {model}");
   const line = renderStatusLine({ ...DATA, git: null, hasGit: false }, compiled);
+
   assert.ok(!line.includes("[]"));
 });
 
 test("renderStatusLine: initial prompt token renders", () => {
   const compiled = compileTemplate("{initial_prompt}");
+
   assert.ok(renderStatusLine(DATA, compiled).includes("Refactor the auth module"));
 });
 
 // ── Unit: responsive cascade (preset-auto) ────────────────────────
 
-const strip = (s) => s.replace(/\x1b\[[0-9;]*m/g, "");
+const strip = (s) => s.replaceAll(/\x1b\[[0-9;]*m/g, "");
 
 // Data matching the user's real-world example (clean repo, empty context)
 const USER_DATA = {
@@ -251,6 +264,7 @@ const USER_DATA = {
 
 test("renderResponsive: very wide width renders the full-label level", () => {
   const line = renderResponsive(USER_DATA, 10_000);
+
   assert.equal(
     strip(line),
     "Project: ~/Projects/pixu1980/pi-coding-agent-extensions › Branch: main › Model: DeepSeek V4 Flash Effort: High › Context: 0/1.0M (0%)",
@@ -261,6 +275,7 @@ test("renderResponsive: very wide width renders the full-label level", () => {
 test("renderResponsive: wide width degrades to the verbose labeled level", () => {
   const full = renderResponsive(USER_DATA, 10_000);
   const line = renderResponsive(USER_DATA, visibleWidth(full) - 1);
+
   assert.equal(
     strip(line),
     "P: ~/Projects/pixu1980/pi-coding-agent-extensions › B: main › M: DeepSeek V4 Flash E: High › C: 0/1.0M (0%)",
@@ -272,6 +287,7 @@ test("renderResponsive: medium width degrades to the compact level", () => {
   const full = renderResponsive(USER_DATA, 10_000);
   const verbose = renderResponsive(USER_DATA, visibleWidth(full) - 1);
   const line = renderResponsive(USER_DATA, visibleWidth(verbose) - 1);
+
   assert.equal(
     strip(line),
     "P: pi-coding-agent-extensions › B: main › M: DeepSeek V4 Flash - High › C: 0/1.0M",
@@ -284,6 +300,7 @@ test("renderResponsive: narrow width degrades to the minimal level", () => {
   const verbose = renderResponsive(USER_DATA, visibleWidth(full) - 1);
   const compact = renderResponsive(USER_DATA, visibleWidth(verbose) - 1);
   const line = renderResponsive(USER_DATA, visibleWidth(compact) - 1);
+
   assert.equal(
     strip(line),
     "pi-coding-agent-extensions | main | DeepSeek V4 Flash - High | 0/1.0M",
@@ -296,6 +313,7 @@ test("renderResponsive: levels are progressively narrower (monotonic)", () => {
   const l1 = renderResponsive(DATA, visibleWidth(l0) - 1);
   const l2 = renderResponsive(DATA, visibleWidth(l1) - 1);
   const l3 = renderResponsive(DATA, visibleWidth(l2) - 1);
+
   assert.ok(visibleWidth(l1) < visibleWidth(l0), "verbose narrower than full-label");
   assert.ok(visibleWidth(l2) < visibleWidth(l1), "compact narrower than verbose");
   assert.ok(visibleWidth(l3) < visibleWidth(l2), "minimal narrower than compact");
@@ -307,10 +325,11 @@ test("renderResponsive: preserves colors at every level", () => {
   const verbose = renderResponsive(DATA, visibleWidth(full) - 1);
   const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
   const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
+
   for (const line of [full, verbose, compact, minimal]) {
     assert.ok(line.includes("\x1b[38;2;255;180;100m"), "model stays orange-gold");
     assert.ok(line.includes("\x1b[38;2;180;220;100m"), "effort stays lime-green");
-    assert.ok(line.includes("\x1b[38;2;140;140;140m"), "labels/separators stay dim grey");
+    assert.ok(line.includes("\x1b[38;2;140;140;140m"), "labels/separators stay dim gray");
     // gradient code sits directly before the used-token count at every level
     assert.match(line, /\x1b\[38;2;\d+;\d+;\d+m901k/, "context keeps the gradient");
   }
@@ -321,17 +340,18 @@ test("renderResponsive: compact/minimal keep the '/' between used and total grad
   const verbose = renderResponsive(DATA, visibleWidth(full) - 1);
   const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
   const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
+
   for (const line of [compact, minimal]) {
     // 901k → reset → gradient-coded '/' → reset → gradient-coded 1.0M
     assert.match(
       line,
       /901k\x1b\[0m\x1b\[38;2;\d+;\d+;\d+m\/\x1b\[0m\x1b\[38;2;\d+;\d+;\d+m1\.0M/,
-      "the '/' keeps the context percentage gradient instead of dim grey",
+      "the '/' keeps the context percentage gradient instead of dim gray",
     );
     assert.ok(
       !line.includes("\x1b[38;2;140;140;140m/\x1b[0m") &&
       !line.includes("901k\x1b[0m\x1b[38;2;140;140;140m/"),
-      "no dim-grey slash adjacent to the context numbers",
+      "no dim-gray slash adjacent to the context numbers",
     );
   }
 });
@@ -342,6 +362,7 @@ test("renderResponsive: model name passes through verbatim at every level", () =
   const l1 = renderResponsive(withBadge, visibleWidth(l0) - 1);
   const l2 = renderResponsive(withBadge, visibleWidth(l1) - 1);
   const l3 = renderResponsive(withBadge, visibleWidth(l2) - 1);
+
   for (const line of [l0, l1, l2, l3]) {
     assert.ok(strip(line).includes("DeepSeek V4 Flash (New)"), "model badge is preserved, not dropped");
   }
@@ -349,19 +370,24 @@ test("renderResponsive: model name passes through verbatim at every level", () =
 
 test("renderResponsive: git status shows at every level", () => {
   const full = renderResponsive(DATA, 10_000);
+
   assert.ok(full.includes("⇡3"), "full-label keeps ahead");
   assert.ok(full.includes("⇣1"), "full-label keeps behind");
   assert.ok(full.includes("!2"), "full-label keeps dirty");
   const verbose = renderResponsive(DATA, visibleWidth(full) - 1);
+
   assert.ok(verbose.includes("⇡3"));
   const compact = renderResponsive(DATA, visibleWidth(verbose) - 1);
+
   assert.ok(compact.includes("⇡3"));
   const minimal = renderResponsive(DATA, visibleWidth(compact) - 1);
+
   assert.ok(minimal.includes("⇡3"));
 });
 
 test("renderResponsive: too-narrow width falls back to minimal, never crashes", () => {
   const line = renderResponsive(DATA, 10);
+
   assert.ok(strip(line).includes("my-app"), "fallback still shows project");
   assert.ok(strip(line).includes("claude-opus-4 - High"));
   // Caller truncates; here we just verify it doesn't throw and is colored.
@@ -371,6 +397,7 @@ test("renderResponsive: too-narrow width falls back to minimal, never crashes", 
 test("renderResponsive: empty git → branch/git_status sections collapse", () => {
   const noGit = { ...DATA, git: null, hasGit: false };
   const line = renderResponsive(noGit, 10_000);
+
   assert.ok(!strip(line).includes("feature/x"));
   assert.ok(!strip(line).includes("B:"), "no empty branch section");
   assert.ok(!strip(line).includes("Branch:"), "no empty branch section in full-label level");
@@ -381,6 +408,7 @@ test("renderResponsive: custom short project name already stays put", () => {
   const short = { ...DATA, project: "my-app" };
   const l1 = renderResponsive(short, 10_000);
   const l2 = renderResponsive(short, visibleWidth(l1) - 1);
+
   assert.ok(strip(l2).includes("P: my-app"));
 });
 
@@ -389,12 +417,14 @@ test("renderResponsive: custom short project name already stays put", () => {
 function withTempGitRepo(fn) {
   const originalCwd = process.cwd();
   const dir = mkdtempSync(join(tmpdir(), "pi-statusline-git-"));
+
   execSync("git init -q -b main", { cwd: dir });
   execSync("git config user.email test@example.com", { cwd: dir });
   execSync("git config user.name Tester", { cwd: dir });
   writeFileSync(join(dir, "file.txt"), "hello\n");
   execSync("git add . && git commit -qm init", { cwd: dir });
   process.chdir(dir);
+
   try {
     fn(dir);
   } finally {
@@ -406,9 +436,12 @@ test("getGitStatus: non-git directory reports no git", () => {
   invalidateGitCache();
   const plain = mkdtempSync(join(tmpdir(), "pi-statusline-nogit-"));
   const originalCwd = process.cwd();
+
   process.chdir(plain);
+
   try {
     const result = getGitStatus(plain, true);
+
     assert.equal(result.hasGit, false);
     assert.equal(result.status, null);
   } finally {
@@ -420,6 +453,7 @@ test("getGitStatus: clean repo reports branch + zero dirty", () => {
   invalidateGitCache();
   withTempGitRepo(() => {
     const { status, hasGit } = getGitStatus(process.cwd(), true);
+
     assert.equal(hasGit, true);
     assert.equal(status.branch, "main");
     assert.equal(status.dirty, 0);
@@ -433,6 +467,7 @@ test("getGitStatus: dirty repo counts modified files", () => {
   withTempGitRepo((dir) => {
     writeFileSync(join(dir, "file.txt"), "changed\n");
     const { status } = getGitStatus(process.cwd(), true);
+
     assert.equal(status.dirty, 1);
   });
 });
@@ -445,9 +480,11 @@ test("loadSettings: missing file returns defaults", () => {
 
 test("saveSettings + loadSettings round-trip", () => {
   const custom = { ...DEFAULT_SETTINGS, format: "custom", customTemplate: "{model} {effort}" };
+
   saveSettings(custom);
   assert.deepEqual(loadSettings(), custom);
   const p = join(process.env.PI_CODING_AGENT_DIR, "pi-statusline.json");
+
   assert.ok(existsSync(p), "settings file must be written to the agent dir");
   assert.ok(readFileSync(p, "utf8").includes("customTemplate"));
 });

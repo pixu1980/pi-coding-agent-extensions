@@ -34,8 +34,10 @@ export function getMcpStats(): McpCacheStats {
 export function getMcpInfo(): McpInfo {
   if (mcpCache && Date.now() - mcpCache.ts < MCP_CACHE_TTL_MS) {
     mcpCacheStats.hits++;
+
     return mcpCache.data;
   }
+
   mcpCacheStats.misses++;
 
   const agentDir = getAgentDir();
@@ -47,18 +49,22 @@ export function getMcpInfo(): McpInfo {
 
   try {
     const config = JSON.parse(fs.readFileSync(mcpConfigPath, "utf-8"));
+
     total = Object.keys(config.mcpServers || {}).length;
   } catch { /* mcp.json not found */ }
 
   try {
     const cache = JSON.parse(fs.readFileSync(mcpCachePath, "utf-8"));
     const servers: Record<string, any> = cache.servers || {};
+
     connected = Object.values(servers).filter(
       (s) => Array.isArray(s.tools) && s.tools.length > 0,
     ).length;
   } catch { /* cache not found */ }
 
   const data = { total, connected };
+
   mcpCache = { data, ts: Date.now() };
+
   return data;
 }

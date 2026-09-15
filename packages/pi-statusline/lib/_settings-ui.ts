@@ -18,12 +18,14 @@ import * as path from "node:path";
 function settingsPath(): string {
   // Store in global pi agent config dir for cross-project persistence
   const agentDir = getAgentDir();
+
   return path.join(agentDir, "pi-statusline.json");
 }
 
 export function loadSettings(): StatusLineSettings {
   try {
     const raw = fs.readFileSync(settingsPath(), "utf-8");
+
     return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
   } catch {
     return { ...DEFAULT_SETTINGS };

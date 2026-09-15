@@ -62,7 +62,10 @@ export function getGitCacheStats(): GitCacheStats {
  */
 export function expireGitCache(cwd: string): void {
   const hit = cacheByCwd.get(cwd);
-  if (hit) cacheByCwd.set(cwd, { ...hit, timestamp: 0 });
+
+  if (hit) {
+    cacheByCwd.set(cwd, { ...hit, timestamp: 0 });
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -82,20 +85,33 @@ function run(cmd: string, cwd: string): string | null {
 
 function hasGit(cwd: string): boolean {
   const out = run("git rev-parse --is-inside-work-tree 2>/dev/null", cwd);
+
   return out === "true";
 }
 
 function getBranch(cwd: string): string | null {
   const out = run("git rev-parse --abbrev-ref HEAD 2>/dev/null", cwd);
-  if (!out || out === "HEAD") return null;
+
+  if (!out || out === "HEAD") {
+    return null;
+  }
+
   return out;
 }
 
 function getAheadBehind(cwd: string): { ahead: number; behind: number; hasUpstream: boolean } {
   const out = run("git rev-list --count --left-right @{upstream}...HEAD 2>/dev/null", cwd);
-  if (!out) return { ahead: 0, behind: 0, hasUpstream: false };
+
+  if (!out) {
+    return { ahead: 0, behind: 0, hasUpstream: false };
+  }
+
   const parts = out.split("\t");
-  if (parts.length !== 2) return { ahead: 0, behind: 0, hasUpstream: false };
+
+  if (parts.length !== 2) {
+    return { ahead: 0, behind: 0, hasUpstream: false };
+  }
+
   return {
     ahead: parseInt(parts[1] ?? "0", 10) || 0,
     behind: parseInt(parts[0] ?? "0", 10) || 0,
@@ -105,7 +121,11 @@ function getAheadBehind(cwd: string): { ahead: number; behind: number; hasUpstre
 
 function getDirty(cwd: string): number {
   const out = run("git status --porcelain 2>/dev/null", cwd);
-  if (!out) return 0;
+
+  if (!out) {
+    return 0;
+  }
+
   return out.split("\n").filter(Boolean).length;
 }
 
@@ -117,8 +137,11 @@ function getDirty(cwd: string): number {
 function runAsync(file: string, args: string[], cwd: string): Promise<string | null> {
   return new Promise((resolve) => {
     execFile(file, args, { encoding: "utf-8", timeout: REFRESH_TIMEOUT_MS, cwd }, (error, stdout) => {
-      if (error) resolve(null);
-      else resolve(String(stdout).trim());
+      if (error) {
+        resolve(null);
+      } else {
+        resolve(String(stdout).trim());
+      }
     });
   });
 }
@@ -126,9 +149,16 @@ function runAsync(file: string, args: string[], cwd: string): Promise<string | n
 interface AheadBehind { ahead: number; behind: number; hasUpstream: boolean }
 
 function parseAheadBehind(out: string | null): AheadBehind {
-  if (!out) return { ahead: 0, behind: 0, hasUpstream: false };
+  if (!out) {
+    return { ahead: 0, behind: 0, hasUpstream: false };
+  }
+
   const parts = out.split("\t");
-  if (parts.length !== 2) return { ahead: 0, behind: 0, hasUpstream: false };
+
+  if (parts.length !== 2) {
+    return { ahead: 0, behind: 0, hasUpstream: false };
+  }
+
   return {
     ahead: parseInt(parts[1] ?? "0", 10) || 0,
     behind: parseInt(parts[0] ?? "0", 10) || 0,
@@ -149,10 +179,15 @@ async function queryGitAsync(cwd: string): Promise<{ status: GitStatus | null; h
       runAsync("git", ["rev-list", "--count", "--left-right", "@{upstream}...HEAD"], cwd),
       runAsync("git", ["status", "--porcelain"], cwd),
     ]);
-    if (branchOut === null) return { hasGit: false, status: null };
+
+    if (branchOut === null) {
+      return { hasGit: false, status: null };
+    }
+
     const branch = branchOut !== "HEAD" ? branchOut : "HEAD";
     const ab = parseAheadBehind(abOut);
     const dirty = dirtyOut ? dirtyOut.split("\n").filter(Boolean).length : 0;
+
     return { hasGit: true, status: { branch, ahead: ab.ahead, behind: ab.behind, dirty, hasUpstream: ab.hasUpstream } };
   } catch {
     return { hasGit: false, status: null };
@@ -167,13 +202,24 @@ async function queryGitAsync(cwd: string): Promise<{ status: GitStatus | null; h
  */
 function refreshGitAsync(cwd: string): void {
   const now = Date.now();
-  if (pendingRefreshes.has(cwd) || scheduledRefreshes.has(cwd)) return;
-  if (now - (lastAttemptByCwd.get(cwd) ?? 0) < REFRESH_RETRY_MS) return;
+
+  if (pendingRefreshes.has(cwd) || scheduledRefreshes.has(cwd)) {
+    return;
+  }
+
+  if (now - (lastAttemptByCwd.get(cwd) ?? 0) < REFRESH_RETRY_MS) {
+    return;
+  }
+
   lastAttemptByCwd.set(cwd, now);
   scheduledRefreshes.add(cwd);
   const timer = setImmediate(() => {
     scheduledRefreshes.delete(cwd);
-    if (pendingRefreshes.has(cwd)) return;
+
+    if (pendingRefreshes.has(cwd)) {
+      return;
+    }
+
     const pending = queryGitAsync(cwd)
       .then((result) => {
         cacheByCwd.set(cwd, { status: result.status, hasGit: result.hasGit, timestamp: Date.now() });
@@ -184,8 +230,10 @@ function refreshGitAsync(cwd: string): void {
       .finally(() => {
         pendingRefreshes.delete(cwd);
       });
+
     pendingRefreshes.set(cwd, pending);
   });
+
   timer.unref();
 }
 
@@ -199,8 +247,13 @@ export async function flushGitRefreshes(): Promise<void> {
   // Yield past deferred kicks so a refresh scheduled this tick is visible.
   await new Promise((resolve) => setImmediate(resolve));
   const pending = [...pendingRefreshes.values()];
-  if (pending.length === 0) return;
+
+  if (pending.length === 0) {
+    return;
+  }
+
   await Promise.all(pending);
+
   return flushGitRefreshes();
 }
 
@@ -210,9 +263,12 @@ export async function flushGitRefreshes(): Promise<void> {
  */
 function queryGitSync(cwd: string): { status: GitStatus | null; hasGit: boolean } {
   const now = Date.now();
+
   if (!hasGit(cwd)) {
     const entry: CacheEntry = { status: null, hasGit: false, timestamp: now };
+
     cacheByCwd.set(cwd, entry);
+
     return { hasGit: false, status: null };
   }
 
@@ -229,6 +285,7 @@ function queryGitSync(cwd: string): { status: GitStatus | null; hasGit: boolean 
   };
 
   cacheByCwd.set(cwd, { status, hasGit: true, timestamp: now });
+
   return { status, hasGit: true };
 }
 
@@ -242,25 +299,33 @@ function queryGitSync(cwd: string): { status: GitStatus | null; hasGit: boolean 
  * query (used after branch change, never per frame).
  */
 export function getGitStatus(cwd: string, force = false): { status: GitStatus | null; hasGit: boolean } {
-  if (force) return queryGitSync(cwd);
+  if (force) {
+    return queryGitSync(cwd);
+  }
 
   const now = Date.now();
   const hit = cacheByCwd.get(cwd);
+
   if (hit) {
     const ttl = hit.hasGit ? CACHE_TTL_MS : NEGATIVE_TTL_MS;
+
     if (now - hit.timestamp < ttl) {
       gitCacheStats.hits++;
+
       return { status: hit.status, hasGit: hit.hasGit };
     }
+
     // Stale: serve last-known-good, refresh off the event loop.
     gitCacheStats.staleServes++;
     refreshGitAsync(cwd);
+
     return { status: hit.status, hasGit: hit.hasGit };
   }
 
   // Cold: neutral fallback, backfill off the event loop.
   gitCacheStats.misses++;
   refreshGitAsync(cwd);
+
   return { hasGit: false, status: null };
 }
 
@@ -271,6 +336,7 @@ export function getGitStatus(cwd: string, force = false): { status: GitStatus | 
  */
 export function invalidateGitCache(cwd?: string): void {
   gitCacheStats.invalidations++;
+
   if (cwd) {
     cacheByCwd.delete(cwd);
     lastAttemptByCwd.delete(cwd);

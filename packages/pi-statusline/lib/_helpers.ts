@@ -134,9 +134,11 @@ export function getProjectPathStats(): ProjectPathStats {
 function toplevelAsync(cwd: string): Promise<string | null> {
   return new Promise((resolve) => {
     execFile("git", ["rev-parse", "--show-toplevel"], { encoding: "utf-8", timeout: REFRESH_TIMEOUT_MS, cwd }, (error, stdout) => {
-      if (error) resolve(null);
-      else {
+      if (error) {
+        resolve(null);
+      } else {
         const root = String(stdout).trim();
+
         resolve(root || null);
       }
     });
@@ -147,18 +149,25 @@ function toplevelAsync(cwd: string): Promise<string | null> {
  * Format a project display path from a known toplevel. Pure and cheap.
  */
 function formatProjectPath(cwd: string, root: string | null, home: string): string {
-  if (!root) return path.basename(cwd);
+  if (!root) {
+    return path.basename(cwd);
+  }
+
   const rel = path.relative(root, cwd);
   let result: string;
+
   if (!rel || rel === ".") {
     result = path.basename(root);
   } else {
     result = `${path.basename(root)}/${rel}`;
   }
+
   if (root.startsWith(home)) {
     const rootRel = path.relative(home, root);
+
     result = "~" + (rootRel ? "/" + rootRel : "") + (rel && rel !== "." ? "/" + rel : "");
   }
+
   return result;
 }
 
@@ -169,13 +178,24 @@ function formatProjectPath(cwd: string, root: string | null, home: string): stri
  */
 function refreshProjectAsync(cwd: string): void {
   const now = Date.now();
-  if (pendingProjectRefreshes.has(cwd) || scheduledProjectRefreshes.has(cwd)) return;
-  if (now - (lastProjectAttemptByCwd.get(cwd) ?? 0) < REFRESH_RETRY_MS) return;
+
+  if (pendingProjectRefreshes.has(cwd) || scheduledProjectRefreshes.has(cwd)) {
+    return;
+  }
+
+  if (now - (lastProjectAttemptByCwd.get(cwd) ?? 0) < REFRESH_RETRY_MS) {
+    return;
+  }
+
   lastProjectAttemptByCwd.set(cwd, now);
   scheduledProjectRefreshes.add(cwd);
   const timer = setImmediate(() => {
     scheduledProjectRefreshes.delete(cwd);
-    if (pendingProjectRefreshes.has(cwd)) return;
+
+    if (pendingProjectRefreshes.has(cwd)) {
+      return;
+    }
+
     const home = os.homedir();
     // Reuse a fresh toplevel without spawning; otherwise resolve it async.
     const cachedRoot = toplevelCache.get(cwd);
@@ -183,9 +203,12 @@ function refreshProjectAsync(cwd: string): void {
       cachedRoot && Date.now() - cachedRoot.ts < TOPLEVEL_TTL_MS
         ? Promise.resolve(cachedRoot.root)
         : toplevelAsync(cwd).then((root) => {
-            if (root) toplevelCache.set(cwd, { root, ts: Date.now() });
-            return root;
-          });
+          if (root) {
+            toplevelCache.set(cwd, { root, ts: Date.now() });
+          }
+
+          return root;
+        });
     const pending = Promise.all([
       rootPromise,
       // Canonicalize symlinked cwd (e.g. macOS /var -> /private/var) so the
@@ -194,6 +217,7 @@ function refreshProjectAsync(cwd: string): void {
     ])
       .then(([root, realCwd]) => {
         const value = formatProjectPath(realCwd, root, home);
+
         projectPathCache.set(`${cwd}:git-relative`, { value, ts: Date.now() });
       })
       .catch(() => {
@@ -202,8 +226,10 @@ function refreshProjectAsync(cwd: string): void {
       .finally(() => {
         pendingProjectRefreshes.delete(cwd);
       });
+
     pendingProjectRefreshes.set(cwd, pending);
   });
+
   timer.unref();
 }
 
@@ -217,8 +243,13 @@ export async function flushProjectPathRefreshes(): Promise<void> {
   // Yield past deferred kicks so a refresh scheduled this tick is visible.
   await new Promise((resolve) => setImmediate(resolve));
   const pending = [...pendingProjectRefreshes.values()];
-  if (pending.length === 0) return;
+
+  if (pending.length === 0) {
+    return;
+  }
+
   await Promise.all(pending);
+
   return flushProjectPathRefreshes();
 }
 
@@ -242,25 +273,32 @@ export function invalidateProjectPathCache(cwd?: string): void {
  * the backfill runs.
  */
 export function getProjectPath(cwd: string, style: string): string {
-  if (style === "dirname") return path.basename(cwd);
+  if (style === "dirname") {
+    return path.basename(cwd);
+  }
 
   // Fast path: fresh cache → zero spawns.
   const cacheKey = `${cwd}:git-relative`;
   const now = Date.now();
   const hit = projectPathCache.get(cacheKey);
+
   if (hit) {
     if (now - hit.ts < PROJECT_TTL_MS) {
       projectPathStats.hits++;
+
       return hit.value;
     }
+
     // Stale: serve last-known-good, refresh off the event loop.
     projectPathStats.staleServes++;
     refreshProjectAsync(cwd);
+
     return hit.value;
   }
 
   // Cold: bare-dirname fallback, backfill off the event loop.
   projectPathStats.misses++;
   refreshProjectAsync(cwd);
+
   return path.basename(cwd);
 }

@@ -8,3 +8,4 @@
 import "./_unit.test.mjs";
 import "./_components.test.mjs";
 import "./_e2e.test.mjs";
+import "./_perf.test.mjs";

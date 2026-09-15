@@ -2,12 +2,12 @@
  * pi-sessions - session file discovery and parsing (private module)
  */
 
-import { createReadStream, readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { createReadStream, readFileSync, statSync, existsSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { createInterface } from "node:readline";
-import { SESSION_DIR_NAME, MAX_NAME_LENGTH, MAX_SESSIONS, CACHE_TTL_MS } from "./_constants.ts";
+import { SESSION_DIR_NAME, MAX_NAME_LENGTH, MAX_SESSIONS, MAX_SESSION_SCAN_LINES, CACHE_TTL_MS } from "./_constants.ts";
 import type { SessionSummary, TextContentBlock } from "./_types.ts";
 
 // ── Session Cache ───────────────────────────────────────────────────
@@ -223,15 +223,38 @@ export function parseSessionFile(filePath: string): SessionSummary | null {
 
 const MAX_CONCURRENT_SESSION_READS = 10;
 
+// ── Bounded-work counters (PERF-04) ──────────────────────────────
+// Proof that discovery stays O(MAX_SESSIONS) in memory and that scanning
+// caps pathological files: candidates never exceed MAX_SESSIONS and lines
+// scanned never grows unbounded.
+
+interface SessionsStats {
+  dirReads: number;
+  fileStats: number;
+  candidatesReturned: number;
+  filesParsed: number;
+  linesScanned: number;
+}
+
+const sessionsStats: SessionsStats = { dirReads: 0, fileStats: 0, candidatesReturned: 0, filesParsed: 0, linesScanned: 0 };
+
+export function getSessionsStats(): SessionsStats {
+  return { ...sessionsStats };
+}
+
 async function mapWithConcurrency<T, R>(
   items: T[],
+  limit: number,
   worker: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
   if (items.length === 0) return [];
+  // Backpressure contract: at most `limit` reads in flight; the remaining
+  // items wait in the loop (deferred, never dropped). The caller bounds the
+  // item count (MAX_SESSIONS candidates) so the queue itself is bounded.
   const results = new Array<R>(items.length);
   let nextIndex = 0;
   const workers = Array.from(
-    { length: Math.min(MAX_CONCURRENT_SESSION_READS, items.length) },
+    { length: Math.min(limit, items.length) },
     async () => {
       while (true) {
         const index = nextIndex++;
@@ -245,18 +268,25 @@ async function mapWithConcurrency<T, R>(
 }
 
 async function parseSessionFileAsync(filePath: string): Promise<SessionSummary | null> {
+  sessionsStats.filesParsed++;
   try {
     const stats = await stat(filePath);
     const input = createReadStream(filePath, { encoding: "utf8" });
     const lines = createInterface({ input, crlfDelay: Infinity });
     const scan = createSessionScan();
+    let scanned = 0;
     try {
       for await (const line of lines) {
         scanSessionLine(scan, line);
+        scanned++;
+        // A summary only needs the header, the first user message and a
+        // sample of metadata; stop reading pathological files at the cap.
+        if (scanned >= MAX_SESSION_SCAN_LINES) break;
       }
     } finally {
       lines.close();
       input.destroy();
+      sessionsStats.linesScanned += scanned;
     }
     return finishSessionSummary(filePath, scan, stats.mtimeMs, stats.mtime);
   } catch {
@@ -264,35 +294,55 @@ async function parseSessionFileAsync(filePath: string): Promise<SessionSummary |
   }
 }
 
+// Bounded top-k selection: keep at most MAX_SESSIONS newest files in a
+// sorted array (descending by mtime). Insert cost is O(k) with k capped at
+// 500, so discovery memory stays O(MAX_SESSIONS) no matter how many session
+// files accumulate.
+function insertCandidate(
+  top: Array<{ path: string; mtime: number }>,
+  entry: { path: string; mtime: number },
+): void {
+  let lo = 0;
+  let hi = top.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (top[mid]!.mtime > entry.mtime) lo = mid + 1;
+    else hi = mid;
+  }
+  top.splice(lo, 0, entry);
+  if (top.length > MAX_SESSIONS) top.length = MAX_SESSIONS;
+}
+
 async function findSessionCandidates(): Promise<string[]> {
   const sessionsDir = getSessionsDir();
   try {
+    sessionsStats.dirReads++;
     const projects = (await readdir(sessionsDir, { withFileTypes: true }))
       .filter((entry) => entry.isDirectory());
-    const filesByProject = await Promise.all(projects.map(async (project) => {
+    const top: Array<{ path: string; mtime: number }> = [];
+    await Promise.all(projects.map(async (project) => {
       const projectPath = join(sessionsDir, project.name);
       try {
-        return (await readdir(projectPath, { withFileTypes: true }))
-          .filter((entry) => entry.name.endsWith(".jsonl"))
-          .map((entry) => join(projectPath, entry.name));
+        sessionsStats.dirReads++;
+        const files = (await readdir(projectPath, { withFileTypes: true }))
+          .filter((entry) => entry.name.endsWith(".jsonl"));
+        await mapWithConcurrency(files, MAX_CONCURRENT_SESSION_READS, async (entry) => {
+          const filePath = join(projectPath, entry.name);
+          try {
+            sessionsStats.fileStats++;
+            const info = await stat(filePath);
+            if (info.isFile()) insertCandidate(top, { path: filePath, mtime: info.mtimeMs });
+          } catch {
+            // unreadable file → skip
+          }
+        });
       } catch {
-        return [];
+        // unreadable project dir → skip
       }
     }));
-    const candidates = await mapWithConcurrency(filesByProject.flat(), async (path) => {
-      try {
-        const stats = await stat(path);
-        return stats.isFile() ? { path, mtime: stats.mtimeMs } : null;
-      } catch {
-        return null;
-      }
-    });
 
-    return candidates
-      .filter((entry): entry is { path: string; mtime: number } => entry !== null)
-      .sort((left, right) => right.mtime - left.mtime)
-      .slice(0, MAX_SESSIONS)
-      .map((entry) => entry.path);
+    sessionsStats.candidatesReturned = top.length;
+    return top.map((entry) => entry.path);
   } catch {
     return [];
   }
@@ -301,7 +351,7 @@ async function findSessionCandidates(): Promise<string[]> {
 async function listSessionsAsync(onProgress?: SessionListProgress): Promise<SessionSummary[]> {
   const files = await findSessionCandidates();
   let loaded = 0;
-  const summaries = await mapWithConcurrency(files, async (file) => {
+  const summaries = await mapWithConcurrency(files, MAX_CONCURRENT_SESSION_READS, async (file) => {
     try {
       return await parseSessionFileAsync(file);
     } finally {
@@ -312,57 +362,6 @@ async function listSessionsAsync(onProgress?: SessionListProgress): Promise<Sess
   return summaries
     .filter((summary): summary is SessionSummary => summary !== null)
     .sort((left, right) => right.mtime - left.mtime);
-}
-
-/**
- * List all session files and return parsed summaries, newest first.
- * Limits to MAX_SESSIONS to prevent OOM.
- */
-export function listSessions(): SessionSummary[] {
-  const sessionsDir = getSessionsDir();
-  if (!existsSync(sessionsDir)) return [];
-
-  const sessions: SessionSummary[] = [];
-  let entries: string[];
-
-  try {
-    entries = readdirSync(sessionsDir);
-  } catch {
-    return [];
-  }
-
-  // Sessions are organized in subdirectories by project path
-  for (const projectDir of entries) {
-    if (sessions.length >= MAX_SESSIONS) break;
-
-    const projectPath = join(sessionsDir, projectDir);
-    try {
-      if (!statSync(projectPath).isDirectory()) continue;
-    } catch {
-      continue;
-    }
-
-    let sessionFiles: string[];
-    try {
-      sessionFiles = readdirSync(projectPath);
-    } catch {
-      continue;
-    }
-
-    for (const sessionFile of sessionFiles) {
-      if (sessions.length >= MAX_SESSIONS) break;
-      if (!sessionFile.endsWith(".jsonl")) continue;
-      const fullPath = join(projectPath, sessionFile);
-      const summary = parseSessionFile(fullPath);
-      if (summary) {
-        sessions.push(summary);
-      }
-    }
-  }
-
-  // Sort by mtime, newest first
-  sessions.sort((a, b) => b.mtime - a.mtime);
-  return sessions;
 }
 
 /**

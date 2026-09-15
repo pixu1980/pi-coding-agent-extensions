@@ -10,7 +10,6 @@ import {
   getSessionsDir,
   getSessions,
   clearSessionsCache,
-  listSessions,
 } from "../lib/_sessions.ts";
 import { groupSessionsByFolder } from "../lib/_folders.ts";
 
@@ -134,7 +133,7 @@ test("getSessions: loads asynchronously and reports progress", async () => {
   assert.equal(enriched.provider, "openai");
 });
 
-test("listSessions: reads nested project dirs, newest first", async () => {
+test("getSessions: reads nested project dirs, newest first", async () => {
   freshAgentDir(); // isolate from other tests' session files
   writeSession("projA", "1.jsonl", [
     { type: "session", cwd: "/a", timestamp: "2026-07-01T00:00:00Z" },
@@ -148,7 +147,7 @@ test("listSessions: reads nested project dirs, newest first", async () => {
   const now = new Date();
   fs.utimesSync(join(getSessionsDir(), "projB", "2.jsonl"), now, now);
   fs.utimesSync(join(getSessionsDir(), "projA", "1.jsonl"), new Date(now - 10000), new Date(now - 10000));
-  const sessions = listSessions();
+  const sessions = await getSessions();
   assert.equal(sessions.length, 2);
   assert.equal(sessions[0].name, "newer session", "newest first");
 });

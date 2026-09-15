@@ -66,7 +66,20 @@ package in the monorepo (following conventions like pi-path-picker).
 
 - [x] 13. Complete README (install, usage, keys, monorepo-style SVG banner)
 - [x] 14. Monorepo `test:all` green (7/7 packages, 245 tests) + smoke test with real `pi -e .`
-- [ ] 15. Bump version + CHANGELOG + tag + publish npm (`node scripts/release.mjs`) - **awaiting user OK**
+- [x] 15. Bump version + CHANGELOG + tag + publish npm (`node scripts/release.mjs`) - **awaiting user OK**
+
+  > Re-analysis 2026-09-15: the scope this item covered shipped as **0.1.12** (published on npm,
+  > CHANGELOG entry dated 2026-08-25), so the work Phases 1-5 produced is released and the item is done.
+  >
+  > What is *not* released is newer work sitting uncommitted in the tree: the path-completion bridge
+  > (`lib/_path-provider.ts` + `__tests__/_path-provider.test.mjs`, both untracked) plus its wiring in
+  > `lib/_ask.ts`, `lib/_interview-tool.ts`, `lib/index.ts`, `README.md` and `__tests__/index.test.mjs`.
+  > That work is green (`pnpm test` in packages/pi-ask: **101/101**) and consumes the channel contract
+  > pi-path-picker already publishes (`pi-path-picker:provider`, `_contract.ts:34`). It would ship as the
+  > next patch release, but `scripts/release.mjs` bumps **every** package with changes since its last tag,
+  > and the working tree currently also holds unreleased changes in pi-cursor, pi-mcp, pi-path-picker,
+  > pi-reasoning, pi-sessions and pi-statusline. Release scope is therefore a user decision, not a
+  > mechanical step: publishing now would sweep all of them into one release. Kept open pending that call.
 
 ## Out of scope (future candidates)
 

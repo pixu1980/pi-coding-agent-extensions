@@ -21,12 +21,14 @@ const SENSITIVE_DIRECTORIES = new Set([
 ]);
 
 export function isSensitiveDir(dirPath: string): boolean {
-  const normalised = resolve(dirPath);
+  const normalized = resolve(dirPath);
+
   for (const sensitive of SENSITIVE_DIRECTORIES) {
-    if (normalised === sensitive || normalised.startsWith(sensitive + sep)) {
+    if (normalized === sensitive || normalized.startsWith(sensitive + sep)) {
       return true;
     }
   }
+
   return false;
 }
 
@@ -39,6 +41,7 @@ export function expandTilde(path: string): string {
   if (path.startsWith("~" + sep) || path === "~") {
     return join(homedir(), path.slice(1));
   }
+
   return path;
 }
 
@@ -47,7 +50,11 @@ export function expandTilde(path: string): string {
  */
 export function resolvePath(path: string, cwd: string): string {
   const expanded = expandTilde(path);
-  if (isAbsolute(expanded)) return expanded;
+
+  if (isAbsolute(expanded)) {
+    return expanded;
+  }
+
   return resolve(cwd, expanded);
 }
 
@@ -59,9 +66,11 @@ const STRING_DELIMITERS = ['"', "'", "`"] as const;
 /** A character is escaped only when preceded by an odd number of consecutive backslashes. */
 function isEscapedAt(text: string, index: number): boolean {
   let backslashes = 0;
+
   for (let i = index - 1; i >= 0 && text[i] === "\\"; i--) {
     backslashes++;
   }
+
   return backslashes % 2 === 1;
 }
 
@@ -91,9 +100,12 @@ export function listPathItems(
   options?: { includeHidden?: boolean },
 ): Array<{ name: string; isDir: boolean; fullPath: string }> {
   // Refuse to list contents of sensitive directories
-  if (isSensitiveDir(dirPath)) return [];
+  if (isSensitiveDir(dirPath)) {
+    return [];
+  }
 
   let entries: string[];
+
   try {
     entries = readdirSync(dirPath);
   } catch {
@@ -105,19 +117,33 @@ export function listPathItems(
   const includeHidden = options?.includeHidden === true;
 
   for (const entry of entries) {
-    if (INVALID_NAME.test(entry)) continue; // skip control-char names (Icon\r)
-    if (entry.startsWith(".") && !includeHidden && !prefix.startsWith(".")) continue; // skip hidden unless query starts with .
-    if (lowerPrefix && !includeHidden && !entry.toLowerCase().startsWith(lowerPrefix)) continue;
+    if (INVALID_NAME.test(entry)) {
+      continue;
+    } // skip control-char names (Icon\r)
+
+    if (entry.startsWith(".") && !includeHidden && !prefix.startsWith(".")) {
+      continue;
+    } // skip hidden unless query starts with .
+
+    if (lowerPrefix && !includeHidden && !entry.toLowerCase().startsWith(lowerPrefix)) {
+      continue;
+    }
 
     const fullPath = join(dirPath, entry);
     let isDir = false;
-    try { isDir = statSync(fullPath).isDirectory(); } catch { /* skip unreadable */ }
+
+    try {
+      isDir = statSync(fullPath).isDirectory(); 
+    } catch { /* skip unreadable */ }
 
     items.push({ name: entry, isDir, fullPath });
   }
 
   items.sort((a, b) => {
-    if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+    if (a.isDir !== b.isDir) {
+      return a.isDir ? -1 : 1;
+    }
+
     return a.name.localeCompare(b.name);
   });
 
@@ -167,15 +193,24 @@ export function findQuoteRegion(line: string, col: number): QuoteRegion | null {
 
   for (let i = 0; i < col; i++) {
     const c = line[i];
-    if (c === undefined) break;
-    if (isEscapedAt(line, i)) continue;
+
+    if (c === undefined) {
+      break;
+    }
+
+    if (isEscapedAt(line, i)) {
+      continue;
+    }
+
     if (active !== null) {
       if (c === active) {
         active = null;
         closing = i;
       }
+
       continue;
     }
+
     if (isStringDelimiter(c)) {
       active = c;
       opening = i;
@@ -185,9 +220,11 @@ export function findQuoteRegion(line: string, col: number): QuoteRegion | null {
   if (active !== null) {
     return { opening, closing: null, delimiter: active, cursorAfterClose: false };
   }
+
   if (opening !== -1 && closing === col - 1) {
     return { opening, closing, delimiter: line[opening] ?? '"', cursorAfterClose: true };
   }
+
   return null;
 }
 
@@ -221,11 +258,23 @@ export function extractPathToken(text: string): { path: string; startIndex: numb
 
   for (const { re, group } of patterns) {
     const match = text.match(re);
-    if (!match) continue;
+
+    if (!match) {
+      continue;
+    }
+
     const path = match[group];
-    if (path === undefined || path === "") continue;
+
+    if (path === undefined || path === "") {
+      continue;
+    }
+
     const index = match.index ?? 0;
-    if (index > 0 && !TOKEN_BOUNDARY.test(text[index - 1])) continue;
+
+    if (index > 0 && !TOKEN_BOUNDARY.test(text[index - 1])) {
+      continue;
+    }
+
     return { path, startIndex: index + (match[0].length - path.length) };
   }
 
@@ -238,6 +287,9 @@ export function extractPathToken(text: string): { path: string; startIndex: numb
  * double-slash bug for absolute paths under the filesystem root.
  */
 export function joinPath(dir: string, name: string): string {
-  if (!dir) return name;
+  if (!dir) {
+    return name;
+  }
+
   return dir.endsWith("/") ? `${dir}${name}` : `${dir}/${name}`;
 }

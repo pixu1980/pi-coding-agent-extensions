@@ -80,15 +80,26 @@ export function answerProviderRequest(
   data: unknown,
   createProvider: (cwd: string) => AutocompleteProvider,
 ): boolean {
-  if (!isRecord(data)) return false;
+  if (!isRecord(data)) {
+    return false;
+  }
+
   const { cwd, reply } = data as Partial<PathPickerProviderRequest>;
-  if (typeof cwd !== "string" || cwd.trim() === "") return false;
-  if (typeof reply !== "function") return false;
+
+  if (typeof cwd !== "string" || cwd.trim() === "") {
+    return false;
+  }
+
+  if (typeof reply !== "function") {
+    return false;
+  }
+
   try {
     reply(createProvider(cwd));
   } catch {
     return false;
   }
+
   return true;
 }
 
@@ -102,11 +113,13 @@ export function requestProviderOverBus(
   cwd: string,
 ): { provider?: AutocompleteProvider; answered: boolean } {
   let provider: AutocompleteProvider | undefined;
+
   bus.emit(PATH_PICKER_PROVIDER_CHANNEL, {
     cwd,
     reply: (value: AutocompleteProvider) => {
       provider = value;
     },
   } satisfies PathPickerProviderRequest);
+
   return { ...(provider ? { provider } : {}), answered: provider !== undefined };
 }

@@ -56,26 +56,31 @@ interface ScoredItem {
 function globToRegex(pattern: string): RegExp {
   let regexStr = "";
   let i = 0;
+
   while (i < pattern.length) {
     const ch = pattern[i];
+
     // **/ pattern (globstar) matches zero or more directory levels
     if (ch === "*" && i + 2 < pattern.length && pattern[i + 1] === "*" && pattern[i + 2] === "/") {
       regexStr += "(.+/)?";
       i += 3;
       continue;
     }
+
     // * matches any characters except slash
     if (ch === "*") {
       regexStr += "[^/]*";
       i++;
       continue;
     }
+
     // ? matches any single character except slash
     if (ch === "?") {
       regexStr += "[^/]";
       i++;
       continue;
     }
+
     // Escape special regex characters
     if (ch === "." || ch === "+" || ch === "^" || ch === "$" ||
         ch === "{" || ch === "}" || ch === "(" || ch === ")" ||
@@ -84,8 +89,10 @@ function globToRegex(pattern: string): RegExp {
     } else {
       regexStr += ch;
     }
+
     i++;
   }
+
   return new RegExp("^" + regexStr + "$");
 }
 
@@ -99,27 +106,52 @@ function globFiles(rootDir: string, pattern: string): string[] {
   const visited = new Set<string>();
 
   const walk = (dir: string): void => {
-    // Use realpathSync to follow symlinks - resolve() only normalises
+    // Use realpathSync to follow symlinks - resolve() only normalizes
     // paths and cannot detect symbolic link cycles.
     let dirResolved: string;
-    try { dirResolved = realpathSync(dir); } catch { return; }
-    if (visited.has(dirResolved)) return;
+
+    try {
+      dirResolved = realpathSync(dir); 
+    } catch {
+      return; 
+    }
+
+    if (visited.has(dirResolved)) {
+      return;
+    }
+
     visited.add(dirResolved);
 
     let entries: string[];
-    try { entries = readdirSync(dir); } catch { return; }
+
+    try {
+      entries = readdirSync(dir); 
+    } catch {
+      return; 
+    }
+
     for (const entry of entries) {
-      if (!SHOW_HIDDEN && entry.startsWith(".")) continue;
+      if (!SHOW_HIDDEN && entry.startsWith(".")) {
+        continue;
+      }
+
       const fullPath = join(dir, entry);
       const relPath = relative(rootDir, fullPath);
-      if (regex.test(relPath)) results.push(fullPath);
+
+      if (regex.test(relPath)) {
+        results.push(fullPath);
+      }
+
       try {
-        if (statSync(fullPath).isDirectory()) walk(fullPath);
+        if (statSync(fullPath).isDirectory()) {
+          walk(fullPath);
+        }
       } catch { /* skip */ }
     }
   };
 
   walk(rootDir);
+
   return results;
 }
 
@@ -130,11 +162,17 @@ function listDir(dirPath: string): FileItem[] {
   try {
     const entries = readdirSync(dirPath);
     const items: FileItem[] = [];
+
     for (const entry of entries) {
-      if (!SHOW_HIDDEN && entry.startsWith(".")) continue;
+      if (!SHOW_HIDDEN && entry.startsWith(".")) {
+        continue;
+      }
+
       const full = join(dirPath, entry);
+
       try {
         const s = statSync(full);
+
         items.push({
           name: entry,
           path: full,
@@ -144,11 +182,16 @@ function listDir(dirPath: string): FileItem[] {
         });
       } catch { /* skip */ }
     }
+
     // Sort: dirs first, then by name
     items.sort((a, b) => {
-      if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+      if (a.isDir !== b.isDir) {
+        return a.isDir ? -1 : 1;
+      }
+
       return a.name.localeCompare(b.name);
     });
+
     return items;
   } catch {
     return [];
@@ -163,18 +206,31 @@ function fuzzyScore(query: string, text: string): number {
   const q = query.toLowerCase();
   const t = text.toLowerCase();
 
-  if (t === q) return 1;
-  if (t.startsWith(q)) return 0.9;
+  if (t === q) {
+    return 1;
+  }
+
+  if (t.startsWith(q)) {
+    return 0.9;
+  }
 
   // Substring match
-  if (t.includes(q)) return 0.7;
+  if (t.includes(q)) {
+    return 0.7;
+  }
 
   // Character-by-character fuzzy (query chars appear in order in text)
   let qi = 0;
+
   for (let ti = 0; ti < t.length && qi < q.length; ti++) {
-    if (t[ti] === q[qi]) qi++;
+    if (t[ti] === q[qi]) {
+      qi++;
+    }
   }
-  if (qi === q.length) return 0.5 + (q.length / Math.max(t.length, 1)) * 0.3;
+
+  if (qi === q.length) {
+    return 0.5 + (q.length / Math.max(t.length, 1)) * 0.3;
+  }
 
   return 0;
 }
@@ -183,17 +239,24 @@ function fuzzyScore(query: string, text: string): number {
  * Filter items by query string (fuzzy + substring).
  */
 function filterItems(items: FileItem[], query: string): FileItem[] {
-  if (!query) return items;
+  if (!query) {
+    return items;
+  }
+
   const scored: ScoredItem[] = items.map(item => ({
     item,
     score: Math.max(
       fuzzyScore(query, item.name),
     ),
   }));
+
   return scored
     .filter(s => s.score >= FUZZY_THRESHOLD)
     .sort((a, b) => {
-      if (a.score !== b.score) return b.score - a.score;
+      if (a.score !== b.score) {
+        return b.score - a.score;
+      }
+
       return a.item.name.localeCompare(b.item.name);
     })
     .map(s => s.item);
@@ -222,6 +285,7 @@ async function interactivePick(startDir: string): Promise<string | null> {
     try {
       stdin.setRawMode(true);
     } catch { /* not a TTY */ }
+
     stdin.resume();
     stdin.setEncoding("utf8");
 
@@ -236,8 +300,10 @@ async function interactivePick(startDir: string): Promise<string | null> {
 
       // Title bar
       const dir = currentDir.replace(homedir(), "~");
+
       lines.push("\x1b[36m📁 " + dir + "\x1b[0m");
       const hint = query ? "🔍 " + query : "Type to filter  ↑↓ navigate  ↵ select  ⭾ browse  ⎋ cancel";
+
       lines.push("\x1b[90m" + hint + "\x1b[0m");
       lines.push("");
 
@@ -251,6 +317,7 @@ async function interactivePick(startDir: string): Promise<string | null> {
           const prefix = idx === selectedIndex ? "\x1b[7m" : " ";
           const suffix = idx === selectedIndex ? "\x1b[0m" : " ";
           const icon = item.isDir ? "📁" : (item.name.match(/\.(js|ts|jsx|tsx|json|md|css|html)$/i) ? "📄" : "📎");
+
           lines.push(prefix + " " + icon + " " + item.name + suffix);
         }
       }
@@ -274,38 +341,51 @@ async function interactivePick(startDir: string): Promise<string | null> {
         switch (bytes[2]) {
           case 0x41: // ↑
             selectedIndex = Math.max(0, selectedIndex - 1);
-            if (selectedIndex < scrollOffset) scrollOffset = selectedIndex;
+
+            if (selectedIndex < scrollOffset) {
+              scrollOffset = selectedIndex;
+            }
+
             render();
+
             return;
           case 0x42: // ↓
             selectedIndex = Math.min(
               filterItems(allItems, query).length - 1,
               selectedIndex + 1
             );
+
             if (selectedIndex >= scrollOffset + MAX_VISIBLE) {
               scrollOffset = selectedIndex - MAX_VISIBLE + 1;
             }
+
             render();
+
             return;
-          case 0x43: // →
+          case 0x43: // ->
             handleEnter(true);
+
             return;
-          case 0x44: // ←
+          case 0x44: // <-
             goUp();
+
             return;
         }
+
         return;
       }
 
       // Tab
       if (bytes[0] === 0x09) {
         handleEnter(true);
+
         return;
       }
 
       // Enter
       if (bytes[0] === 0x0d || bytes[0] === 0x0a) {
         handleEnter(false);
+
         return;
       }
 
@@ -315,17 +395,20 @@ async function interactivePick(startDir: string): Promise<string | null> {
         selectedIndex = 0;
         scrollOffset = 0;
         render();
+
         return;
       }
 
       // Esc
       if (bytes[0] === 0x1b && data.length === 1) {
         cleanup(null);
+
         return;
       }
 
       // Printable characters
       const char = data.toString();
+
       if (char.length === 1 && char >= " ") {
         query += char;
         selectedIndex = 0;
@@ -336,6 +419,7 @@ async function interactivePick(startDir: string): Promise<string | null> {
 
     function goUp(): void {
       const parent = dirname(currentDir);
+
       if (parent !== currentDir) {
         currentDir = parent;
         allItems = listDir(currentDir);
@@ -350,7 +434,9 @@ async function interactivePick(startDir: string): Promise<string | null> {
       const filtered = filterItems(allItems, query);
       const selected = filtered[selectedIndex];
 
-      if (!selected) return;
+      if (!selected) {
+        return;
+      }
 
       if (selected.isDir && browseInto) {
         // Enter directory
@@ -393,6 +479,7 @@ async function main(): Promise<void> {
   if (isQuick) {
     const pattern = quickArgs[0] || "**/*";
     const results = globFiles(".", pattern);
+
     console.log(results.join("\n"));
     process.exit(0);
   }
@@ -403,9 +490,16 @@ async function main(): Promise<void> {
   // Check for piped input
   if (!process.stdin.isTTY) {
     const chunks: Buffer[] = [];
-    for await (const chunk of process.stdin) chunks.push(chunk);
+
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk);
+    }
+
     const piped = Buffer.concat(chunks).toString().trim();
-    if (piped) startPath = piped;
+
+    if (piped) {
+      startPath = piped;
+    }
   } else if (quickArgs.length > 0) {
     startPath = quickArgs[0];
   }
@@ -414,6 +508,7 @@ async function main(): Promise<void> {
   if (startPath.startsWith("~")) {
     startPath = join(homedir(), startPath.slice(1));
   }
+
   startPath = resolve(startPath);
 
   // Interactive mode
@@ -423,10 +518,12 @@ async function main(): Promise<void> {
     // Output relative path if possible
     try {
       const rel = relative(process.cwd(), selected);
+
       console.log(rel || ".");
     } catch {
       console.log(selected);
     }
+
     process.exit(0);
   } else {
     process.exit(1);

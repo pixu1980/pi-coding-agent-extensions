@@ -46,6 +46,7 @@ import {
 /** Text of the quote region that touches the cursor. */
 function regionText(line: string, region: QuoteRegion, col: number): string {
   const end = region.cursorAfterClose ? (region.closing ?? col) : col;
+
   return line.slice(region.opening + 1, end);
 }
 
@@ -56,10 +57,18 @@ function regionText(line: string, region: QuoteRegion, col: number): string {
  */
 function tokenRange(line: string, col: number): { token: string; start: number; end: number } | null {
   const region = findQuoteRegion(line, col);
-  if (!region) return null;
+
+  if (!region) {
+    return null;
+  }
+
   const text = regionText(line, region, col);
   const token = extractPathToken(text);
-  if (!token) return null;
+
+  if (!token) {
+    return null;
+  }
+
   return {
     token: token.path,
     start: region.opening + 1 + token.startIndex,
@@ -90,22 +99,25 @@ export function createPathAutocompleteProvider(
       const currentLine = lines[cursorLine] ?? "";
       const region = findQuoteRegion(currentLine, cursorCol);
 
-      // Senza una regione quotata relativa al cursore il wrapper è trasparente.
+      // With no quoted region under the cursor the wrapper stays transparent.
       if (!region) {
         return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
 
-      if (options.signal.aborted) return null;
+      if (options.signal.aborted) {
+        return null;
+      }
 
-      // Dentro una regione, solo Tab (force) attiva il path picker. La
-      // digitazione naturale (trigger "@" dentro le virgolette, ecc.) resta
-      // al provider nativo, così @"-fuzzy e i trigger esistenti non mutano.
+      // Inside a region only Tab (force) activates the path picker. Plain
+      // typing, such as a "@" trigger inside the quotes, stays with the
+      // native provider, so the existing @"-fuzzy and its triggers are unchanged.
       if (!options.force) {
         return current.getSuggestions(lines, cursorLine, cursorCol, options);
       }
 
       const text = regionText(currentLine, region, cursorCol);
       const token = extractPathToken(text);
+
       // Nessun token di percorso (o "~" senza slash) chiude eventuali menu
       // aperti, senza passare dal provider nativo.
       if (!token || !token.path.includes("/")) {
@@ -133,10 +145,12 @@ export function createPathAutocompleteProvider(
           // Partial name: parent dir, filtered by the typed prefix
           filePrefix = basename(path);
           const parentDir = dirname(path);
+
           dirPath = parentDir === "." ? cwd : resolvePath(parentDir, cwd);
         }
 
         const items = listPathItems(dirPath, filePrefix, { includeHidden: filePrefix === "" });
+
         if (items.length === 0 || options.signal.aborted) {
           return null;
         }
@@ -145,6 +159,7 @@ export function createPathAutocompleteProvider(
         const autocompleteItems: AutocompleteItem[] = items.map((item) => {
           const suffix = item.isDir ? "/" : "";
           const base = path.endsWith("/") ? path : dirname(path);
+
           return {
             value: joinPath(base, `${item.name}${suffix}`),
             label: item.isDir ? `📁 ${item.name}/` : `📄 ${item.name}`,
@@ -171,10 +186,10 @@ export function createPathAutocompleteProvider(
       const currentLine = lines[cursorLine] ?? "";
       const range = tokenRange(currentLine, cursorCol);
 
-      // Se i suggerimenti provengono da un provider che non è il path picker
-      // (comandi slash nativi, @file, argomenti comandi, ecc.), o se il
-      // token non corrisponde al prefix dei suggerimenti, delegherai al
-      // provider sottostante esattamente con gli stessi argomenti.
+      // When the suggestions come from a provider that is not the path picker
+      // (native slash commands, @file, command arguments), or the token does
+      // not match the suggestion prefix, delegate to the underlying provider
+      // with exactly the same arguments.
       if (!range || range.token !== prefix) {
         return current.applyCompletion(lines, cursorLine, cursorCol, item, prefix);
       }
@@ -185,6 +200,7 @@ export function createPathAutocompleteProvider(
       const newLine = currentLine.slice(0, range.start) + completion + currentLine.slice(range.end);
 
       const newLines = [...lines];
+
       newLines[cursorLine] = newLine;
 
       return {

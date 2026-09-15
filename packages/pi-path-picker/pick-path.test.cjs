@@ -10,12 +10,12 @@ const { execSync } = require("node:child_process");
 const { mkdtempSync, writeFileSync, mkdirSync, symlinkSync } = require("node:fs");
 const { tmpdir } = require("node:os");
 const { join } = require("node:path");
-const { createRequire } = require("module");
+const { createRequire } = require("node:module");
 
 // ── Load jiti from pi's bundled location ───────────────────────────
 const piRequire = createRequire(
   "/opt/homebrew/Cellar/pi-coding-agent/" +
-  require("fs").readdirSync("/opt/homebrew/Cellar/pi-coding-agent/").filter(f => f.match(/^\d+\.\d+\.\d+$/)).sort().at(-1) +
+  require("node:fs").readdirSync("/opt/homebrew/Cellar/pi-coding-agent/").filter(f => f.match(/^\d+\.\d+\.\d+$/)).sort().at(-1) +
   "/libexec/lib/node_modules/@earendil-works/pi-coding-agent/package.json"
 );
 const { createJiti } = piRequire("jiti");
@@ -29,6 +29,7 @@ function runQuickGlob(cwd, pattern) {
     `node --experimental-strip-types "${__dirname}/lib/_pick-path.ts" --quick "${pattern}"`,
     { cwd, timeout: 5000, encoding: "utf8" },
   );
+
   return stdout.trim().split("\n").filter(Boolean);
 }
 
@@ -37,11 +38,14 @@ function runQuickGlob(cwd, pattern) {
  */
 function createTempFs(structure) {
   const dir = mkdtempSync(join(tmpdir(), "pick-path-test-"));
+
   for (const filePath of structure) {
     const full = join(dir, filePath);
+
     mkdirSync(join(full, ".."), { recursive: true });
     writeFileSync(full, "", "utf8");
   }
+
   return dir;
 }
 
@@ -58,6 +62,7 @@ function createTempFs(structure) {
       "nested/deep/e.txt",
     ]);
     const results = runQuickGlob(dir, "**/*.txt");
+
     assert.ok(results.includes("a.txt"), "should find a.txt");
     assert.ok(results.includes("b.txt"), "should find b.txt");
     assert.ok(results.includes("nested/d.txt"), "should find nested/d.txt");
@@ -74,6 +79,7 @@ function createTempFs(structure) {
       "baz.log",
     ]);
     const results = runQuickGlob(dir, "*.txt");
+
     assert.equal(results.length, 2, "should match two .txt files");
     assert.ok(results.includes("foo.txt"));
     assert.ok(results.includes("bar.txt"));
@@ -91,6 +97,7 @@ function createTempFs(structure) {
       "dog.txt",
     ]);
     const results = runQuickGlob(dir, "ca?.txt");
+
     assert.equal(results.length, 3, "should match ca(t|r|b).txt");
     assert.ok(results.includes("cat.txt"));
     assert.ok(results.includes("car.txt"));
@@ -109,6 +116,7 @@ function createTempFs(structure) {
       "README.md",
     ]);
     const results = runQuickGlob(dir, "src/**/*.ts");
+
     assert.equal(results.length, 3, "should find all .ts files under src/");
     assert.ok(results.includes("src/index.ts"));
     assert.ok(results.includes("src/utils/helper.ts"));
@@ -125,6 +133,7 @@ function createTempFs(structure) {
       "normal.txt",
     ]);
     const results = runQuickGlob(dir, "*");
+
     assert.ok(results.includes("visible.txt"), "should include visible.txt");
     assert.ok(results.includes("normal.txt"), "should include normal.txt");
     assert.equal(results.includes(".hidden.txt"), false, "should not include hidden files by default");
@@ -135,6 +144,7 @@ function createTempFs(structure) {
   {
     const dir = mkdtempSync(join(tmpdir(), "pick-path-empty-"));
     const results = runQuickGlob(dir, "**/*");
+
     assert.equal(results.length, 0, "empty dir should return no results");
     console.log("  ✓ empty directory");
   }
@@ -143,6 +153,7 @@ function createTempFs(structure) {
   {
     const dir = createTempFs(["readme.md"]);
     const results = runQuickGlob(dir, "*.js");
+
     assert.equal(results.length, 0, "no matching files should return empty");
     console.log("  ✓ no matches returns empty");
   }
@@ -150,6 +161,7 @@ function createTempFs(structure) {
   // Test 8: Symlink cycle does not cause infinite loop
   {
     const dir = createTempFs(["actual.txt"]);
+
     // Create a self-referencing symlink
     try {
       symlinkSync(".", join(dir, "self"), "dir");
@@ -161,6 +173,7 @@ function createTempFs(structure) {
 
     // This should complete without hanging despite the cycle
     const results = runQuickGlob(dir, "**/*");
+
     // Should still list actual.txt, but not recurse infinitely
     assert.ok(results.includes("actual.txt"), "should list actual files");
     assert.ok(results.length >= 1, "should return results without hanging");

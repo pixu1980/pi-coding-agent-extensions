@@ -1,0 +1,51 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
+  "files": {
+    "includes": [
+      "packages/**/*.ts",
+      "packages/**/*.mjs",
+      "scripts/**/*.mjs",
+      "test/*.mjs",
+      "!packages/pi-mcp/lib/_app-bridge.bundle.js"
+    ]
+  },
+  "formatter": {
+    "enabled": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noControlCharactersInRegex": "off",
+        "noTemplateCurlyInString": "off",
+        "noExplicitAny": "off",
+        "noAssignInExpressions": "off",
+        "noDuplicateObjectKeys": "off",
+        "noPrototypeBuiltins": "off",
+        "noGlobalIsNan": "off",
+        "noImplicitAnyLet": "off",
+        "noShadowRestrictedNames": "off"
+      },
+      "style": {
+        "useTemplate": "off",
+        "noNonNullAssertion": "off",
+        "useConst": "off",
+        "useImportType": "off"
+      },
+      "complexity": {
+        "useOptionalChain": "off",
+        "useLiteralKeys": "off",
+        "noBannedTypes": "off",
+        "noUselessSwitchCase": "off"
+      },
+      "correctness": {
+        "noUnusedVariables": "off",
+        "noUnusedImports": "off",
+        "noUnusedFunctionParameters": "off",
+        "noUnusedPrivateClassMembers": "off",
+        "noUnsafeFinally": "off"
+      }
+    }
+  }
+}

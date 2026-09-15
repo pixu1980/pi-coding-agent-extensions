@@ -19,6 +19,7 @@ import { describeApiKeySource, normalizeApiKey, readEnvApiKey, resolveCursorApiK
 import { checkBackendOverride, describeEgressSurface, formatEgressSurface } from "./_egress.ts";
 import {
 	discoverCursorCatalog,
+	isOfflineMode,
 	registerCatalog,
 	toPiModel,
 	type CursorModelMetadata,
@@ -83,9 +84,10 @@ function buildProvider(metadata: CursorModelMetadata[]) {
 		},
 		fetchModels: async (context) => {
 			const key = normalizeApiKey(context.credential?.type === "api_key" ? context.credential.key : undefined);
+			// No forceRefresh: the 6h disk cache plus the in-memory memo serve
+			// repeated calls. Explicit refresh lives in /cursor-models.
 			const result = await discoverCursorCatalog({
 				...(key ? { apiKey: key } : {}),
-				forceRefresh: true,
 			});
 			return result.metadata.map((entry) =>
 				toPiModel(entry, { providerId: CURSOR_PROVIDER_ID, api: CURSOR_API_ID, baseUrl: CURSOR_BASE_URL }),
@@ -112,6 +114,15 @@ export default async function (pi: ExtensionAPI): Promise<void> {
 			const blocking = checkBackendOverride();
 			if (!blocking.ok) {
 				if (ctx.hasUI) ctx.ui.notify(blocking.reason ?? "Cursor backend override blocked.", "error");
+				return;
+			}
+			if (isOfflineMode()) {
+				if (ctx.hasUI) {
+					ctx.ui.notify(
+						"pi is running offline; refreshing the Cursor catalog would send your API key. Restart without --offline.",
+						"warning",
+					);
+				}
 				return;
 			}
 			const refreshed = await discoverCursorCatalog({ apiKey, forceRefresh: true });

@@ -16,11 +16,12 @@
 
 import type { Api, Model } from "@earendil-works/pi-ai";
 import type { CachedModelRecord } from "./_cache.ts";
-import { loadCachedCatalog, saveCachedCatalog } from "./_cache.ts";
+import { loadCachedCatalog, saveCachedCatalog, getModelCachePath, getModelCacheTtlMs } from "./_cache.ts";
 import {
 	CURSOR_FALLBACK_CONTEXT_WINDOW,
 	CURSOR_FALLBACK_MAX_TOKENS,
 	CURSOR_MODEL_INPUT,
+	CURSOR_OFFLINE_ENV,
 	CURSOR_ZERO_COST,
 } from "./_types.ts";
 
@@ -450,6 +451,13 @@ export interface DiscoverCatalogOptions {
 	apiKey?: string;
 	/** Skip the cache and always hit the API. */
 	forceRefresh?: boolean;
+	/**
+	 * Skip the live fetch entirely. Defaults to pi's offline flag, because the
+	 * Cursor SDK does not honour `--offline` on its own.
+	 */
+	offline?: boolean;
+	/** Environment used for the offline default. Overridable for tests. */
+	env?: Record<string, string | undefined>;
 	/** Cache file override for tests. */
 	cachePath?: string;
 	/** TTL override for tests. */
@@ -458,6 +466,12 @@ export interface DiscoverCatalogOptions {
 	now?: number;
 	/** Injectable loader; defaults to a dynamic `import("@cursor/sdk")`. */
 	loadSdk?: () => Promise<{ Cursor: { models: { list(options?: { apiKey?: string }): Promise<CursorModelItem[]> } } }>;
+}
+
+/** True when pi was started with `--offline` / `PI_OFFLINE=1`. */
+export function isOfflineMode(env: Record<string, string | undefined> = process.env): boolean {
+	const raw = env[CURSOR_OFFLINE_ENV]?.trim().toLowerCase();
+	return raw === "1" || raw === "true" || raw === "yes";
 }
 
 export interface DiscoverCatalogResult {
@@ -480,12 +494,53 @@ async function defaultLoadSdk() {
 }
 
 /**
+ * In-flight catalog discoveries by normalized options (PERF-09). Concurrent
+ * callers with equivalent options await the same promise instead of firing
+ * duplicate SDK list calls and racing the cache write. Entries are removed
+ * in a finally, so sequential calls with different options never collide.
+ */
+const pendingDiscoveries = new Map<string, Promise<DiscoverCatalogResult>>();
+
+function discoveryFlightKey(options: DiscoverCatalogOptions, offline: boolean): string {
+	return JSON.stringify({
+		path: options.cachePath ?? getModelCachePath(),
+		ttlMs: options.ttlMs ?? getModelCacheTtlMs(),
+		forceRefresh: options.forceRefresh ?? false,
+		hasKey: Boolean(options.apiKey),
+		offline,
+		now: options.now ?? null,
+	});
+}
+
+/**
  * Resolve the model catalog: live API when a key is available, otherwise the
  * local cache, otherwise the static fallback. Never throws.
  */
 export async function discoverCursorCatalog(
 	options: DiscoverCatalogOptions = {},
 ): Promise<DiscoverCatalogResult> {
+	const offline = options.offline ?? isOfflineMode(options.env ?? process.env);
+	const key = discoveryFlightKey(options, offline);
+	const pending = pendingDiscoveries.get(key);
+
+	if (pending) {
+		return pending;
+	}
+
+	const run = runDiscovery(options, offline);
+
+	pendingDiscoveries.set(key, run);
+
+	try {
+		return await run;
+	} finally {
+		if (pendingDiscoveries.get(key) === run) {
+			pendingDiscoveries.delete(key);
+		}
+	}
+}
+
+async function runDiscovery(options: DiscoverCatalogOptions, offline: boolean): Promise<DiscoverCatalogResult> {
 	const fromCache = (): DiscoverCatalogResult | undefined => {
 		const cached = loadCachedCatalog(cacheKeyForCacheOverride(options));
 		if (!cached) return undefined;
@@ -497,13 +552,15 @@ export async function discoverCursorCatalog(
 		if (cached) return cached;
 	}
 
-	if (!options.apiKey) {
+	if (!options.apiKey || offline) {
 		const cached = options.forceRefresh ? undefined : fromCache();
 		if (cached) return cached;
 		return {
 			metadata: registerCatalog(FALLBACK_CURSOR_MODELS),
 			source: "fallback",
-			note: "No Cursor API key configured; showing a placeholder catalog. Run /login cursor or set CURSOR_API_KEY.",
+			note: offline
+				? "Offline mode: using the placeholder catalog and making no network request. Run pi without --offline to refresh."
+				: "No Cursor API key configured; showing a placeholder catalog. Run /login cursor or set CURSOR_API_KEY.",
 		};
 	}
 

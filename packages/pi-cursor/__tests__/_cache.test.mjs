@@ -6,11 +6,12 @@
  */
 
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
+	getCatalogCacheStats,
 	getModelCachePath,
 	getModelCacheTtlMs,
 	isModelCacheDisabled,
@@ -112,6 +113,100 @@ describe("saveCachedCatalog / loadCachedCatalog", () => {
 		const dir = tempDir();
 		try {
 			assert.equal(saveCachedCatalog([], { path: join(dir, "cache.json") }), false);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+});
+
+describe("catalog memo (PERF-09)", () => {
+	it("serves repeat loads from memory: save primes, loads read zero times", () => {
+		const dir = tempDir();
+		try {
+			const path = join(dir, "cache.json");
+			const before = getCatalogCacheStats();
+			assert.equal(saveCachedCatalog([{ id: "grok-4.6", displayName: "Grok 4.6" }], { path, now: 1000 }), true);
+			const first = loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 });
+			const second = loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 });
+			assert.equal(first?.models.length, 1);
+			assert.equal(second?.models.length, 1);
+			const after = getCatalogCacheStats();
+			assert.equal(after.diskReads - before.diskReads, 0, "save primes the memo; loads must not touch disk");
+			assert.equal(after.memoHits - before.memoHits, 2);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("reads from disk once on a cold path, then memos", () => {
+		const dir = tempDir();
+		try {
+			const path = join(dir, "cache.json");
+			writeFileSync(
+				path,
+				JSON.stringify({ version: CURSOR_MODEL_CACHE_VERSION, fetchedAt: 1000, models: [{ id: "a", displayName: "A" }] }),
+			);
+			const before = getCatalogCacheStats();
+			const first = loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 });
+			const second = loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 });
+			assert.equal(first?.models[0]?.id, "a");
+			assert.equal(second?.models[0]?.id, "a");
+			const after = getCatalogCacheStats();
+			assert.equal(after.diskReads - before.diskReads, 1);
+			assert.equal(after.memoHits - before.memoHits, 1);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("invalidates the memo when the file changes underneath", () => {
+		const dir = tempDir();
+		try {
+			const path = join(dir, "cache.json");
+			const write = (models) =>
+				writeFileSync(path, JSON.stringify({ version: CURSOR_MODEL_CACHE_VERSION, fetchedAt: 1000, models }));
+			write([{ id: "a", displayName: "A" }]);
+			assert.equal(loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 })?.models[0]?.id, "a");
+			assert.equal(loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 })?.models[0]?.id, "a");
+			const before = getCatalogCacheStats();
+			write([
+				{ id: "a", displayName: "A" },
+				{ id: "b-with-a-much-longer-id", displayName: "B" },
+			]);
+			const reloaded = loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 });
+			assert.equal(reloaded?.models.length, 2);
+			const after = getCatalogCacheStats();
+			assert.equal(after.diskReads - before.diskReads, 1, "changed file must be re-read");
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("a truncated file reads as absent and clears the memo", () => {
+		const dir = tempDir();
+		try {
+			const path = join(dir, "cache.json");
+			assert.equal(saveCachedCatalog([{ id: "grok-4.6", displayName: "Grok 4.6" }], { path, now: 1000 }), true);
+			assert.equal(loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 })?.models.length, 1);
+			writeFileSync(path, "{truncated");
+			assert.equal(loadCachedCatalog({ path, now: 1500, ttlMs: 10_000 }), undefined);
+			writeFileSync(
+				path,
+				JSON.stringify({ version: CURSOR_MODEL_CACHE_VERSION, fetchedAt: 2000, models: [{ id: "b", displayName: "B" }] }),
+			);
+			assert.equal(loadCachedCatalog({ path, now: 2500, ttlMs: 10_000 })?.models[0]?.id, "b");
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("atomic write leaves no temp files and keeps mode 0600", () => {
+		const dir = tempDir();
+		try {
+			const path = join(dir, "cache.json");
+			assert.equal(saveCachedCatalog([{ id: "grok-4.6", displayName: "Grok 4.6" }], { path, now: 1000 }), true);
+			assert.deepEqual(readdirSync(dir), ["cache.json"]);
+			assert.equal(statSync(path).mode & 0o777, 0o600);
 		} finally {
 			rmSync(dir, { recursive: true, force: true });
 		}

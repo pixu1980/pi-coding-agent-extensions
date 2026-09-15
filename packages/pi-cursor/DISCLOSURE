@@ -62,9 +62,13 @@ bundle:
    set to anything outside the allowlist, pi-cursor refuses to resolve the API
    key at all, so nothing is sent. `PI_CURSOR_ALLOW_BACKEND_OVERRIDE=1` is the
    explicit opt-out for self-hosted Cursor-compatible stacks.
-2. **Secret scrubbing.** Every model output delta, activity trace line, error
+2. **Offline mode is enforced, not assumed.** The Cursor SDK does not read pi's
+   `--offline` / `PI_OFFLINE` flag, so pi-cursor reads it and skips the startup
+   model fetch; `/cursor-models` refuses as well. Without this check an offline
+   run would still send the API key to Cursor.
+3. **Secret scrubbing.** Every model output delta, activity trace line, error
    message and diagnostic is scrubbed before it is emitted.
-3. **Bounded activity trace.** Tool activity is summarised (command, path,
+4. **Bounded activity trace.** Tool activity is summarised (command, path,
    pattern) and capped, so file bodies are not copied into the session log.
 
 ## Deliberate non-goals

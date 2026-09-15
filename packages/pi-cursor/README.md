@@ -88,6 +88,10 @@ and nowhere else. Two guards back that up:
   with `PI_CURSOR_ALLOW_BACKEND_OVERRIDE=1` if you run your own Cursor backend.
 - Every string that can reach the transcript, an error, or stderr is scrubbed
   first, so the key cannot be echoed back by the SDK or by a failing request.
+- **`--offline` is honoured.** The Cursor SDK issues its own requests and does
+  not read pi's offline flag, so pi-cursor checks `PI_OFFLINE` itself and skips
+  startup model discovery entirely: an offline run makes no request at all.
+  `/cursor-models` refuses too, instead of quietly sending your key.
 
 Run `/cursor-egress` at any time to see the current state, or read
 [`DISCLOSURE`](./DISCLOSURE) for the precise statement.

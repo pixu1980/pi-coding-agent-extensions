@@ -11,7 +11,7 @@
  * File: `~/.pi/agent/pi-cursor-models.json`, mode 0600.
  */
 
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { CURSOR_MODEL_CACHE_FILE, CURSOR_MODEL_CACHE_TTL_MS, CURSOR_MODEL_CACHE_VERSION } from "./_types.ts";
 
@@ -97,16 +97,66 @@ export function parseCatalog(raw: string): CachedCatalog | undefined {
 	return records.length > 0 ? { fetchedAt, models: records } : undefined;
 }
 
+/**
+ * In-memory memo of the parsed catalog, keyed by path and validated against
+ * the file's mtimeMs+size on every load (same pattern as the pi-mcp metadata
+ * cache). A stat is one syscall; the memo skips the open+read+parse.
+ *
+ * Same-millisecond same-size rewrites can slip through - accepted, matches the
+ * pi-mcp pattern: the 6h TTL bounds any staleness, and saves prime the memo.
+ * Entries are shared read-only references; callers must not mutate them.
+ */
+interface CatalogMemoEntry {
+	mtimeMs: number;
+	size: number;
+	catalog: CachedCatalog;
+}
+
+const memoByPath = new Map<string, CatalogMemoEntry>();
+
+const catalogCacheStats = { diskReads: 0, memoHits: 0 };
+
+/** Cache counters (PERF-09): prove the memo serves before optimizing further. */
+export function getCatalogCacheStats(): { diskReads: number; memoHits: number } {
+	return { ...catalogCacheStats };
+}
+
 /** Read the cache. Returns `undefined` when absent, malformed, or stale. */
 export function loadCachedCatalog(options: { path?: string; ttlMs?: number; now?: number } = {}): CachedCatalog | undefined {
 	const path = options.path ?? getModelCachePath();
+	const ttl = options.ttlMs ?? getModelCacheTtlMs();
+	const now = options.now ?? Date.now();
+
 	try {
-		if (!existsSync(path)) return undefined;
+		const st = statSync(path);
+		const hit = memoByPath.get(path);
+
+		if (hit && hit.mtimeMs === st.mtimeMs && hit.size === st.size) {
+			if (ttl >= 0 && now - hit.catalog.fetchedAt > ttl) {
+				return undefined;
+			}
+
+			catalogCacheStats.memoHits += 1;
+
+			return hit.catalog;
+		}
+
 		const catalog = parseCatalog(readFileSync(path, "utf8"));
-		if (!catalog) return undefined;
-		const ttl = options.ttlMs ?? getModelCacheTtlMs();
-		const now = options.now ?? Date.now();
-		if (ttl >= 0 && now - catalog.fetchedAt > ttl) return undefined;
+
+		catalogCacheStats.diskReads += 1;
+
+		if (!catalog) {
+			memoByPath.delete(path);
+
+			return undefined;
+		}
+
+		if (ttl >= 0 && now - catalog.fetchedAt > ttl) {
+			return undefined;
+		}
+
+		memoByPath.set(path, { mtimeMs: st.mtimeMs, size: st.size, catalog });
+
 		return catalog;
 	} catch {
 		return undefined;
@@ -114,28 +164,48 @@ export function loadCachedCatalog(options: { path?: string; ttlMs?: number; now?
 }
 
 /**
- * Write the cache with mode 0600.
+ * Write the cache with mode 0600, atomically via tmp+rename so a crash
+ * mid-write can never leave a truncated file behind (a truncated file reads
+ * back as `undefined` anyway, but atomicity keeps that path exceptional).
  *
- * Returns `false` instead of throwing: a read-only or unwritable agent dir
- * must never break a chat turn.
+ * Primes the memo on success, so the loads that follow a save never touch
+ * disk. Returns `false` instead of throwing: a read-only or unwritable
+ * agent dir must never break a chat turn.
  */
 export function saveCachedCatalog(
 	models: CachedModelRecord[],
 	options: { path?: string; now?: number } = {},
 ): boolean {
-	if (models.length === 0) return false;
+	if (models.length === 0) {
+		return false;
+	}
+
 	const path = options.path ?? getModelCachePath();
+	const fetchedAt = options.now ?? Date.now();
+	const tmpPath = `${path}.${process.pid}.tmp`;
 	try {
 		const payload = {
 			version: CURSOR_MODEL_CACHE_VERSION,
-			fetchedAt: options.now ?? Date.now(),
+			fetchedAt,
 			models,
 		};
 		mkdirSync(dirname(path), { recursive: true });
-		writeFileSync(path, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
+		writeFileSync(tmpPath, `${JSON.stringify(payload, null, 2)}\n`, { mode: 0o600 });
+		renameSync(tmpPath, path);
 		chmodSync(path, 0o600);
+		try {
+			const st = statSync(path);
+			memoByPath.set(path, { mtimeMs: st.mtimeMs, size: st.size, catalog: { fetchedAt, models } });
+		} catch {
+			memoByPath.delete(path);
+		}
 		return true;
 	} catch {
+		try {
+			rmSync(tmpPath, { force: true });
+		} catch {
+			// Best effort: the save already failed, never throw from cleanup.
+		}
 		return false;
 	}
 }

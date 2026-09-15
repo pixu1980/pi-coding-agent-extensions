@@ -18,6 +18,7 @@ import {
 	discoverCursorCatalog,
 	FALLBACK_CURSOR_MODELS,
 	getModelMetadata,
+	isOfflineMode,
 	listModelMetadata,
 	parseContextWindow,
 	registerCatalog,
@@ -262,6 +263,126 @@ describe("discoverCursorCatalog", () => {
 			});
 			assert.equal(result.source, "fallback");
 			assert.match(result.note, /empty model catalog/);
+		} finally {
+			cache.cleanup();
+		}
+	});
+
+	// ── Offline mode ──────────────────────────────────────────────
+	//
+	// pi sets PI_OFFLINE for `--offline`, but the Cursor SDK issues its own
+	// requests and ignores it. Without this guard an offline run still sent the
+	// user's API key to Cursor at startup.
+
+	it("isOfflineMode: reads pi's flag, strictly", () => {
+		for (const value of ["1", "true", "yes", "TRUE", " 1 "]) {
+			assert.equal(isOfflineMode({ PI_OFFLINE: value }), true, value);
+		}
+		for (const value of [undefined, "", "0", "false", "no", "offline", "2"]) {
+			assert.equal(isOfflineMode({ PI_OFFLINE: value }), false, String(value));
+		}
+	});
+
+	it("offline makes no request and says so", async () => {
+		const cache = tempCache();
+		try {
+			let called = 0;
+			const result = await discoverCursorCatalog({
+				apiKey: "crsr_live_test",
+				offline: true,
+				cachePath: cache.path,
+				loadSdk: async () => {
+					called += 1;
+					return { Cursor: { models: { list: async () => CATALOG } } };
+				},
+			});
+			assert.equal(called, 0, "the SDK must never be loaded offline");
+			assert.equal(result.source, "fallback");
+			assert.match(result.note, /Offline mode/);
+		} finally {
+			cache.cleanup();
+		}
+	});
+
+	it("offline still serves a warm cache without a request", async () => {
+		const cache = tempCache();
+		try {
+			await discoverCursorCatalog({
+				apiKey: "crsr_live_test",
+				cachePath: cache.path,
+				loadSdk: async () => ({ Cursor: { models: { list: async () => CATALOG } } }),
+			});
+
+			let called = 0;
+			const offline = await discoverCursorCatalog({
+				apiKey: "crsr_live_test",
+				offline: true,
+				cachePath: cache.path,
+				loadSdk: async () => {
+					called += 1;
+					return { Cursor: { models: { list: async () => CATALOG } } };
+				},
+			});
+			assert.equal(called, 0);
+			assert.equal(offline.source, "cache");
+		} finally {
+			cache.cleanup();
+		}
+	});
+
+	it("the env flag alone is enough to stay offline", async () => {
+		const cache = tempCache();
+		try {
+			let called = 0;
+			const result = await discoverCursorCatalog({
+				apiKey: "crsr_live_test",
+				env: { PI_OFFLINE: "1" },
+				cachePath: cache.path,
+				loadSdk: async () => {
+					called += 1;
+					return { Cursor: { models: { list: async () => CATALOG } } };
+				},
+			});
+			assert.equal(called, 0);
+			assert.equal(result.source, "fallback");
+			assert.match(result.note, /Offline mode/);
+		} finally {
+			cache.cleanup();
+		}
+	});
+
+	it("concurrent discoveries share one SDK list call (PERF-09 single-flight)", async () => {
+		const cache = tempCache();
+		try {
+			let calls = 0;
+			let release = () => {};
+			const gate = new Promise((resolve) => {
+				release = resolve;
+			});
+			const loadSdk = async () => {
+				calls += 1;
+				await gate;
+				return { Cursor: { models: { list: async () => CATALOG } } };
+			};
+			const options = {
+				apiKey: "crsr_live_test",
+				cachePath: cache.path,
+				forceRefresh: true,
+				offline: false,
+				loadSdk,
+				now: 1000,
+				ttlMs: 60_000,
+			};
+			const pending = [discoverCursorCatalog(options), discoverCursorCatalog(options)];
+			release();
+			const [first, second] = await Promise.all(pending);
+			assert.equal(calls, 1, "concurrent discoveries must share one SDK list call");
+			assert.equal(first.source, "live");
+			assert.equal(second.source, "live");
+			assert.deepEqual(
+				second.metadata.map((entry) => entry.piModelId).sort(),
+				first.metadata.map((entry) => entry.piModelId).sort(),
+			);
 		} finally {
 			cache.cleanup();
 		}

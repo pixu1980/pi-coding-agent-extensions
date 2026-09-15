@@ -56,6 +56,15 @@ export const CURSOR_EGRESS_LOG_ENV = "PI_CURSOR_LOG_EGRESS";
 /** Model catalog cache filename under pi's agent dir. */
 export const CURSOR_MODEL_CACHE_FILE = "pi-cursor-models.json";
 
+/**
+ * Set by pi when `--offline` (or `PI_OFFLINE=1`) is used.
+ *
+ * pi's own network operations honour it, but the Cursor SDK does not: it issues
+ * its requests directly. Startup model discovery must therefore check this
+ * flag itself, or an offline run still sends the user's API key to Cursor.
+ */
+export const CURSOR_OFFLINE_ENV = "PI_OFFLINE";
+
 /** Catalog cache schema version; bump to invalidate on shape changes. */
 export const CURSOR_MODEL_CACHE_VERSION = 1;
 

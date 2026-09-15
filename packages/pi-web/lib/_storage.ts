@@ -41,19 +41,19 @@ export function readSlice(id: string, offset: number, limit: number): SliceResul
   const page = pages.get(id);
 
   if (!page) {
-    return { text: "", offset, nextOffset: offset, totalChars: 0, end: true, error: "unknown id" };
+    return { text: '', offset, nextOffset: offset, totalChars: 0, end: true, error: 'unknown id' };
   }
 
   const total = page.content.length;
 
   if (offset > total) {
     return {
-      text: "",
+      text: '',
       offset,
       nextOffset: offset,
       totalChars: total,
       end: true,
-      error: "offset out of range",
+      error: 'offset out of range',
     };
   }
 
@@ -64,20 +64,20 @@ export function readSlice(id: string, offset: number, limit: number): SliceResul
 }
 
 function isValidStoredPage(data: unknown): data is StoredPage {
-  if (!data || typeof data !== "object") {
+  if (!data || typeof data !== 'object') {
     return false;
   }
 
   const page = data as Record<string, unknown>;
 
   return (
-    typeof page.id === "string" &&
+    typeof page.id === 'string' &&
     page.id.length > 0 &&
-    typeof page.url === "string" &&
-    typeof page.title === "string" &&
-    typeof page.content === "string" &&
-    typeof page.contentType === "string" &&
-    typeof page.fetchedAt === "number"
+    typeof page.url === 'string' &&
+    typeof page.title === 'string' &&
+    typeof page.content === 'string' &&
+    typeof page.contentType === 'string' &&
+    typeof page.fetchedAt === 'number'
   );
 }
 
@@ -91,7 +91,7 @@ export function restorePages(entries: unknown[]): void {
   for (const entry of entries) {
     const candidate = entry as { customType?: string; data?: unknown } | null;
 
-    if (!candidate || candidate.customType !== "pi-web-page") {
+    if (!candidate || candidate.customType !== 'pi-web-page') {
       continue;
     }
 

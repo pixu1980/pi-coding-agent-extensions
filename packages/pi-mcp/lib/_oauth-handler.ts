@@ -1,6 +1,6 @@
 // oauth-handler.ts - OAuth token compatibility helpers for MCP servers
-import type { OAuthTokens } from "@modelcontextprotocol/sdk/shared/auth.js";
-import { getAuthEntry } from "./_mcp-auth.ts";
+import type { OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js';
+import { getAuthEntry } from './_mcp-auth.ts';
 
 /**
  * Get stored OAuth tokens for a server (if any).
@@ -22,11 +22,10 @@ export function getStoredTokens(serverName: string): OAuthTokens | undefined {
 
   return {
     access_token: tokens.accessToken,
-    token_type: "Bearer",
+    token_type: 'Bearer',
     refresh_token: tokens.refreshToken,
-    expires_in: tokens.expiresAt !== undefined
-      ? Math.max(0, Math.floor(tokens.expiresAt - Date.now() / 1000))
-      : undefined,
+    expires_in:
+      tokens.expiresAt !== undefined ? Math.max(0, Math.floor(tokens.expiresAt - Date.now() / 1000)) : undefined,
     scope: tokens.scope,
     ...(tokens.issuer !== undefined ? { issuer: tokens.issuer } : {}),
   };

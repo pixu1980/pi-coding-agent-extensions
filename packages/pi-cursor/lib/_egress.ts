@@ -9,20 +9,16 @@
  * key to an arbitrary host without any prompt.
  */
 
-import {
-  CURSOR_ALLOW_BACKEND_OVERRIDE_ENV,
-  CURSOR_BACKEND_URL_ENV,
-  CURSOR_EGRESS_ALLOWLIST,
-} from "./_types.ts";
+import { CURSOR_ALLOW_BACKEND_OVERRIDE_ENV, CURSOR_BACKEND_URL_ENV, CURSOR_EGRESS_ALLOWLIST } from './_types.ts';
 
 export type EgressEnv = Record<string, string | undefined>;
 
 /** True when `hostname` is a Cursor-owned endpoint we are willing to reach. */
 export function isAllowedCursorHost(hostname: string): boolean {
-  const normalized = hostname.trim().toLowerCase().replace(/\.$/, "");
+  const normalized = hostname.trim().toLowerCase().replace(/\.$/, '');
 
   return (CURSOR_EGRESS_ALLOWLIST as readonly string[]).some(
-    (allowed) => normalized === allowed || normalized.endsWith(`.${allowed}`),
+    (allowed) => normalized === allowed || normalized.endsWith(`.${allowed}`)
   );
 }
 
@@ -41,7 +37,7 @@ function parseEndpoint(value: string | URL | undefined): URL | undefined {
   }
 
   if (value instanceof URL) {
-    return value.protocol === "https:" && isAllowedCursorHost(value.hostname) ? value : undefined;
+    return value.protocol === 'https:' && isAllowedCursorHost(value.hostname) ? value : undefined;
   }
 
   const raw = value.trim();
@@ -51,9 +47,9 @@ function parseEndpoint(value: string | URL | undefined): URL | undefined {
   }
 
   try {
-    const url = new URL(raw.includes("://") ? raw : `https://${raw}`);
+    const url = new URL(raw.includes('://') ? raw : `https://${raw}`);
 
-    return url.protocol === "https:" && isAllowedCursorHost(url.hostname) ? url : undefined;
+    return url.protocol === 'https:' && isAllowedCursorHost(url.hostname) ? url : undefined;
   } catch {
     return undefined;
   }
@@ -65,7 +61,7 @@ export function assertAllowedCursorEndpoint(value: string | URL): URL {
 
   if (!url) {
     throw new Error(
-      `Refusing to contact ${JSON.stringify(String(value))}: pi-cursor only talks to ${CURSOR_EGRESS_ALLOWLIST.join(", ")}.`,
+      `Refusing to contact ${JSON.stringify(String(value))}: pi-cursor only talks to ${CURSOR_EGRESS_ALLOWLIST.join(', ')}.`
     );
   }
 
@@ -99,7 +95,7 @@ export function checkBackendOverride(env: EgressEnv = process.env): BackendOverr
     return { ok: true, override };
   }
 
-  if (env[CURSOR_ALLOW_BACKEND_OVERRIDE_ENV] === "1") {
+  if (env[CURSOR_ALLOW_BACKEND_OVERRIDE_ENV] === '1') {
     return {
       ok: true,
       override,
@@ -111,9 +107,9 @@ export function checkBackendOverride(env: EgressEnv = process.env): BackendOverr
     ok: false,
     override,
     reason:
-			`${CURSOR_BACKEND_URL_ENV}=${JSON.stringify(override)} is not a Cursor endpoint. ` +
-			`pi-cursor refuses to send your API key there. Unset ${CURSOR_BACKEND_URL_ENV}, ` +
-			`or set ${CURSOR_ALLOW_BACKEND_OVERRIDE_ENV}=1 if this is your own Cursor-compatible backend.`,
+      `${CURSOR_BACKEND_URL_ENV}=${JSON.stringify(override)} is not a Cursor endpoint. ` +
+      `pi-cursor refuses to send your API key there. Unset ${CURSOR_BACKEND_URL_ENV}, ` +
+      `or set ${CURSOR_ALLOW_BACKEND_OVERRIDE_ENV}=1 if this is your own Cursor-compatible backend.`,
   };
 }
 
@@ -123,10 +119,10 @@ export interface EgressSurface {
   /** Backend override state for the current process. */
   override: BackendOverrideCheck;
   /**
-	 * HTTP clients owned by pi-cursor. Always empty: it ships none, so every
-	 * request on the wire is the Cursor SDK's own, issued from the call sites
-	 * listed below.
-	 */
+   * HTTP clients owned by pi-cursor. Always empty: it ships none, so every
+   * request on the wire is the Cursor SDK's own, issued from the call sites
+   * listed below.
+   */
   extensionHttpClients: readonly string[];
   /** The Cursor SDK entry points pi-cursor drives, in order of occurrence. */
   sdkCallSites: readonly string[];
@@ -134,9 +130,9 @@ export interface EgressSurface {
 
 /** Cursor SDK entry points the extension triggers. */
 export const CURSOR_SDK_CALL_SITES = [
-  "Cursor.models.list(), model discovery",
-  "Agent.create(), one local agent per pi session",
-  "agent.send(), one run per turn",
+  'Cursor.models.list(), model discovery',
+  'Agent.create(), one local agent per pi session',
+  'agent.send(), one run per turn',
 ] as const;
 
 /** Machine-readable description of the outbound surface, for the status command. */
@@ -152,12 +148,12 @@ export function describeEgressSurface(env: EgressEnv = process.env): EgressSurfa
 /** Multi-line, human-readable render of the outbound surface. */
 export function formatEgressSurface(surface: EgressSurface = describeEgressSurface()): string {
   const lines = [
-    "pi-cursor outbound surface",
+    'pi-cursor outbound surface',
     `- HTTP clients owned by pi-cursor: none`,
-    `- requests allowed to: ${surface.hosts.join(", ")}`,
-    "- Cursor SDK call sites pi-cursor triggers:",
+    `- requests allowed to: ${surface.hosts.join(', ')}`,
+    '- Cursor SDK call sites pi-cursor triggers:',
     ...surface.sdkCallSites.map((site) => `    ${site}`),
-    `- ${CURSOR_BACKEND_URL_ENV}: ${surface.override.override ? JSON.stringify(surface.override.override) : "(unset)"}`,
+    `- ${CURSOR_BACKEND_URL_ENV}: ${surface.override.override ? JSON.stringify(surface.override.override) : '(unset)'}`,
   ];
 
   if (!surface.override.ok) {
@@ -166,5 +162,5 @@ export function formatEgressSurface(surface: EgressSurface = describeEgressSurfa
     lines.push(`- note: ${surface.override.reason}`);
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

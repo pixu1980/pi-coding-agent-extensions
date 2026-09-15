@@ -1,10 +1,10 @@
-import type { McpExtensionState } from "./_state.ts";
+import type { McpExtensionState } from './_state.ts';
 import {
   MCP_STATUS_EVENT,
   MCP_STATUS_SNAPSHOT_VERSION,
   type McpServerStatusSnapshot,
   type McpStatusSnapshot,
-} from "./_types.ts";
+} from './_types.ts';
 
 const FAILURE_BACKOFF_MS = 60 * 1000;
 
@@ -41,26 +41,27 @@ export function createMcpStatusSnapshot(state: McpExtensionState): McpStatusSnap
     const disabled = definition?.disabled === true;
     const connection = disabled ? undefined : state.manager.getConnection(name);
     const metadata = disabled ? undefined : state.toolMetadata.get(name);
-    const toolCount = metadata?.length ?? (connection?.status === "connected" ? connection.tools.length : 0);
+    const toolCount = metadata?.length ?? (connection?.status === 'connected' ? connection.tools.length : 0);
     const resourceCount = disabled
       ? undefined
-      : state.resourceCounts?.get(name) ?? (connection?.status === "connected" ? connection.resources.length : undefined);
+      : (state.resourceCounts?.get(name) ??
+        (connection?.status === 'connected' ? connection.resources.length : undefined));
     const failedAgoSeconds = disabled ? undefined : getActiveFailureAgeSeconds(state, name);
 
-    let status: McpServerStatusSnapshot["status"] = "not-connected";
+    let status: McpServerStatusSnapshot['status'] = 'not-connected';
 
     if (disabled) {
-      status = "disabled";
+      status = 'disabled';
       disabledCount++;
-    } else if (connection?.status === "connected") {
-      status = "connected";
+    } else if (connection?.status === 'connected') {
+      status = 'connected';
       connectedCount++;
-    } else if (connection?.status === "needs-auth") {
-      status = "needs-auth";
+    } else if (connection?.status === 'needs-auth') {
+      status = 'needs-auth';
     } else if (failedAgoSeconds !== undefined) {
-      status = "failed";
+      status = 'failed';
     } else if (metadata !== undefined) {
-      status = "cached";
+      status = 'cached';
     }
 
     totalTools += disabled ? 0 : toolCount;
@@ -74,7 +75,7 @@ export function createMcpStatusSnapshot(state: McpExtensionState): McpStatusSnap
       status,
       toolCount,
       ...(resourceCount !== undefined ? { resourceCount } : {}),
-      ...(status === "failed" && failedAgoSeconds !== undefined ? { failedAgoSeconds } : {}),
+      ...(status === 'failed' && failedAgoSeconds !== undefined ? { failedAgoSeconds } : {}),
       disabled,
     });
   }
@@ -89,10 +90,7 @@ export function createMcpStatusSnapshot(state: McpExtensionState): McpStatusSnap
   };
 }
 
-export function publishMcpStatusSnapshot(
-  state: McpExtensionState,
-  snapshot?: McpStatusSnapshot,
-): void {
+export function publishMcpStatusSnapshot(state: McpExtensionState, snapshot?: McpStatusSnapshot): void {
   const events = state.statusEvents;
 
   if (!events) {
@@ -125,5 +123,5 @@ export function publishMcpStatusShutdown(events: McpStatusEventBus | undefined):
   }
 }
 
-export type { McpServerStatusSnapshot, McpStatusSnapshot } from "./_types.ts";
-export { MCP_STATUS_EVENT, MCP_STATUS_SNAPSHOT_VERSION } from "./_types.ts";
+export type { McpServerStatusSnapshot, McpStatusSnapshot } from './_types.ts';
+export { MCP_STATUS_EVENT, MCP_STATUS_SNAPSHOT_VERSION } from './_types.ts';

@@ -7,53 +7,53 @@
  * is in failing loudly when someone adds `fetch()` two years from now.
  */
 
-import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { describe, it } from "node:test";
-import { CURSOR_EGRESS_ALLOWLIST } from "../lib/_types.ts";
+import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, it } from 'node:test';
+import { CURSOR_EGRESS_ALLOWLIST } from '../lib/_types.ts';
 
-const packageRoot = fileURLToPath(new URL("../", import.meta.url));
-const libDir = fileURLToPath(new URL("../lib/", import.meta.url));
+const packageRoot = fileURLToPath(new URL('../', import.meta.url));
+const libDir = fileURLToPath(new URL('../lib/', import.meta.url));
 
 /** Drop comments so a doc sentence cannot be mistaken for a call. */
 function stripComments(text) {
-  return text.replaceAll(/\/\*[\s\S]*?\*\//g, "").replaceAll(/(^|[^:])\/\/.*$/gm, "$1");
+  return text.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
 function readSource(path) {
-  return { source: stripComments(readFileSync(path, "utf8")), raw: readFileSync(path, "utf8") };
+  return { source: stripComments(readFileSync(path, 'utf8')), raw: readFileSync(path, 'utf8') };
 }
 
 function sourceFiles() {
   const files = readdirSync(libDir)
-    .filter((name) => name.endsWith(".ts"))
+    .filter((name) => name.endsWith('.ts'))
     .map((name) => ({ name: `lib/${name}`, ...readSource(`${libDir}${name}`) }));
 
-  return [{ name: "index.ts", ...readSource(`${packageRoot}index.ts`) }, ...files];
+  return [{ name: 'index.ts', ...readSource(`${packageRoot}index.ts`) }, ...files];
 }
 
-describe("no network APIs in pi-cursor source", () => {
+describe('no network APIs in pi-cursor source', () => {
   const forbidden = [
-    "fetch(",
-    "XMLHttpRequest",
-    "axios",
-    "node-fetch",
-    "sendBeacon",
-    "WebSocket",
-    "EventSource",
-    "http.request",
-    "https.request",
-    "http.get(",
-    "https.get(",
-    "net.connect",
-    "net.createConnection",
-    "dns.lookup",
-    "tls.connect",
-    "undici",
+    'fetch(',
+    'XMLHttpRequest',
+    'axios',
+    'node-fetch',
+    'sendBeacon',
+    'WebSocket',
+    'EventSource',
+    'http.request',
+    'https.request',
+    'http.get(',
+    'https.get(',
+    'net.connect',
+    'net.createConnection',
+    'dns.lookup',
+    'tls.connect',
+    'undici',
   ];
 
-  it("uses none of them", () => {
+  it('uses none of them', () => {
     for (const file of sourceFiles()) {
       for (const needle of forbidden) {
         assert.equal(file.source.includes(needle), false, `${file.name} must not use ${needle}`);
@@ -61,15 +61,15 @@ describe("no network APIs in pi-cursor source", () => {
     }
   });
 
-  it("does not shell out", () => {
+  it('does not shell out', () => {
     for (const file of sourceFiles()) {
-      for (const needle of ["child_process", "execSync", "spawnSync", "execFile"]) {
+      for (const needle of ['child_process', 'execSync', 'spawnSync', 'execFile']) {
         assert.equal(file.source.includes(needle), false, `${file.name} must not use ${needle}`);
       }
     }
   });
 
-  it("imports the Cursor SDK lazily only", () => {
+  it('imports the Cursor SDK lazily only', () => {
     for (const file of sourceFiles()) {
       const staticImport = /^\s*import\s[^\n]*from\s+["']@cursor\/sdk["']/m.test(file.source);
 
@@ -78,8 +78,8 @@ describe("no network APIs in pi-cursor source", () => {
   });
 });
 
-describe("URL literals stay inside the allowlist", () => {
-  it("contains no other host", () => {
+describe('URL literals stay inside the allowlist', () => {
+  it('contains no other host', () => {
     const allowed = new Set(CURSOR_EGRESS_ALLOWLIST);
 
     for (const file of sourceFiles()) {
@@ -91,37 +91,33 @@ describe("URL literals stay inside the allowlist", () => {
     }
   });
 
-  it("has an allowlist with no wildcard or scheme", () => {
+  it('has an allowlist with no wildcard or scheme', () => {
     for (const host of CURSOR_EGRESS_ALLOWLIST) {
-      assert.equal(host.includes("*"), false, `${host} must be an exact host`);
-      assert.equal(host.includes("/"), false, `${host} must not carry a path`);
-      assert.equal(host.includes(":"), false, `${host} must not carry a port`);
+      assert.equal(host.includes('*'), false, `${host} must be an exact host`);
+      assert.equal(host.includes('/'), false, `${host} must not carry a path`);
+      assert.equal(host.includes(':'), false, `${host} must not carry a port`);
     }
   });
 });
 
 describe("the SDK's own credential store is never touched", () => {
-  it("no source file references ~/.cursor", () => {
+  it('no source file references ~/.cursor', () => {
     for (const file of sourceFiles()) {
-      assert.equal(file.source.includes(".cursor/sdk"), false, `${file.name} must not read the SDK auth file`);
-      assert.equal(file.source.includes("~/.cursor"), false, `${file.name} must not read the SDK auth file`);
+      assert.equal(file.source.includes('.cursor/sdk'), false, `${file.name} must not read the SDK auth file`);
+      assert.equal(file.source.includes('~/.cursor'), false, `${file.name} must not read the SDK auth file`);
     }
   });
 });
-describe("secrets are not written to the console", () => {
-  it("no console call mentions a key", () => {
+describe('secrets are not written to the console', () => {
+  it('no console call mentions a key', () => {
     for (const file of sourceFiles()) {
       for (const match of file.source.matchAll(/console\.\w+\(([^\n]*)/g)) {
-        assert.equal(
-          /apiKey|api_key|CURSOR_API_KEY/i.test(match[1]),
-          false,
-          `${file.name} logs something key-shaped`,
-        );
+        assert.equal(/apiKey|api_key|CURSOR_API_KEY/i.test(match[1]), false, `${file.name} logs something key-shaped`);
       }
     }
   });
 
-  it("stderr diagnostics never interpolate a key variable", () => {
+  it('stderr diagnostics never interpolate a key variable', () => {
     for (const file of sourceFiles()) {
       for (const match of file.source.matchAll(/process\.(?:stderr|stdout)\.write\(([\s\S]{0,200}?)\)/g)) {
         assert.equal(/apiKey|\bkey\b/i.test(match[1]), false, `${file.name} writes a key-shaped value`);

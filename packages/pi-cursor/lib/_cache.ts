@@ -11,9 +11,9 @@
  * File: `~/.pi/agent/pi-cursor-models.json`, mode 0600.
  */
 
-import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { CURSOR_MODEL_CACHE_FILE, CURSOR_MODEL_CACHE_TTL_MS, CURSOR_MODEL_CACHE_VERSION } from "./_types.ts";
+import { chmodSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { CURSOR_MODEL_CACHE_FILE, CURSOR_MODEL_CACHE_TTL_MS, CURSOR_MODEL_CACHE_VERSION } from './_types.ts';
 
 /** Minimal shape we persist. Deliberately not the SDK's full model object. */
 export interface CachedModelRecord {
@@ -33,8 +33,8 @@ export interface CacheEnv {
   [key: string]: string | undefined;
 }
 
-export const CURSOR_MODEL_CACHE_DISABLE_ENV = "PI_CURSOR_DISABLE_MODEL_CACHE";
-export const CURSOR_MODEL_CACHE_TTL_ENV = "PI_CURSOR_MODEL_CACHE_TTL_MS";
+export const CURSOR_MODEL_CACHE_DISABLE_ENV = 'PI_CURSOR_DISABLE_MODEL_CACHE';
+export const CURSOR_MODEL_CACHE_TTL_ENV = 'PI_CURSOR_MODEL_CACHE_TTL_MS';
 
 /** Resolve the cache path. Pass `agentDir` in tests to avoid touching `~`. */
 export function getModelCachePath(agentDir?: string): string {
@@ -50,13 +50,13 @@ function defaultAgentDir(): string {
     return fromEnv;
   }
 
-  const configDir = process.env.PI_CONFIG_DIR?.trim() || ".pi";
+  const configDir = process.env.PI_CONFIG_DIR?.trim() || '.pi';
 
-  return join(process.env.HOME ?? process.env.USERPROFILE ?? ".", configDir, "agent");
+  return join(process.env.HOME ?? process.env.USERPROFILE ?? '.', configDir, 'agent');
 }
 
 export function isModelCacheDisabled(env: CacheEnv = process.env): boolean {
-  return env[CURSOR_MODEL_CACHE_DISABLE_ENV] === "1";
+  return env[CURSOR_MODEL_CACHE_DISABLE_ENV] === '1';
 }
 
 export function getModelCacheTtlMs(env: CacheEnv = process.env): number {
@@ -72,7 +72,7 @@ export function getModelCacheTtlMs(env: CacheEnv = process.env): number {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Parse a cache file, dropping anything malformed rather than throwing. */
@@ -95,7 +95,7 @@ export function parseCatalog(raw: string): CachedCatalog | undefined {
 
   const fetchedAt = parsed.fetchedAt;
 
-  if (typeof fetchedAt !== "number" || !Number.isFinite(fetchedAt)) {
+  if (typeof fetchedAt !== 'number' || !Number.isFinite(fetchedAt)) {
     return undefined;
   }
 
@@ -115,20 +115,20 @@ export function parseCatalog(raw: string): CachedCatalog | undefined {
     const id = item.id;
     const displayName = item.displayName;
 
-    if (typeof id !== "string" || !id.trim()) {
+    if (typeof id !== 'string' || !id.trim()) {
       continue;
     }
 
-    if (typeof displayName !== "string") {
+    if (typeof displayName !== 'string') {
       continue;
     }
 
     records.push({
       id,
       displayName,
-      ...(typeof item.description === "string" ? { description: item.description } : {}),
-      ...(Array.isArray(item.parameters) ? { parameters: item.parameters as CachedModelRecord["parameters"] } : {}),
-      ...(Array.isArray(item.variants) ? { variants: item.variants as CachedModelRecord["variants"] } : {}),
+      ...(typeof item.description === 'string' ? { description: item.description } : {}),
+      ...(Array.isArray(item.parameters) ? { parameters: item.parameters as CachedModelRecord['parameters'] } : {}),
+      ...(Array.isArray(item.variants) ? { variants: item.variants as CachedModelRecord['variants'] } : {}),
     });
   }
 
@@ -160,7 +160,9 @@ export function getCatalogCacheStats(): { diskReads: number; memoHits: number } 
 }
 
 /** Read the cache. Returns `undefined` when absent, malformed, or stale. */
-export function loadCachedCatalog(options: { path?: string; ttlMs?: number; now?: number } = {}): CachedCatalog | undefined {
+export function loadCachedCatalog(
+  options: { path?: string; ttlMs?: number; now?: number } = {}
+): CachedCatalog | undefined {
   const path = options.path ?? getModelCachePath();
   const ttl = options.ttlMs ?? getModelCacheTtlMs();
   const now = options.now ?? Date.now();
@@ -179,7 +181,7 @@ export function loadCachedCatalog(options: { path?: string; ttlMs?: number; now?
       return hit.catalog;
     }
 
-    const catalog = parseCatalog(readFileSync(path, "utf8"));
+    const catalog = parseCatalog(readFileSync(path, 'utf8'));
 
     catalogCacheStats.diskReads += 1;
 
@@ -210,10 +212,7 @@ export function loadCachedCatalog(options: { path?: string; ttlMs?: number; now?
  * disk. Returns `false` instead of throwing: a read-only or unwritable
  * agent dir must never break a chat turn.
  */
-export function saveCachedCatalog(
-  models: CachedModelRecord[],
-  options: { path?: string; now?: number } = {},
-): boolean {
+export function saveCachedCatalog(models: CachedModelRecord[], options: { path?: string; now?: number } = {}): boolean {
   if (models.length === 0) {
     return false;
   }

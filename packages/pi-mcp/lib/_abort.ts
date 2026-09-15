@@ -3,7 +3,7 @@ export function throwIfAborted(signal?: AbortSignal): void {
     return;
   }
 
-  throw signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason ?? "MCP request aborted"));
+  throw signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason ?? 'MCP request aborted'));
 }
 
 export async function abortable<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
@@ -15,7 +15,7 @@ export async function abortable<T>(promise: Promise<T>, signal?: AbortSignal): P
 
   return await new Promise<T>((resolve, reject) => {
     let settled = false;
-    const cleanup = () => signal.removeEventListener("abort", onAbort);
+    const cleanup = () => signal.removeEventListener('abort', onAbort);
     const onAbort = () => {
       if (settled) {
         return;
@@ -23,12 +23,14 @@ export async function abortable<T>(promise: Promise<T>, signal?: AbortSignal): P
 
       settled = true;
       cleanup();
-      reject(signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason ?? "MCP request aborted")));
+      reject(
+        signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason ?? 'MCP request aborted'))
+      );
     };
 
-    signal.addEventListener("abort", onAbort, { once: true });
+    signal.addEventListener('abort', onAbort, { once: true });
     promise.then(
-      value => {
+      (value) => {
         if (settled) {
           return;
         }
@@ -37,7 +39,7 @@ export async function abortable<T>(promise: Promise<T>, signal?: AbortSignal): P
         cleanup();
         resolve(value);
       },
-      error => {
+      (error) => {
         if (settled) {
           return;
         }
@@ -45,7 +47,7 @@ export async function abortable<T>(promise: Promise<T>, signal?: AbortSignal): P
         settled = true;
         cleanup();
         reject(error);
-      },
+      }
     );
   });
 }

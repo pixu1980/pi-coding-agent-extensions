@@ -12,7 +12,7 @@
  *   await runCommand("reasoning", "auto", ctx);
  */
 
-import assert from "node:assert/strict";
+import assert from 'node:assert/strict';
 
 // ── Theme stub (for UI components) ────────────────────────────────
 
@@ -47,35 +47,35 @@ export function createMockCtx(overrides = {}) {
   const ui = {
     addAutocompleteProvider(factory) {
       providers.push(factory);
-      uiCalls.push(["addAutocompleteProvider", factory]);
+      uiCalls.push(['addAutocompleteProvider', factory]);
     },
     notify(msg, type) {
-      uiCalls.push(["notify", msg, type]);
+      uiCalls.push(['notify', msg, type]);
     },
     setStatus(key, text) {
-      uiCalls.push(["setStatus", key, text]);
+      uiCalls.push(['setStatus', key, text]);
     },
     setWidget(name, factory, opts) {
-      uiCalls.push(["setWidget", name, factory, opts]);
+      uiCalls.push(['setWidget', name, factory, opts]);
     },
     setFooter(factory) {
-      uiCalls.push(["setFooter", factory]);
+      uiCalls.push(['setFooter', factory]);
     },
     /** Records the component factory so tests can drive it: ui.customCalls[0].factory(fakeTui, theme, keybindings, done) */
     custom(factory, opts) {
-      uiCalls.push(["custom", factory, opts]);
+      uiCalls.push(['custom', factory, opts]);
       return Promise.resolve(undefined);
     },
     select(prompt, options) {
-      uiCalls.push(["select", prompt, options]);
+      uiCalls.push(['select', prompt, options]);
       return Promise.resolve(undefined);
     },
     input(prompt, opts) {
-      uiCalls.push(["input", prompt, opts]);
+      uiCalls.push(['input', prompt, opts]);
       return Promise.resolve(undefined);
     },
     confirm(prompt, opts) {
-      uiCalls.push(["confirm", prompt, opts]);
+      uiCalls.push(['confirm', prompt, opts]);
       return Promise.resolve(undefined);
     },
     // test helpers
@@ -93,11 +93,11 @@ export function createMockCtx(overrides = {}) {
   };
 
   const ctx = {
-    cwd: "/tmp",
+    cwd: '/tmp',
     hasUI: true,
-    mode: "tui",
+    mode: 'tui',
     model: undefined,
-    thinkingLevel: "high",
+    thinkingLevel: 'high',
     signal: new AbortController().signal,
     ui,
     sessionManager,
@@ -153,8 +153,8 @@ export function createMockPi(overrides = {}) {
     exec: [],
   };
   const state = {
-    thinkingLevel: "high",
-    sessionName: "",
+    thinkingLevel: 'high',
+    sessionName: '',
     activeTools: [],
   };
 
@@ -276,7 +276,7 @@ export function createMockPi(overrides = {}) {
     }
   };
 
-  const runCommand = async (name, args = "", ctx = createMockCtx()) => {
+  const runCommand = async (name, args = '', ctx = createMockCtx()) => {
     const def = commands.get(name);
     assert.ok(def, `command "${name}" is not registered`);
     return def.handler(args, ctx);

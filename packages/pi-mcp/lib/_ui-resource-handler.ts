@@ -1,10 +1,20 @@
-import { RESOURCE_MIME_TYPE } from "@modelcontextprotocol/ext-apps/app-bridge";
-import { UrlElicitationRequiredError, type ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
-import { ResourceFetchError, ResourceParseError } from "./_errors.ts";
-import { logger } from "./_logger.ts";
-import { SessionRecoveryAuthRequiredError, withSessionRecovery, type SessionRecoveryDeps } from "./_session-recovery.ts";
-import type { McpServerManager } from "./_server-manager.ts";
-import { isServerDisabled, type McpConfig, type UiResourceContent, type UiResourceCsp, type UiResourceMeta } from "./_types.ts";
+import { RESOURCE_MIME_TYPE } from '@modelcontextprotocol/ext-apps/app-bridge';
+import { UrlElicitationRequiredError, type ReadResourceResult } from '@modelcontextprotocol/sdk/types.js';
+import { ResourceFetchError, ResourceParseError } from './_errors.ts';
+import { logger } from './_logger.ts';
+import {
+  SessionRecoveryAuthRequiredError,
+  withSessionRecovery,
+  type SessionRecoveryDeps,
+} from './_session-recovery.ts';
+import type { McpServerManager } from './_server-manager.ts';
+import {
+  isServerDisabled,
+  type McpConfig,
+  type UiResourceContent,
+  type UiResourceCsp,
+  type UiResourceMeta,
+} from './_types.ts';
 
 interface ResourceContentRecord {
   uri?: string;
@@ -17,22 +27,29 @@ interface ResourceContentRecord {
 interface ReadUiResourceOptions {
   config?: McpConfig;
   signal?: AbortSignal;
-  onNeedsAuth?: SessionRecoveryDeps["onNeedsAuth"];
+  onNeedsAuth?: SessionRecoveryDeps['onNeedsAuth'];
 }
 
 export class UiResourceHandler {
-  private log = logger.child({ component: "UiResourceHandler" });
+  private log = logger.child({ component: 'UiResourceHandler' });
 
-  constructor(private manager: McpServerManager, private config?: McpConfig) {}
+  constructor(
+    private manager: McpServerManager,
+    private config?: McpConfig
+  ) {}
 
-  async readUiResource(serverName: string, uri: string, options: ReadUiResourceOptions = {}): Promise<UiResourceContent> {
+  async readUiResource(
+    serverName: string,
+    uri: string,
+    options: ReadUiResourceOptions = {}
+  ): Promise<UiResourceContent> {
     const log = this.log.child({ server: serverName, uri });
 
-    if (!uri.startsWith("ui://")) {
-      throw new ResourceParseError(uri, "URI must start with ui://", { server: serverName });
+    if (!uri.startsWith('ui://')) {
+      throw new ResourceParseError(uri, 'URI must start with ui://', { server: serverName });
     }
 
-    log.debug("Fetching UI resource");
+    log.debug('Fetching UI resource');
 
     let result: ReadResourceResult;
 
@@ -51,7 +68,8 @@ export class UiResourceHandler {
           result = await withSessionRecovery(
             { manager: this.manager, config, signal: options.signal, onNeedsAuth: options.onNeedsAuth },
             serverName,
-            (connection) => connection.client.readResource({ uri }, this.manager.getRequestOptions(serverName, options.signal)),
+            (connection) =>
+              connection.client.readResource({ uri }, this.manager.getRequestOptions(serverName, options.signal))
           );
         } finally {
           this.manager.decrementInFlight(serverName);
@@ -67,7 +85,7 @@ export class UiResourceHandler {
 
       const message = error instanceof Error ? error.message : String(error);
 
-      log.error("Failed to read resource", error instanceof Error ? error : undefined);
+      log.error('Failed to read resource', error instanceof Error ? error : undefined);
       throw new ResourceFetchError(uri, message, {
         server: serverName,
         cause: error instanceof Error ? error : undefined,
@@ -78,7 +96,7 @@ export class UiResourceHandler {
     const mimeType = content.mimeType;
 
     if (mimeType && !isHtmlMimeType(mimeType)) {
-      log.warn("Unsupported MIME type", { mimeType });
+      log.warn('Unsupported MIME type', { mimeType });
       throw new ResourceParseError(
         uri,
         `unsupported MIME type "${mimeType}" (expected text/html or ${RESOURCE_MIME_TYPE})`,
@@ -89,14 +107,14 @@ export class UiResourceHandler {
     const html = toHtml(content);
 
     if (!html.trim()) {
-      log.warn("Resource content is empty");
-      throw new ResourceParseError(uri, "content is empty", { server: serverName });
+      log.warn('Resource content is empty');
+      throw new ResourceParseError(uri, 'content is empty', { server: serverName });
     }
 
     const contentMeta = extractUiMeta(content._meta);
     const listMeta = extractUiMeta(this.getListResourceMeta(serverName, uri));
 
-    log.debug("Resource loaded successfully", { 
+    log.debug('Resource loaded successfully', {
       contentLength: html.length,
       hasCsp: !!contentMeta.csp || !!listMeta.csp,
     });
@@ -123,7 +141,7 @@ export class UiResourceHandler {
 
     const resource = connection.resources.find((entry) => entry.uri === uri);
 
-    if (!resource || !resource._meta || typeof resource._meta !== "object") {
+    if (!resource || !resource._meta || typeof resource._meta !== 'object') {
       return undefined;
     }
 
@@ -144,9 +162,7 @@ function selectContent(result: ReadResourceResult, preferredUri: string): Resour
     return byUri;
   }
 
-  const byHtmlMime = contents.find(
-    (content) => content.mimeType && isHtmlMimeType(content.mimeType)
-  );
+  const byHtmlMime = contents.find((content) => content.mimeType && isHtmlMimeType(content.mimeType));
 
   if (byHtmlMime) {
     return byHtmlMime;
@@ -158,54 +174,52 @@ function selectContent(result: ReadResourceResult, preferredUri: string): Resour
 function isHtmlMimeType(mimeType: string): boolean {
   const normalized = mimeType.toLowerCase();
 
-  return normalized.startsWith("text/html") || normalized === RESOURCE_MIME_TYPE.toLowerCase();
+  return normalized.startsWith('text/html') || normalized === RESOURCE_MIME_TYPE.toLowerCase();
 }
 
 function toHtml(content: ResourceContentRecord): string {
-  if (typeof content.text === "string") {
+  if (typeof content.text === 'string') {
     return content.text;
   }
 
-  if (typeof content.blob === "string") {
-    return Buffer.from(content.blob, "base64").toString("utf-8");
+  if (typeof content.blob === 'string') {
+    return Buffer.from(content.blob, 'base64').toString('utf-8');
   }
 
-  throw new Error(`UI resource ${content.uri ?? "(unknown)"} did not include text or blob content`);
+  throw new Error(`UI resource ${content.uri ?? '(unknown)'} did not include text or blob content`);
 }
 
 const OPENAI_CSP_FIELD_MAPPINGS = [
-  ["resource_domains", "resourceDomains"],
-  ["connect_domains", "connectDomains"],
-  ["frame_domains", "frameDomains"],
+  ['resource_domains', 'resourceDomains'],
+  ['connect_domains', 'connectDomains'],
+  ['frame_domains', 'frameDomains'],
 ] as const;
 
 const UI_CSP_DOMAIN_FIELDS: readonly (keyof UiResourceCsp)[] = [
-  "resourceDomains",
-  "connectDomains",
-  "frameDomains",
-  "baseUriDomains",
+  'resourceDomains',
+  'connectDomains',
+  'frameDomains',
+  'baseUriDomains',
 ];
 
 function extractUiMeta(meta: Record<string, unknown> | undefined): UiResourceMeta {
-  if (!meta || typeof meta !== "object") {
+  if (!meta || typeof meta !== 'object') {
     return {};
   }
 
   const ui = isRecord(meta.ui) ? meta.ui : undefined;
   const out: UiResourceMeta = {};
-  const openAiCsp = hasOwnProperty(meta, "openai/widgetCSP")
-    ? normalizeOpenAiWidgetCsp(meta["openai/widgetCSP"])
+  const openAiCsp = hasOwnProperty(meta, 'openai/widgetCSP')
+    ? normalizeOpenAiWidgetCsp(meta['openai/widgetCSP'])
     : undefined;
-  const hasStandardCsp = !!ui && hasOwnProperty(ui, "csp");
+  const hasStandardCsp = !!ui && hasOwnProperty(ui, 'csp');
   const standardCspValue = hasStandardCsp ? ui.csp : undefined;
 
   if (hasStandardCsp && !isRecord(standardCspValue)) {
     // A declared canonical container takes precedence even when malformed.
     out.csp = {};
   } else {
-    const standardCsp = hasStandardCsp
-      ? normalizeUiResourceCsp(standardCspValue)
-      : undefined;
+    const standardCsp = hasStandardCsp ? normalizeUiResourceCsp(standardCspValue) : undefined;
 
     if (openAiCsp || standardCsp) {
       out.csp = { ...openAiCsp, ...standardCsp };
@@ -221,14 +235,14 @@ function extractUiMeta(meta: Record<string, unknown> | undefined): UiResourceMet
   }
 
   if (ui && isRecord(ui.permissions)) {
-    out.permissions = ui.permissions as UiResourceMeta["permissions"];
+    out.permissions = ui.permissions as UiResourceMeta['permissions'];
   }
 
-  if (ui && typeof ui.domain === "string") {
+  if (ui && typeof ui.domain === 'string') {
     out.domain = ui.domain;
   }
 
-  if (ui && typeof ui.prefersBorder === "boolean") {
+  if (ui && typeof ui.prefersBorder === 'boolean') {
     out.prefersBorder = ui.prefersBorder;
   }
 
@@ -272,9 +286,7 @@ function normalizeOpenAiWidgetCsp(value: unknown): UiResourceCsp {
 }
 
 function copyStringArray(value: unknown): string[] | undefined {
-  return Array.isArray(value) && value.every((entry) => typeof entry === "string")
-    ? [...value]
-    : undefined;
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string') ? [...value] : undefined;
 }
 
 function hasOwnProperty(record: Record<string, unknown>, property: string): boolean {
@@ -282,5 +294,5 @@ function hasOwnProperty(record: Record<string, unknown>, property: string): bool
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

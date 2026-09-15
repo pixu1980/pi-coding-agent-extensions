@@ -1,19 +1,20 @@
-import http, { type IncomingMessage, type ServerResponse } from "node:http";
-import fs from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
-import { buildAllowAttribute } from "@modelcontextprotocol/ext-apps/app-bridge";
-import type {
-  CallToolRequest,
-  CallToolResult,
-} from "@modelcontextprotocol/sdk/types.js";
-import type { ConsentManager } from "./_consent-manager.ts";
-import { ServerError, wrapError } from "./_errors.ts";
-import { formatAuthRequiredMessage } from "./_utils.ts";
-import { buildHostHtmlTemplate, buildCspMetaContent } from "./_host-html-template.ts";
-import { logger } from "./_logger.ts";
-import type { McpServerManager } from "./_server-manager.ts";
-import { SessionRecoveryAuthRequiredError, withSessionRecovery, type SessionRecoveryDeps } from "./_session-recovery.ts";
+import http, { type IncomingMessage, type ServerResponse } from 'node:http';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { buildAllowAttribute } from '@modelcontextprotocol/ext-apps/app-bridge';
+import type { CallToolRequest, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { ConsentManager } from './_consent-manager.ts';
+import { ServerError, wrapError } from './_errors.ts';
+import { formatAuthRequiredMessage } from './_utils.ts';
+import { buildHostHtmlTemplate, buildCspMetaContent } from './_host-html-template.ts';
+import { logger } from './_logger.ts';
+import type { McpServerManager } from './_server-manager.ts';
+import {
+  SessionRecoveryAuthRequiredError,
+  withSessionRecovery,
+  type SessionRecoveryDeps,
+} from './_session-recovery.ts';
 import {
   extractUiPromptText,
   getVisualizationStreamEnvelope,
@@ -31,7 +32,7 @@ import {
   type UiResourceContent,
   type UiSessionMessages,
   type UiStreamSummary,
-} from "./_types.ts";
+} from './_types.ts';
 
 const MAX_BODY_SIZE = 2 * 1024 * 1024;
 const ABANDONED_GRACE_MS = 60_000;
@@ -52,7 +53,7 @@ export interface UiServerOptions {
    * tool calls run without recovery (unchanged pre-existing behavior).
    */
   config?: McpConfig;
-  onNeedsAuth?: SessionRecoveryDeps["onNeedsAuth"];
+  onNeedsAuth?: SessionRecoveryDeps['onNeedsAuth'];
   consentManager: ConsentManager;
   hostContext?: UiHostContext;
   initialResultPromise?: Promise<CallToolResult>;
@@ -69,7 +70,7 @@ export interface UiServerHandle {
   sessionToken: string;
   serverName: string;
   toolName: string;
-  viewer?: "browser" | "glimpse" | "suppressed";
+  viewer?: 'browser' | 'glimpse' | 'suppressed';
   windowOpen?: boolean;
   close: (reason?: string) => void;
   sendToolInput: (args: Record<string, unknown>) => void;
@@ -84,20 +85,20 @@ export interface UiServerHandle {
 
 export async function startUiServer(options: UiServerOptions): Promise<UiServerHandle> {
   const sessionToken = options.sessionToken ?? randomUUID();
-  const log = logger.child({ 
-    component: "UiServer",
+  const log = logger.child({
+    component: 'UiServer',
     server: options.serverName,
     tool: options.toolName,
     session: sessionToken.slice(0, 8),
   });
 
-  log.debug("Starting UI server");
+  log.debug('Starting UI server');
 
   const sseClients = new Set<ServerResponse>();
   let completed = false;
   let lastHeartbeatAt = Date.now();
   let watchdog: NodeJS.Timeout | null = null;
-  let currentDisplayMode: UiDisplayMode = options.hostContext?.displayMode ?? "inline";
+  let currentDisplayMode: UiDisplayMode = options.hostContext?.displayMode ?? 'inline';
   let nextEventId = 1;
   const eventLog: Array<{ id: number; name: string; payload: unknown }> = [];
   let streamSummary: UiStreamSummary | undefined;
@@ -111,20 +112,20 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
   const hostContext: UiHostContext = {
     displayMode: currentDisplayMode,
-    availableDisplayModes: ["inline", "fullscreen", "pip"],
-    platform: "desktop",
+    availableDisplayModes: ['inline', 'fullscreen', 'pip'],
+    platform: 'desktop',
     ...options.hostContext,
     // Only include toolInfo if caller provides full tool definition with inputSchema
     // The App validates toolInfo.tool.inputSchema as required object
   };
 
-  const initialStreamContext = hostContext["pi-mcp-adapter/stream"];
+  const initialStreamContext = hostContext['pi-mcp-adapter/stream'];
 
-  if (initialStreamContext && typeof initialStreamContext === "object") {
+  if (initialStreamContext && typeof initialStreamContext === 'object') {
     const streamId = (initialStreamContext as { streamId?: unknown }).streamId;
     const mode = (initialStreamContext as { mode?: unknown }).mode;
 
-    if (typeof streamId === "string" && (mode === "eager" || mode === "stream-first")) {
+    if (typeof streamId === 'string' && (mode === 'eager' || mode === 'stream-first')) {
       streamSummary = {
         streamId,
         mode,
@@ -139,7 +140,9 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
   };
 
   const updateStreamSummary = (payload: unknown) => {
-    const envelope = getVisualizationStreamEnvelope((payload as { structuredContent?: unknown } | null)?.structuredContent);
+    const envelope = getVisualizationStreamEnvelope(
+      (payload as { structuredContent?: unknown } | null)?.structuredContent
+    );
 
     if (!envelope) {
       return;
@@ -148,7 +151,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
     if (!streamSummary) {
       streamSummary = {
         streamId: envelope.streamId,
-        mode: "eager",
+        mode: 'eager',
         frames: 0,
         phases: [],
       };
@@ -171,9 +174,11 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
   const getLatestCheckpointIndex = () => {
     for (let index = eventLog.length - 1; index >= 0; index -= 1) {
       const entry = eventLog[index];
-      const envelope = getVisualizationStreamEnvelope((entry.payload as { structuredContent?: unknown } | null)?.structuredContent);
+      const envelope = getVisualizationStreamEnvelope(
+        (entry.payload as { structuredContent?: unknown } | null)?.structuredContent
+      );
 
-      if (envelope?.frameType === "checkpoint" || envelope?.frameType === "final") {
+      if (envelope?.frameType === 'checkpoint' || envelope?.frameType === 'final') {
         return index;
       }
     }
@@ -223,10 +228,10 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
     const eventsToReplay = Number.isFinite(parsedLastId)
       ? eventLog.filter((entry) => entry.id > parsedLastId)
       : (() => {
-        const latestCheckpointIndex = getLatestCheckpointIndex();
+          const latestCheckpointIndex = getLatestCheckpointIndex();
 
-        return latestCheckpointIndex >= 0 ? eventLog.slice(latestCheckpointIndex) : eventLog;
-      })();
+          return latestCheckpointIndex >= 0 ? eventLog.slice(latestCheckpointIndex) : eventLog;
+        })();
 
     for (const entry of eventsToReplay) {
       try {
@@ -265,8 +270,8 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
       return;
     }
 
-    log.debug("Session completed", { reason });
-    pushEvent("session-complete", { reason });
+    log.debug('Session completed', { reason });
+    pushEvent('session-complete', { reason });
     completed = true;
     stopWatchdog();
     options.onComplete?.(reason);
@@ -274,10 +279,10 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
   const server = http.createServer(async (req, res) => {
     try {
-      const method = req.method || "GET";
-      const url = new URL(req.url || "/", `http://${req.headers.host || "127.0.0.1"}`);
+      const method = req.method || 'GET';
+      const url = new URL(req.url || '/', `http://${req.headers.host || '127.0.0.1'}`);
 
-      if (method === "GET" && url.pathname === "/") {
+      if (method === 'GET' && url.pathname === '/') {
         if (!validateTokenQuery(url, sessionToken, res)) {
           return;
         }
@@ -297,38 +302,38 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         });
 
         res.writeHead(200, {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-store",
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
         });
         res.end(html);
 
         return;
       }
 
-      if (method === "GET" && url.pathname === "/events") {
+      if (method === 'GET' && url.pathname === '/events') {
         if (!validateTokenQuery(url, sessionToken, res)) {
           return;
         }
 
         touchHeartbeat();
-        log.debug("SSE client connected", { clientCount: sseClients.size + 1 });
+        log.debug('SSE client connected', { clientCount: sseClients.size + 1 });
         res.writeHead(200, {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache, no-transform",
-          Connection: "keep-alive",
-          "X-Accel-Buffering": "no",
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+          'X-Accel-Buffering': 'no',
         });
-        res.write(": connected\n\n");
+        res.write(': connected\n\n');
         sseClients.add(res);
-        replayEvents(res, req.headers["last-event-id"] ? String(req.headers["last-event-id"]) : null);
-        req.on("close", () => {
+        replayEvents(res, req.headers['last-event-id'] ? String(req.headers['last-event-id']) : null);
+        req.on('close', () => {
           sseClients.delete(res);
         });
 
         return;
       }
 
-      if (method === "GET" && url.pathname === "/health") {
+      if (method === 'GET' && url.pathname === '/health') {
         if (!validateTokenQuery(url, sessionToken, res)) {
           return;
         }
@@ -338,7 +343,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         return;
       }
 
-      if (method === "GET" && url.pathname === "/ui-app") {
+      if (method === 'GET' && url.pathname === '/ui-app') {
         if (!validateTokenQuery(url, sessionToken, res)) {
           return;
         }
@@ -348,36 +353,36 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         const cspContent = buildCspMetaContent(options.resource.meta.csp);
 
         res.writeHead(200, {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-store",
-          ...(cspContent ? { "Content-Security-Policy": cspContent } : {}),
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+          ...(cspContent ? { 'Content-Security-Policy': cspContent } : {}),
         });
         res.end(options.resource.html);
 
         return;
       }
 
-      if (method === "GET" && url.pathname === "/app-bridge.bundle.js") {
+      if (method === 'GET' && url.pathname === '/app-bridge.bundle.js') {
         // Serve the pre-bundled AppBridge module
-        const bundlePath = path.join(import.meta.dirname, "_app-bridge.bundle.js");
+        const bundlePath = path.join(import.meta.dirname, '_app-bridge.bundle.js');
 
         try {
-          const content = await fs.readFile(bundlePath, "utf-8");
+          const content = await fs.readFile(bundlePath, 'utf-8');
 
           res.writeHead(200, {
-            "Content-Type": "application/javascript",
-            "Cache-Control": "public, max-age=31536000",
+            'Content-Type': 'application/javascript',
+            'Cache-Control': 'public, max-age=31536000',
           });
           res.end(content);
         } catch {
-          sendJson(res, 500, { ok: false, error: "Bundle not found" });
+          sendJson(res, 500, { ok: false, error: 'Bundle not found' });
         }
 
         return;
       }
 
-      if (method !== "POST") {
-        sendJson(res, 404, { ok: false, error: "Not found" });
+      if (method !== 'POST') {
+        sendJson(res, 404, { ok: false, error: 'Not found' });
 
         return;
       }
@@ -396,25 +401,28 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
       touchHeartbeat();
 
-      if (url.pathname === "/proxy/tools/call") {
+      if (url.pathname === '/proxy/tools/call') {
         options.consentManager.ensureApproved(options.serverName);
-        const callParams = params as CallToolRequest["params"];
+        const callParams = params as CallToolRequest['params'];
 
-        if (!callParams || typeof callParams.name !== "string" || !callParams.name.trim()) {
-          sendJson(res, 400, { ok: false, error: "Invalid tools/call params" });
+        if (!callParams || typeof callParams.name !== 'string' || !callParams.name.trim()) {
+          sendJson(res, 400, { ok: false, error: 'Invalid tools/call params' });
 
           return;
         }
 
         const connection = options.manager.getConnection(options.serverName);
 
-        if (!connection || connection.status !== "connected") {
+        if (!connection || connection.status !== 'connected') {
           sendJson(res, 503, { ok: false, error: `Server "${options.serverName}" is not connected` });
 
           return;
         }
 
-        if (isServerDisabled(options.config?.mcpServers[options.serverName]) || isServerDisabled(connection.definition)) {
+        if (
+          isServerDisabled(options.config?.mcpServers[options.serverName]) ||
+          isServerDisabled(connection.definition)
+        ) {
           sendJson(res, 503, { ok: false, error: `Server "${options.serverName}" is disabled` });
 
           return;
@@ -426,17 +434,22 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
           const callArgs = {
             name: callParams.name,
             arguments:
-              callParams.arguments && typeof callParams.arguments === "object" && !Array.isArray(callParams.arguments)
+              callParams.arguments && typeof callParams.arguments === 'object' && !Array.isArray(callParams.arguments)
                 ? callParams.arguments
                 : {},
           };
           const result = options.config
             ? await withSessionRecovery(
-              { manager: options.manager, config: options.config, onNeedsAuth: options.onNeedsAuth },
-              options.serverName,
-              (conn) => conn.client.callTool(callArgs, undefined, options.manager.getRequestOptions?.(options.serverName)),
-            )
-            : await connection.client.callTool(callArgs, undefined, options.manager.getRequestOptions?.(options.serverName));
+                { manager: options.manager, config: options.config, onNeedsAuth: options.onNeedsAuth },
+                options.serverName,
+                (conn) =>
+                  conn.client.callTool(callArgs, undefined, options.manager.getRequestOptions?.(options.serverName))
+              )
+            : await connection.client.callTool(
+                callArgs,
+                undefined,
+                options.manager.getRequestOptions?.(options.serverName)
+              );
 
           sendJson(res, 200, { ok: true, result });
         } finally {
@@ -447,7 +460,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         return;
       }
 
-      if (url.pathname === "/proxy/ui/consent") {
+      if (url.pathname === '/proxy/ui/consent') {
         const approved = !!(params as { approved?: boolean }).approved;
 
         options.consentManager.registerDecision(options.serverName, approved);
@@ -456,55 +469,55 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         return;
       }
 
-      if (url.pathname === "/proxy/ui/message") {
+      if (url.pathname === '/proxy/ui/message') {
         const msgParams = params as UiMessageParams;
         const promptText = extractUiPromptText(msgParams);
-        
+
         // Track messages by type (order: prompt -> intent -> notify)
         // Must match the order in index.ts onMessage handler
         if (promptText) {
           sessionMessages.prompts.push(promptText);
-          log.debug("UI prompt received", { prompt: promptText.slice(0, 100) });
-        } else if (msgParams.type === "intent" || msgParams.intent) {
-          const intentName = msgParams.intent ?? "";
+          log.debug('UI prompt received', { prompt: promptText.slice(0, 100) });
+        } else if (msgParams.type === 'intent' || msgParams.intent) {
+          const intentName = msgParams.intent ?? '';
 
           if (intentName) {
-            sessionMessages.intents.push({ 
-              intent: intentName, 
-              params: msgParams.params 
+            sessionMessages.intents.push({
+              intent: intentName,
+              params: msgParams.params,
             });
-            log.debug("UI intent received", { intent: intentName });
+            log.debug('UI intent received', { intent: intentName });
           }
-        } else if (msgParams.type === "notify" || msgParams.message) {
-          const notifyText = msgParams.message ?? "";
+        } else if (msgParams.type === 'notify' || msgParams.message) {
+          const notifyText = msgParams.message ?? '';
 
           if (notifyText) {
             sessionMessages.notifications.push(notifyText);
-            log.debug("UI notification", { message: notifyText.slice(0, 100) });
+            log.debug('UI notification', { message: notifyText.slice(0, 100) });
           }
         }
-        
+
         await options.onMessage?.(msgParams);
         sendJson(res, 200, { ok: true, result: {} });
 
         return;
       }
 
-      if (url.pathname === "/proxy/ui/context") {
+      if (url.pathname === '/proxy/ui/context') {
         const ctxParams = params as UiModelContextParams;
 
-        log.debug("UI context update", { hasContent: !!ctxParams.content });
+        log.debug('UI context update', { hasContent: !!ctxParams.content });
         await options.onContextUpdate?.(ctxParams);
         sendJson(res, 200, { ok: true, result: {} });
 
         return;
       }
 
-      if (url.pathname === "/proxy/ui/open-link") {
+      if (url.pathname === '/proxy/ui/open-link') {
         const openParams = params as { url?: string };
 
-        if (!openParams?.url || typeof openParams.url !== "string") {
-          sendJson(res, 400, { ok: false, error: "Invalid open-link params" });
+        if (!openParams?.url || typeof openParams.url !== 'string') {
+          sendJson(res, 400, { ok: false, error: 'Invalid open-link params' });
 
           return;
         }
@@ -522,23 +535,23 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         return;
       }
 
-      if (url.pathname === "/proxy/ui/download-file") {
+      if (url.pathname === '/proxy/ui/download-file') {
         sendJson(res, 200, { ok: true, result: { isError: true } });
 
         return;
       }
 
-      if (url.pathname === "/proxy/ui/request-display-mode") {
+      if (url.pathname === '/proxy/ui/request-display-mode') {
         const displayParams = params as UiDisplayModeRequest;
         const requested = displayParams?.mode;
-        const available = hostContext.availableDisplayModes ?? ["inline"];
+        const available = hostContext.availableDisplayModes ?? ['inline'];
 
         if (requested && available.includes(requested)) {
           currentDisplayMode = requested;
         }
 
         hostContext.displayMode = currentDisplayMode;
-        pushEvent("host-context", { displayMode: currentDisplayMode });
+        pushEvent('host-context', { displayMode: currentDisplayMode });
         const result: UiDisplayModeResult = { mode: currentDisplayMode };
 
         sendJson(res, 200, { ok: true, result });
@@ -546,16 +559,15 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         return;
       }
 
-      if (url.pathname === "/proxy/ui/heartbeat") {
+      if (url.pathname === '/proxy/ui/heartbeat') {
         sendJson(res, 200, { ok: true, result: {} });
 
         return;
       }
 
-      if (url.pathname === "/proxy/ui/complete") {
-        const reason = typeof (params as { reason?: string }).reason === "string"
-          ? (params as { reason?: string }).reason!
-          : "done";
+      if (url.pathname === '/proxy/ui/complete') {
+        const reason =
+          typeof (params as { reason?: string }).reason === 'string' ? (params as { reason?: string }).reason! : 'done';
 
         markCompleted(reason);
         sendJson(res, 200, { ok: true, result: {} });
@@ -572,13 +584,13 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         return;
       }
 
-      sendJson(res, 404, { ok: false, error: "Not found" });
+      sendJson(res, 404, { ok: false, error: 'Not found' });
     } catch (error) {
       if (error instanceof SessionRecoveryAuthRequiredError) {
         const fallback = `Server "${options.serverName}" requires OAuth authentication. Run mcp({ action: "auth-start", server: "${options.serverName}" }) to get a browser URL, or /mcp-auth ${options.serverName} in an interactive local session.`;
-        const message = error.authMessage ?? (options.config
-          ? formatAuthRequiredMessage(options.config, options.serverName, fallback)
-          : fallback);
+        const message =
+          error.authMessage ??
+          (options.config ? formatAuthRequiredMessage(options.config, options.serverName, fallback) : fallback);
 
         sendJson(res, 401, { ok: false, error: message });
 
@@ -589,7 +601,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
       const status = /approval required|denied/i.test(wrapped.message) ? 403 : 500;
 
       if (status === 500) {
-        log.error("Request handler error", error instanceof Error ? error : undefined);
+        log.error('Request handler error', error instanceof Error ? error : undefined);
       }
 
       sendJson(res, status, { ok: false, error: wrapped.message });
@@ -598,11 +610,11 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
   if (options.initialResultPromise) {
     options.initialResultPromise.then(
-      (result) => pushEvent("tool-result", result),
+      (result) => pushEvent('tool-result', result),
       (error) => {
         const reason = error instanceof Error ? error.message : String(error);
 
-        pushEvent("tool-canceled", { reason });
+        pushEvent('tool-canceled', { reason });
       }
     );
   }
@@ -616,7 +628,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
       return;
     }
 
-    markCompleted("stale");
+    markCompleted('stale');
 
     try {
       server.close();
@@ -630,25 +642,25 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
   return new Promise((resolve, reject) => {
     const onError = (error: Error) => {
-      log.error("Failed to start server", error);
+      log.error('Failed to start server', error);
       reject(new ServerError(error.message, { port: options.port, cause: error }));
     };
 
-    server.once("error", onError);
-    server.listen(options.port ?? 0, "127.0.0.1", () => {
-      server.off("error", onError);
+    server.once('error', onError);
+    server.listen(options.port ?? 0, '127.0.0.1', () => {
+      server.off('error', onError);
       const address = server.address();
 
-      if (!address || typeof address === "string") {
-        const err = new ServerError("invalid address");
+      if (!address || typeof address === 'string') {
+        const err = new ServerError('invalid address');
 
-        log.error("Invalid server address", err);
+        log.error('Invalid server address', err);
         reject(err);
 
         return;
       }
 
-      log.debug("Server started", { port: address.port });
+      log.debug('Server started', { port: address.port });
 
       const handle: UiServerHandle = {
         url: `http://localhost:${address.port}/?session=${sessionToken}`,
@@ -657,7 +669,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
         serverName: options.serverName,
         toolName: options.toolName,
         close: (reason?: string) => {
-          markCompleted(reason ?? "closed");
+          markCompleted(reason ?? 'closed');
 
           try {
             server.close();
@@ -668,23 +680,23 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
           closeSse();
         },
         sendToolInput: (args: Record<string, unknown>) => {
-          pushEvent("tool-input", { arguments: args });
+          pushEvent('tool-input', { arguments: args });
         },
         sendToolResult: (result: CallToolResult) => {
-          pushEvent("tool-result", result);
+          pushEvent('tool-result', result);
         },
         sendResultPatch: (result: CallToolResult) => {
-          pushEvent("result-patch", result);
+          pushEvent('result-patch', result);
         },
         sendToolCancelled: (reason: string) => {
-          pushEvent("tool-canceled", { reason });
+          pushEvent('tool-canceled', { reason });
         },
         sendHostContext: (context: UiHostContext) => {
           Object.assign(hostContext, context);
-          pushEvent("host-context", context);
+          pushEvent('host-context', context);
         },
         getSessionMessages: () => ({ ...sessionMessages }),
-        getStreamSummary: () => streamSummary ? { ...streamSummary, phases: [...streamSummary.phases] } : undefined,
+        getStreamSummary: () => (streamSummary ? { ...streamSummary, phases: [...streamSummary.phases] } : undefined),
       };
 
       resolve(handle);
@@ -694,20 +706,20 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
 async function parseBody(
   req: IncomingMessage,
-  res: ServerResponse,
+  res: ServerResponse
 ): Promise<UiProxyRequestBody<Record<string, unknown>> | null> {
   try {
     const body = await readBody(req);
 
-    if (!body || typeof body !== "object") {
-      sendJson(res, 400, { ok: false, error: "Invalid request body" });
+    if (!body || typeof body !== 'object') {
+      sendJson(res, 400, { ok: false, error: 'Invalid request body' });
 
       return null;
     }
 
     return body as UiProxyRequestBody<Record<string, unknown>>;
   } catch (error) {
-    sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : "Invalid body" });
+    sendJson(res, 400, { ok: false, error: error instanceof Error ? error.message : 'Invalid body' });
 
     return null;
   }
@@ -718,12 +730,12 @@ function readBody(req: IncomingMessage): Promise<unknown> {
     let size = 0;
     const chunks: Buffer[] = [];
 
-    req.on("data", (chunk: Buffer) => {
+    req.on('data', (chunk: Buffer) => {
       size += chunk.length;
 
       if (size > MAX_BODY_SIZE) {
         req.destroy();
-        reject(new Error("Request body too large"));
+        reject(new Error('Request body too large'));
 
         return;
       }
@@ -731,23 +743,23 @@ function readBody(req: IncomingMessage): Promise<unknown> {
       chunks.push(chunk);
     });
 
-    req.on("end", () => {
+    req.on('end', () => {
       try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf-8')));
       } catch (error) {
         reject(error);
       }
     });
 
-    req.on("error", reject);
+    req.on('error', reject);
   });
 }
 
 function validateTokenQuery(url: URL, expected: string, res: ServerResponse): boolean {
-  const token = url.searchParams.get("session");
+  const token = url.searchParams.get('session');
 
   if (token !== expected) {
-    sendJson(res, 403, { ok: false, error: "Invalid session" });
+    sendJson(res, 403, { ok: false, error: 'Invalid session' });
 
     return false;
   }
@@ -758,10 +770,10 @@ function validateTokenQuery(url: URL, expected: string, res: ServerResponse): bo
 function validateTokenBody(
   body: UiProxyRequestBody<Record<string, unknown>>,
   expected: string,
-  res: ServerResponse,
+  res: ServerResponse
 ): boolean {
   if (body.token !== expected) {
-    sendJson(res, 403, { ok: false, error: "Invalid session" });
+    sendJson(res, 403, { ok: false, error: 'Invalid session' });
 
     return false;
   }
@@ -769,14 +781,10 @@ function validateTokenBody(
   return true;
 }
 
-function sendJson<T>(
-  res: ServerResponse,
-  status: number,
-  payload: UiProxyResult<T>,
-): void {
+function sendJson<T>(res: ServerResponse, status: number, payload: UiProxyResult<T>): void {
   res.writeHead(status, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store",
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
   });
   res.end(JSON.stringify(payload));
 }

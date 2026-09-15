@@ -27,11 +27,11 @@
  * plus Tab. Nothing else opens the menu.
  */
 
-import type { AutocompleteProvider } from "@earendil-works/pi-tui";
+import type { AutocompleteProvider } from '@earendil-works/pi-tui';
 
 /** Channel name. Duplicated literally in pi-ask's consumer module; both sides
  *  assert the literal in their own tests so a rename cannot drift silently. */
-export const PATH_PICKER_PROVIDER_CHANNEL = "pi-path-picker:provider";
+export const PATH_PICKER_PROVIDER_CHANNEL = 'pi-path-picker:provider';
 
 /** Request payload sent by a consumer over the channel. */
 export interface PathPickerProviderRequest {
@@ -65,7 +65,7 @@ export const NULL_AUTOCOMPLETE_PROVIDER: AutocompleteProvider = {
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -76,21 +76,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * boundary, and one extension must never be able to break another by emitting
  * a bad event.
  */
-export function answerProviderRequest(
-  data: unknown,
-  createProvider: (cwd: string) => AutocompleteProvider,
-): boolean {
+export function answerProviderRequest(data: unknown, createProvider: (cwd: string) => AutocompleteProvider): boolean {
   if (!isRecord(data)) {
     return false;
   }
 
   const { cwd, reply } = data as Partial<PathPickerProviderRequest>;
 
-  if (typeof cwd !== "string" || cwd.trim() === "") {
+  if (typeof cwd !== 'string' || cwd.trim() === '') {
     return false;
   }
 
-  if (typeof reply !== "function") {
+  if (typeof reply !== 'function') {
     return false;
   }
 
@@ -110,7 +107,7 @@ export function answerProviderRequest(
  */
 export function requestProviderOverBus(
   bus: { emit(channel: string, data: unknown): void },
-  cwd: string,
+  cwd: string
 ): { provider?: AutocompleteProvider; answered: boolean } {
   let provider: AutocompleteProvider | undefined;
 

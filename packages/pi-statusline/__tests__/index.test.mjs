@@ -5,8 +5,8 @@
  * discovers all tests from a single file.
  */
 
-import "./_unit.test.mjs";
-import "./_e2e.test.mjs";
-import "./_swr.test.mjs";
-import "./_cache-stats.test.mjs";
-import "./_bench-quiet.test.mjs";
+import './_unit.test.mjs';
+import './_e2e.test.mjs';
+import './_swr.test.mjs';
+import './_cache-stats.test.mjs';
+import './_bench-quiet.test.mjs';

@@ -1,6 +1,6 @@
-import { randomUUID } from "node:crypto";
-import { UrlElicitationRequiredError, type CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { McpExtensionState } from "./_state.ts";
+import { randomUUID } from 'node:crypto';
+import { UrlElicitationRequiredError, type CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type { McpExtensionState } from './_state.ts';
 import {
   extractUiPromptText,
   UI_STREAM_HOST_CONTEXT_KEY,
@@ -10,13 +10,13 @@ import {
   type UiMessageParams,
   type UiModelContextParams,
   type UiStreamMode,
-} from "./_types.ts";
-import { logger } from "./_logger.ts";
-import { startUiServer, type UiServerHandle } from "./_ui-server.ts";
-import { isGlimpseAvailable, openGlimpseWindow } from "./_glimpse-ui.ts";
-import type { SessionRecoveryDeps } from "./_session-recovery.ts";
-import { combineAbortSignals, isAbortError } from "./_runtime-owner.ts";
-import { throwIfAborted } from "./_abort.ts";
+} from './_types.ts';
+import { logger } from './_logger.ts';
+import { startUiServer, type UiServerHandle } from './_ui-server.ts';
+import { isGlimpseAvailable, openGlimpseWindow } from './_glimpse-ui.ts';
+import type { SessionRecoveryDeps } from './_session-recovery.ts';
+import { combineAbortSignals, isAbortError } from './_runtime-owner.ts';
+import { throwIfAborted } from './_abort.ts';
 
 let activeGlimpseWindow: { close(): void } | null = null;
 
@@ -27,10 +27,10 @@ export interface UiSessionRequest {
   uiResourceUri: string;
   streamMode?: UiStreamMode;
   signal?: AbortSignal;
-  onNeedsAuth?: SessionRecoveryDeps["onNeedsAuth"];
+  onNeedsAuth?: SessionRecoveryDeps['onNeedsAuth'];
 }
 
-export type UiSessionViewer = "browser" | "glimpse" | "suppressed";
+export type UiSessionViewer = 'browser' | 'glimpse' | 'suppressed';
 
 export interface UiSessionRuntime {
   serverName: string;
@@ -60,13 +60,13 @@ export interface UiSessionResultSummary {
 export function summarizeUiSessionResult(uiSession: UiSessionRuntime | null): UiSessionResultSummary {
   if (!uiSession) {
     return {
-      message: "Interactive UI was unavailable; returning the tool result inline.",
+      message: 'Interactive UI was unavailable; returning the tool result inline.',
       uiOpen: false,
     };
   }
 
   if (!uiSession.windowOpen) {
-    const action = uiSession.reused ? "Updated the suppressed MCP UI session." : "MCP UI window was suppressed.";
+    const action = uiSession.reused ? 'Updated the suppressed MCP UI session.' : 'MCP UI window was suppressed.';
 
     return {
       message: `${action} Open manually: ${uiSession.url}`,
@@ -78,7 +78,7 @@ export function summarizeUiSessionResult(uiSession: UiSessionRuntime | null): Ui
 
   return {
     message: uiSession.reused
-      ? "Updated the open UI."
+      ? 'Updated the open UI.'
       : "Interactive UI is open. I'll respond to your prompts and intents as you interact with it.",
     uiOpen: true,
     uiViewer: uiSession.viewer,
@@ -88,27 +88,25 @@ export function summarizeUiSessionResult(uiSession: UiSessionRuntime | null): Ui
 
 const MAX_COMPLETED_SESSIONS = 10;
 
-function withStreamEnvelope(
-  result: CallToolResult,
-  streamId: string | undefined,
-  sequence: number,
-): CallToolResult {
+function withStreamEnvelope(result: CallToolResult, streamId: string | undefined, sequence: number): CallToolResult {
   if (!streamId) {
     return result;
   }
 
-  const structuredContent = result.structuredContent && typeof result.structuredContent === "object" && !Array.isArray(result.structuredContent)
-    ? { ...result.structuredContent }
-    : {};
+  const structuredContent =
+    result.structuredContent && typeof result.structuredContent === 'object' && !Array.isArray(result.structuredContent)
+      ? { ...result.structuredContent }
+      : {};
 
   const rawEnvelope = structuredContent[UI_STREAM_STRUCTURED_CONTENT_KEY];
-  const envelope = rawEnvelope && typeof rawEnvelope === "object" && !Array.isArray(rawEnvelope)
-    ? { ...rawEnvelope as Record<string, unknown> }
-    : {
-      frameType: "final",
-      phase: "settled",
-      status: result.isError ? "error" : "ok",
-    };
+  const envelope =
+    rawEnvelope && typeof rawEnvelope === 'object' && !Array.isArray(rawEnvelope)
+      ? { ...(rawEnvelope as Record<string, unknown>) }
+      : {
+          frameType: 'final',
+          phase: 'settled',
+          status: result.isError ? 'error' : 'ok',
+        };
 
   structuredContent[UI_STREAM_STRUCTURED_CONTENT_KEY] = {
     ...envelope,
@@ -139,17 +137,17 @@ async function openInBrowser(state: McpExtensionState, url: string, signal: Abor
       return;
     }
 
-    state.ui?.notify(`MCP UI browser open failed: ${message}`, "warning");
-    state.ui?.notify(`Open manually: ${url}`, "info");
+    state.ui?.notify(`MCP UI browser open failed: ${message}`, 'warning');
+    state.ui?.notify(`Open manually: ${url}`, 'info');
   }
 }
 
 export async function maybeStartUiSession(
   state: McpExtensionState,
-  request: UiSessionRequest,
+  request: UiSessionRequest
 ): Promise<UiSessionRuntime | null> {
   const log = logger.child({
-    component: "UiSession",
+    component: 'UiSession',
     server: request.serverName,
     tool: request.toolName,
   });
@@ -190,7 +188,7 @@ export async function maybeStartUiSession(
 
           nextStreamSequence += 1;
           existingHandle.sendResultPatch(
-            withStreamEnvelope(notification.result as CallToolResult, streamId, nextStreamSequence),
+            withStreamEnvelope(notification.result as CallToolResult, streamId, nextStreamSequence)
           );
         });
       }
@@ -204,7 +202,7 @@ export async function maybeStartUiSession(
         streamMode,
         requestMeta: streamToken ? { [UI_STREAM_REQUEST_META_KEY]: streamToken } : undefined,
         url: existingHandle.url,
-        viewer: existingHandle.viewer ?? "browser",
+        viewer: existingHandle.viewer ?? 'browser',
         windowOpen: existingHandle.windowOpen ?? true,
         isActive: () => active && state.uiServer === existingHandle,
         sendToolResult: (result: CallToolResult) => {
@@ -233,11 +231,11 @@ export async function maybeStartUiSession(
             withStreamEnvelope(
               {
                 isError: true,
-                content: [{ type: "text", text: reason }],
+                content: [{ type: 'text', text: reason }],
               },
               streamId,
-              nextStreamSequence,
-            ),
+              nextStreamSequence
+            )
           );
         },
         close: () => {
@@ -256,7 +254,7 @@ export async function maybeStartUiSession(
     throwIfAborted(runtimeSignal);
 
     if (state.uiServer) {
-      state.uiServer.close("replaced");
+      state.uiServer.close('replaced');
       state.uiServer = null;
     }
 
@@ -268,16 +266,17 @@ export async function maybeStartUiSession(
     const streamMode = request.streamMode;
     const streamId = streamMode ? randomUUID() : undefined;
     const streamToken = streamMode ? randomUUID() : undefined;
-    const hostContext: UiHostContext | undefined = streamMode && streamId
-      ? {
-        [UI_STREAM_HOST_CONTEXT_KEY]: {
-          mode: streamMode,
-          streamId,
-          intermediateResultPatches: streamMode === "stream-first",
-          partialInput: false,
-        },
-      }
-      : undefined;
+    const hostContext: UiHostContext | undefined =
+      streamMode && streamId
+        ? {
+            [UI_STREAM_HOST_CONTEXT_KEY]: {
+              mode: streamMode,
+              streamId,
+              intermediateResultPatches: streamMode === 'stream-first',
+              partialInput: false,
+            },
+          }
+        : undefined;
 
     let active = true;
     let nextStreamSequence = 0;
@@ -292,7 +291,7 @@ export async function maybeStartUiSession(
     handle = await startUiServer({
       serverName: request.serverName,
       toolName: request.toolName,
-      toolArgs: streamMode === "stream-first" ? {} : request.toolArgs,
+      toolArgs: streamMode === 'stream-first' ? {} : request.toolArgs,
       resource,
       manager: state.manager,
       config: state.config,
@@ -307,44 +306,46 @@ export async function maybeStartUiSession(
           if (state.sendMessage) {
             state.sendMessage(
               {
-                customType: "mcp-ui-prompt",
-                content: [{ type: "text", text: `User sent prompt from ${request.serverName} UI: "${prompt}"` }],
+                customType: 'mcp-ui-prompt',
+                content: [{ type: 'text', text: `User sent prompt from ${request.serverName} UI: "${prompt}"` }],
                 display: `💬 UI Prompt: ${prompt}`,
                 details: { server: request.serverName, tool: request.toolName, prompt },
               },
-              { triggerTurn: true },
+              { triggerTurn: true }
             );
-            log.debug("Triggered agent turn for UI prompt", { prompt: prompt.slice(0, 50) });
+            log.debug('Triggered agent turn for UI prompt', { prompt: prompt.slice(0, 50) });
           }
-        } else if (params.type === "intent" || params.intent) {
-          const intent = params.intent ?? "";
+        } else if (params.type === 'intent' || params.intent) {
+          const intent = params.intent ?? '';
           const intentParams = params.params;
 
           if (intent && state.sendMessage) {
-            const paramsStr = intentParams ? ` ${JSON.stringify(intentParams)}` : "";
+            const paramsStr = intentParams ? ` ${JSON.stringify(intentParams)}` : '';
 
             state.sendMessage(
               {
-                customType: "mcp-ui-intent",
-                content: [{ type: "text", text: `User triggered intent from ${request.serverName} UI: ${intent}${paramsStr}` }],
+                customType: 'mcp-ui-intent',
+                content: [
+                  { type: 'text', text: `User triggered intent from ${request.serverName} UI: ${intent}${paramsStr}` },
+                ],
                 display: `🎯 UI Intent: ${intent}`,
                 details: { server: request.serverName, tool: request.toolName, intent, params: intentParams },
               },
-              { triggerTurn: true },
+              { triggerTurn: true }
             );
-            log.debug("Triggered agent turn for UI intent", { intent });
+            log.debug('Triggered agent turn for UI intent', { intent });
           }
-        } else if (params.type === "notify" || params.message) {
-          const text = params.message ?? "";
+        } else if (params.type === 'notify' || params.message) {
+          const text = params.message ?? '';
 
           if (text && state.ui) {
-            state.ui.notify(`[${request.serverName}] ${text}`, "info");
+            state.ui.notify(`[${request.serverName}] ${text}`, 'info');
           }
         }
       },
 
       onContextUpdate: (params: UiModelContextParams) => {
-        log.debug("Model context update from UI", {
+        log.debug('Model context update from UI', {
           hasContent: !!params.content,
           hasStructured: !!params.structuredContent,
         });
@@ -358,10 +359,7 @@ export async function maybeStartUiSession(
           const messages = handle.getSessionMessages();
           const stream = handle.getStreamSummary();
           const hasContent =
-            messages.prompts.length > 0 ||
-            messages.intents.length > 0 ||
-            messages.notifications.length > 0 ||
-            !!stream;
+            messages.prompts.length > 0 || messages.intents.length > 0 || messages.notifications.length > 0 || !!stream;
 
           if (hasContent) {
             state.completedUiSessions.push({
@@ -377,7 +375,7 @@ export async function maybeStartUiSession(
               state.completedUiSessions.shift();
             }
 
-            log.debug("Session completed", {
+            log.debug('Session completed', {
               reason,
               prompts: messages.prompts.length,
               intents: messages.intents.length,
@@ -397,10 +395,10 @@ export async function maybeStartUiSession(
     });
 
     if (state.owner?.isActive() === false || runtimeSignal.aborted) {
-      handle.close("runtime_owner_stopped");
+      handle.close('runtime_owner_stopped');
       handle = null;
       throwIfAborted(runtimeSignal);
-      throw new Error("MCP UI session became stale before registration");
+      throw new Error('MCP UI session became stale before registration');
     }
 
     if (streamToken) {
@@ -421,20 +419,19 @@ export async function maybeStartUiSession(
     state.uiServer = handle;
 
     const viewerPref = process.env.MCP_UI_VIEWER?.toLowerCase();
-    const uiSuppressed = viewerPref === "none" || viewerPref === "off" || viewerPref === "disabled";
+    const uiSuppressed = viewerPref === 'none' || viewerPref === 'off' || viewerPref === 'disabled';
 
-    let viewer: UiSessionViewer = "browser";
+    let viewer: UiSessionViewer = 'browser';
     let windowOpen = true;
 
     if (uiSuppressed) {
-      viewer = "suppressed";
+      viewer = 'suppressed';
       windowOpen = false;
-      state.ui?.notify(`MCP UI window suppressed (MCP_UI_VIEWER=${viewerPref}). Open manually: ${handle.url}`, "info");
-      log.info("Suppressing MCP UI window (MCP_UI_VIEWER=" + viewerPref + ")", { url: handle.url });
+      state.ui?.notify(`MCP UI window suppressed (MCP_UI_VIEWER=${viewerPref}). Open manually: ${handle.url}`, 'info');
+      log.info('Suppressing MCP UI window (MCP_UI_VIEWER=' + viewerPref + ')', { url: handle.url });
     } else {
       const glimpseDetected = isGlimpseAvailable();
-      const useGlimpse = viewerPref === "glimpse" ||
-        (viewerPref !== "browser" && glimpseDetected);
+      const useGlimpse = viewerPref === 'glimpse' || (viewerPref !== 'browser' && glimpseDetected);
 
       if (useGlimpse) {
         try {
@@ -445,7 +442,7 @@ export async function maybeStartUiSession(
             height: 800,
             onClosed: () => {
               if (active) {
-                handle.close("glimpse-closed");
+                handle.close('glimpse-closed');
               }
             },
           });
@@ -453,17 +450,17 @@ export async function maybeStartUiSession(
           if (state.owner?.isActive() === false || runtimeSignal.aborted) {
             glimpseWindow.close();
             throwIfAborted(runtimeSignal);
-            throw new Error("MCP Glimpse window became stale before registration");
+            throw new Error('MCP Glimpse window became stale before registration');
           }
 
           activeGlimpseWindow = glimpseWindow;
-          viewer = "glimpse";
+          viewer = 'glimpse';
         } catch (error) {
-          log.debug("Glimpse unavailable, using browser", {
+          log.debug('Glimpse unavailable, using browser', {
             error: error instanceof Error ? error.message : String(error),
           });
           await openInBrowser(state, handle.url, runtimeSignal!);
-          viewer = "browser";
+          viewer = 'browser';
         }
       } else {
         await openInBrowser(state, handle.url, runtimeSignal!);
@@ -522,11 +519,8 @@ export async function maybeStartUiSession(
 
     const message = error instanceof Error ? error.message : String(error);
 
-    log.error("Failed to start UI session", error instanceof Error ? error : undefined);
-    state.ui?.notify(
-      `MCP UI unavailable for ${request.toolName} (${request.serverName}): ${message}`,
-      "warning",
-    );
+    log.error('Failed to start UI session', error instanceof Error ? error : undefined);
+    state.ui?.notify(`MCP UI unavailable for ${request.toolName} (${request.serverName}): ${message}`, 'warning');
 
     return null;
   }

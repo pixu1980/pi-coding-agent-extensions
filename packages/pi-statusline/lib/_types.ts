@@ -27,8 +27,8 @@ export interface StatusLineData {
 
 // ── Settings ───────────────────────────────────────────────────
 
-export type FormatPreset = "preset-auto" | "preset-full" | "preset-compact" | "preset-minimal" | "custom";
-export type ProjectStyle = "git-relative" | "dirname";
+export type FormatPreset = 'preset-auto' | 'preset-full' | 'preset-compact' | 'preset-minimal' | 'custom';
+export type ProjectStyle = 'git-relative' | 'dirname';
 
 export interface StatusLineSettings {
   format: FormatPreset;
@@ -43,31 +43,26 @@ export interface StatusLineSettings {
 }
 
 export const DEFAULT_SETTINGS: StatusLineSettings = {
-  format: "preset-auto",
-  customTemplate:
-    "{project} | {branch} {git_status} | {model} - {effort} | {context}",
+  format: 'preset-auto',
+  customTemplate: '{project} | {branch} {git_status} | {model} - {effort} | {context}',
   showProject: true,
   showBranch: true,
   showGitStatus: true,
   showModel: true,
   showEffort: true,
   showContext: true,
-  projectStyle: "git-relative",
+  projectStyle: 'git-relative',
 };
 
 // ── Preset Templates ───────────────────────────────────────────
 
-export const PRESET_TEMPLATES: Record<Exclude<FormatPreset, "custom">, string> = {
+export const PRESET_TEMPLATES: Record<Exclude<FormatPreset, 'custom'>, string> = {
   // preset-auto resolves to the responsive cascade (see RESPONSIVE_LEVELS);
   // this entry is only the fallback/verbose anchor for resolveTemplate.
-  "preset-auto":
-    "P: {project} › B: {branch} S: {git_status} › M: {model} E: {effort} › C: {context}",
-  "preset-full":
-    "P: {project} › B: {branch} S: {git_status} › M: {model} ({context_total}) E: {effort} › C: {context}",
-  "preset-compact":
-    "P: {project} › B: {branch} S: {git_status} › M: {model} E: {effort} › C: {context}",
-  "preset-minimal":
-    "{project} | {branch} {git_status} | {model} - {effort} | {context}",
+  'preset-auto': 'P: {project} › B: {branch} S: {git_status} › M: {model} E: {effort} › C: {context}',
+  'preset-full': 'P: {project} › B: {branch} S: {git_status} › M: {model} ({context_total}) E: {effort} › C: {context}',
+  'preset-compact': 'P: {project} › B: {branch} S: {git_status} › M: {model} E: {effort} › C: {context}',
+  'preset-minimal': '{project} | {branch} {git_status} | {model} - {effort} | {context}',
 };
 
 // ── Responsive cascade (preset-auto) ──────────────────────────
@@ -83,10 +78,10 @@ export const PRESET_TEMPLATES: Record<Exclude<FormatPreset, "custom">, string> =
 // levels 1–3 use single-letter labels. Levels 2–3 use the bare project name
 // (dirname) instead of the full path.
 export const RESPONSIVE_LEVELS: readonly string[] = [
-  "Project: {project} › Branch: {branch} Status: {git_status} › Model: {model} Effort: {effort} › Context: {context}",
-  "P: {project} › B: {branch} S: {git_status} › M: {model} E: {effort} › C: {context}",
-  "P: {project} › B: {branch} S: {git_status} › M: {model} - {effort} › C: {context_used}/{context_total}",
-  "{project} | {branch} {git_status} | {model} - {effort} | {context_used}/{context_total}",
+  'Project: {project} › Branch: {branch} Status: {git_status} › Model: {model} Effort: {effort} › Context: {context}',
+  'P: {project} › B: {branch} S: {git_status} › M: {model} E: {effort} › C: {context}',
+  'P: {project} › B: {branch} S: {git_status} › M: {model} - {effort} › C: {context_used}/{context_total}',
+  '{project} | {branch} {git_status} | {model} - {effort} | {context_used}/{context_total}',
 ];
 
 // ── Template Tokens ───────────────────────────────────────────
@@ -106,19 +101,19 @@ export const RESPONSIVE_LEVELS: readonly string[] = [
 //   {initial_prompt} – first 60 chars of the session's first user message
 
 export const KNOWN_TOKENS = [
-  "project",
-  "branch",
-  "git_status",
-  "git_ahead",
-  "git_behind",
-  "git_dirty",
-  "model",
-  "effort",
-  "context",
-  "context_used",
-  "context_total",
-  "context_pct",
-  "initial_prompt",
+  'project',
+  'branch',
+  'git_status',
+  'git_ahead',
+  'git_behind',
+  'git_dirty',
+  'model',
+  'effort',
+  'context',
+  'context_used',
+  'context_total',
+  'context_pct',
+  'initial_prompt',
 ] as const;
 
 export type TokenName = (typeof KNOWN_TOKENS)[number];

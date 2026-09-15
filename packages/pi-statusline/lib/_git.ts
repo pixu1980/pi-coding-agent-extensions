@@ -12,8 +12,8 @@
  * synchronous query (tests, branch-change handling).
  */
 
-import { execSync, execFile } from "node:child_process";
-import type { GitStatus } from "./_types.js";
+import { execSync, execFile } from 'node:child_process';
+import type { GitStatus } from './_types.js';
 
 // ── Cache ──────────────────────────────────────────────────────
 
@@ -73,8 +73,8 @@ export function expireGitCache(cwd: string): void {
 function run(cmd: string, cwd: string): string | null {
   try {
     return execSync(cmd, {
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "ignore"],
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
       timeout: 800,
       cwd,
     }).trim();
@@ -84,15 +84,15 @@ function run(cmd: string, cwd: string): string | null {
 }
 
 function hasGit(cwd: string): boolean {
-  const out = run("git rev-parse --is-inside-work-tree 2>/dev/null", cwd);
+  const out = run('git rev-parse --is-inside-work-tree 2>/dev/null', cwd);
 
-  return out === "true";
+  return out === 'true';
 }
 
 function getBranch(cwd: string): string | null {
-  const out = run("git rev-parse --abbrev-ref HEAD 2>/dev/null", cwd);
+  const out = run('git rev-parse --abbrev-ref HEAD 2>/dev/null', cwd);
 
-  if (!out || out === "HEAD") {
+  if (!out || out === 'HEAD') {
     return null;
   }
 
@@ -100,33 +100,33 @@ function getBranch(cwd: string): string | null {
 }
 
 function getAheadBehind(cwd: string): { ahead: number; behind: number; hasUpstream: boolean } {
-  const out = run("git rev-list --count --left-right @{upstream}...HEAD 2>/dev/null", cwd);
+  const out = run('git rev-list --count --left-right @{upstream}...HEAD 2>/dev/null', cwd);
 
   if (!out) {
     return { ahead: 0, behind: 0, hasUpstream: false };
   }
 
-  const parts = out.split("\t");
+  const parts = out.split('\t');
 
   if (parts.length !== 2) {
     return { ahead: 0, behind: 0, hasUpstream: false };
   }
 
   return {
-    ahead: parseInt(parts[1] ?? "0", 10) || 0,
-    behind: parseInt(parts[0] ?? "0", 10) || 0,
+    ahead: parseInt(parts[1] ?? '0', 10) || 0,
+    behind: parseInt(parts[0] ?? '0', 10) || 0,
     hasUpstream: true,
   };
 }
 
 function getDirty(cwd: string): number {
-  const out = run("git status --porcelain 2>/dev/null", cwd);
+  const out = run('git status --porcelain 2>/dev/null', cwd);
 
   if (!out) {
     return 0;
   }
 
-  return out.split("\n").filter(Boolean).length;
+  return out.split('\n').filter(Boolean).length;
 }
 
 // ── Async refresh (off the event loop) ─────────────────────────
@@ -136,7 +136,7 @@ function getDirty(cwd: string): number {
  */
 function runAsync(file: string, args: string[], cwd: string): Promise<string | null> {
   return new Promise((resolve) => {
-    execFile(file, args, { encoding: "utf-8", timeout: REFRESH_TIMEOUT_MS, cwd }, (error, stdout) => {
+    execFile(file, args, { encoding: 'utf-8', timeout: REFRESH_TIMEOUT_MS, cwd }, (error, stdout) => {
       if (error) {
         resolve(null);
       } else {
@@ -146,22 +146,26 @@ function runAsync(file: string, args: string[], cwd: string): Promise<string | n
   });
 }
 
-interface AheadBehind { ahead: number; behind: number; hasUpstream: boolean }
+interface AheadBehind {
+  ahead: number;
+  behind: number;
+  hasUpstream: boolean;
+}
 
 function parseAheadBehind(out: string | null): AheadBehind {
   if (!out) {
     return { ahead: 0, behind: 0, hasUpstream: false };
   }
 
-  const parts = out.split("\t");
+  const parts = out.split('\t');
 
   if (parts.length !== 2) {
     return { ahead: 0, behind: 0, hasUpstream: false };
   }
 
   return {
-    ahead: parseInt(parts[1] ?? "0", 10) || 0,
-    behind: parseInt(parts[0] ?? "0", 10) || 0,
+    ahead: parseInt(parts[1] ?? '0', 10) || 0,
+    behind: parseInt(parts[0] ?? '0', 10) || 0,
     hasUpstream: true,
   };
 }
@@ -175,18 +179,18 @@ function parseAheadBehind(out: string | null): AheadBehind {
 async function queryGitAsync(cwd: string): Promise<{ status: GitStatus | null; hasGit: boolean }> {
   try {
     const [branchOut, abOut, dirtyOut] = await Promise.all([
-      runAsync("git", ["rev-parse", "--abbrev-ref", "HEAD"], cwd),
-      runAsync("git", ["rev-list", "--count", "--left-right", "@{upstream}...HEAD"], cwd),
-      runAsync("git", ["status", "--porcelain"], cwd),
+      runAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], cwd),
+      runAsync('git', ['rev-list', '--count', '--left-right', '@{upstream}...HEAD'], cwd),
+      runAsync('git', ['status', '--porcelain'], cwd),
     ]);
 
     if (branchOut === null) {
       return { hasGit: false, status: null };
     }
 
-    const branch = branchOut !== "HEAD" ? branchOut : "HEAD";
+    const branch = branchOut !== 'HEAD' ? branchOut : 'HEAD';
     const ab = parseAheadBehind(abOut);
-    const dirty = dirtyOut ? dirtyOut.split("\n").filter(Boolean).length : 0;
+    const dirty = dirtyOut ? dirtyOut.split('\n').filter(Boolean).length : 0;
 
     return { hasGit: true, status: { branch, ahead: ab.ahead, behind: ab.behind, dirty, hasUpstream: ab.hasUpstream } };
   } catch {
@@ -277,7 +281,7 @@ function queryGitSync(cwd: string): { status: GitStatus | null; hasGit: boolean 
   const dirty = getDirty(cwd);
 
   const status: GitStatus = {
-    branch: branch ?? "HEAD",
+    branch: branch ?? 'HEAD',
     ahead: aheadBehind.ahead,
     behind: aheadBehind.behind,
     dirty,

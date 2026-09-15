@@ -5,6 +5,6 @@
  * importable but are internal.
  */
 
-import extension from "./_extension.ts";
+import extension from './_extension.ts';
 
 export default extension;

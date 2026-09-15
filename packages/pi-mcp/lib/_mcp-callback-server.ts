@@ -1,11 +1,11 @@
 /**
  * MCP OAuth Callback Server
- * 
+ *
  * HTTP server that handles OAuth callbacks from the authorization server.
  * Uses Node.js http module for compatibility.
  */
 
-import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http"
+import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import {
   DEFAULT_OAUTH_CALLBACK_PATH,
   getConfiguredOAuthCallbackPort,
@@ -13,7 +13,7 @@ import {
   getOAuthCallbackPort,
   setOAuthCallbackPath,
   setOAuthCallbackPort,
-} from "./_mcp-oauth-provider.ts"
+} from './_mcp-oauth-provider.ts';
 
 // HTML templates for callback responses
 const HTML_SUCCESS = `<!DOCTYPE html>
@@ -34,7 +34,7 @@ const HTML_SUCCESS = `<!DOCTYPE html>
   </div>
   <script>setTimeout(() => window.close(), 2000);</script>
 </body>
-</html>`
+</html>`;
 
 const HTML_MANUAL_SUCCESS = `<!DOCTYPE html>
 <html>
@@ -53,15 +53,15 @@ const HTML_MANUAL_SUCCESS = `<!DOCTYPE html>
     <p>Copy the full callback URL from your browser address bar and paste it back into Pi with auth-complete.</p>
   </div>
 </body>
-</html>`
+</html>`;
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll('&', "&amp;")
-    .replaceAll('<', "&lt;")
-    .replaceAll('>', "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll('\'', "&#39;")
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 const HTML_ERROR = (error: string) => `<!DOCTYPE html>
@@ -83,138 +83,138 @@ const HTML_ERROR = (error: string) => `<!DOCTYPE html>
     <div class="error">${escapeHtml(error)}</div>
   </div>
 </body>
-</html>`
+</html>`;
 
 /** Result of a successful OAuth callback */
 export interface OAuthCallbackResult {
-  code: string
+  code: string;
   /** RFC 9207 `iss` authorization response parameter, when provided */
-  iss?: string
+  iss?: string;
 }
 
 /** Pending authorization request */
 interface PendingAuth {
-  resolve: (result: OAuthCallbackResult) => void
-  reject: (error: Error) => void
-  timeout: ReturnType<typeof setTimeout>
+  resolve: (result: OAuthCallbackResult) => void;
+  reject: (error: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
 }
 
 /** Server singleton state */
-let server: Server | undefined
-let bindingPromise: Promise<void> | undefined
-let stoppingPromise: Promise<void> | undefined
-let callbackGeneration = 0
-const pendingAuths = new Map<string, PendingAuth>()
-const reservedAuthStates = new Set<string>()
+let server: Server | undefined;
+let bindingPromise: Promise<void> | undefined;
+let stoppingPromise: Promise<void> | undefined;
+let callbackGeneration = 0;
+const pendingAuths = new Map<string, PendingAuth>();
+const reservedAuthStates = new Set<string>();
 
 /** Timeout for callback completion (5 minutes) */
-const CALLBACK_TIMEOUT_MS = 5 * 60 * 1000
+const CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface EnsureCallbackServerOptions {
-  strictPort?: boolean
-  port?: number
-  callbackHost?: string
-  callbackPath?: string
-  oauthState?: string
-  reserveState?: boolean
+  strictPort?: boolean;
+  port?: number;
+  callbackHost?: string;
+  callbackPath?: string;
+  oauthState?: string;
+  reserveState?: boolean;
 }
 
-const DEFAULT_OAUTH_CALLBACK_HOST = "localhost"
-let callbackServerHost = DEFAULT_OAUTH_CALLBACK_HOST
+const DEFAULT_OAUTH_CALLBACK_HOST = 'localhost';
+let callbackServerHost = DEFAULT_OAUTH_CALLBACK_HOST;
 
 /**
  * Handle incoming HTTP requests to the callback server.
  */
 function handleRequest(req: IncomingMessage, res: ServerResponse): void {
-  const url = new URL(req.url || "/", `http://${req.headers.host}`)
+  const url = new URL(req.url || '/', `http://${req.headers.host}`);
 
   // Only handle the callback path
   if (url.pathname !== getOAuthCallbackPath()) {
-    res.writeHead(404, { "Content-Type": "text/plain" })
-    res.end("Not found")
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not found');
 
-    return
+    return;
   }
 
-  const code = url.searchParams.get("code")
-  const iss = url.searchParams.get("iss")
-  const state = url.searchParams.get("state")
-  const error = url.searchParams.get("error")
-  const errorDescription = url.searchParams.get("error_description")
+  const code = url.searchParams.get('code');
+  const iss = url.searchParams.get('iss');
+  const state = url.searchParams.get('state');
+  const error = url.searchParams.get('error');
+  const errorDescription = url.searchParams.get('error_description');
 
   // Enforce state parameter presence for CSRF protection
   if (!state) {
-    const errorMsg = "Missing required state parameter - potential CSRF attack"
+    const errorMsg = 'Missing required state parameter - potential CSRF attack';
 
-    res.writeHead(400, { "Content-Type": "text/html" })
-    res.end(HTML_ERROR(errorMsg))
+    res.writeHead(400, { 'Content-Type': 'text/html' });
+    res.end(HTML_ERROR(errorMsg));
 
-    return
+    return;
   }
 
-  const pending = pendingAuths.get(state)
-  const isReserved = reservedAuthStates.has(state)
+  const pending = pendingAuths.get(state);
+  const isReserved = reservedAuthStates.has(state);
 
   // Handle OAuth errors only for a state that belongs to an active flow.
   if (error) {
     if (!pending && !isReserved) {
-      const errorMsg = "Invalid or expired state parameter - potential CSRF attack"
+      const errorMsg = 'Invalid or expired state parameter - potential CSRF attack';
 
-      res.writeHead(400, { "Content-Type": "text/html" })
-      res.end(HTML_ERROR(errorMsg))
+      res.writeHead(400, { 'Content-Type': 'text/html' });
+      res.end(HTML_ERROR(errorMsg));
 
-      return
+      return;
     }
 
-    const errorMsg = errorDescription || error
+    const errorMsg = errorDescription || error;
 
     // Send HTTP response first before rejecting promise
-    res.writeHead(200, { "Content-Type": "text/html" })
-    res.end(HTML_ERROR(errorMsg))
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(HTML_ERROR(errorMsg));
 
     // Reject promise after response is sent (defer to allow test to attach handler)
     if (pending) {
-      reservedAuthStates.delete(state)
-      clearTimeout(pending.timeout)
-      pendingAuths.delete(state)
-      setTimeout(() => pending.reject(new Error(errorMsg)), 0)
+      reservedAuthStates.delete(state);
+      clearTimeout(pending.timeout);
+      pendingAuths.delete(state);
+      setTimeout(() => pending.reject(new Error(errorMsg)), 0);
     }
 
-    return
+    return;
   }
 
   // Validate state parameter
   if (!pending && !isReserved) {
-    const errorMsg = "Invalid or expired state parameter - potential CSRF attack"
+    const errorMsg = 'Invalid or expired state parameter - potential CSRF attack';
 
-    res.writeHead(400, { "Content-Type": "text/html" })
-    res.end(HTML_ERROR(errorMsg))
+    res.writeHead(400, { 'Content-Type': 'text/html' });
+    res.end(HTML_ERROR(errorMsg));
 
-    return
+    return;
   }
 
   // Require authorization code
   if (!code) {
-    res.writeHead(400, { "Content-Type": "text/html" })
-    res.end(HTML_ERROR("No authorization code provided"))
+    res.writeHead(400, { 'Content-Type': 'text/html' });
+    res.end(HTML_ERROR('No authorization code provided'));
 
-    return
+    return;
   }
 
   if (!pending) {
-    res.writeHead(200, { "Content-Type": "text/html" })
-    res.end(HTML_MANUAL_SUCCESS)
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(HTML_MANUAL_SUCCESS);
 
-    return
+    return;
   }
 
   // Clear timeout and resolve the pending promise
-  clearTimeout(pending.timeout)
-  pendingAuths.delete(state)
-  pending.resolve({ code, ...(iss !== null ? { iss } : {}) })
+  clearTimeout(pending.timeout);
+  pendingAuths.delete(state);
+  pending.resolve({ code, ...(iss !== null ? { iss } : {}) });
 
-  res.writeHead(200, { "Content-Type": "text/html" })
-  res.end(HTML_SUCCESS)
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(HTML_SUCCESS);
 }
 
 /**
@@ -224,53 +224,53 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
  */
 export async function ensureCallbackServer(options: EnsureCallbackServerOptions = {}): Promise<void> {
   if (stoppingPromise) {
-    throw new Error("OAuth callback server stopped")
+    throw new Error('OAuth callback server stopped');
   }
 
-  const generation = callbackGeneration
+  const generation = callbackGeneration;
 
   while (bindingPromise) {
-    await bindingPromise
+    await bindingPromise;
 
     if (generation !== callbackGeneration) {
-      throw new Error("OAuth callback server stopped")
+      throw new Error('OAuth callback server stopped');
     }
   }
 
   if (generation !== callbackGeneration) {
-    throw new Error("OAuth callback server stopped")
+    throw new Error('OAuth callback server stopped');
   }
 
-  const operation = ensureCallbackServerLocked(options)
+  const operation = ensureCallbackServerLocked(options);
 
-  bindingPromise = operation
+  bindingPromise = operation;
 
   try {
-    await operation
+    await operation;
   } finally {
     if (bindingPromise === operation) {
-      bindingPromise = undefined
+      bindingPromise = undefined;
     }
   }
 }
 
 async function ensureCallbackServerLocked(options: EnsureCallbackServerOptions = {}): Promise<void> {
-  const requiredPort = options.port ?? getConfiguredOAuthCallbackPort()
-  const strictPort = options.strictPort === true
-  const requestedHost = options.callbackHost ?? DEFAULT_OAUTH_CALLBACK_HOST
-  const rawRequestedPath = options.callbackPath ?? DEFAULT_OAUTH_CALLBACK_PATH
-  const requestedPath = rawRequestedPath.startsWith("/") ? rawRequestedPath : `/${rawRequestedPath}`
+  const requiredPort = options.port ?? getConfiguredOAuthCallbackPort();
+  const strictPort = options.strictPort === true;
+  const requestedHost = options.callbackHost ?? DEFAULT_OAUTH_CALLBACK_HOST;
+  const rawRequestedPath = options.callbackPath ?? DEFAULT_OAUTH_CALLBACK_PATH;
+  const requestedPath = rawRequestedPath.startsWith('/') ? rawRequestedPath : `/${rawRequestedPath}`;
 
   if (options.reserveState && !options.oauthState) {
-    throw new Error("OAuth callback reservation requires an oauthState")
+    throw new Error('OAuth callback reservation requires an oauthState');
   }
 
-  let reservedState: string | undefined
+  let reservedState: string | undefined;
 
-  const previousServer = server
-  const needsStrictRebind = Boolean(previousServer && strictPort && getOAuthCallbackPort() !== requiredPort)
-  const needsHostSwitch = Boolean(previousServer && callbackServerHost !== requestedHost)
-  const needsPathSwitch = Boolean(previousServer && getOAuthCallbackPath() !== requestedPath)
+  const previousServer = server;
+  const needsStrictRebind = Boolean(previousServer && strictPort && getOAuthCallbackPort() !== requiredPort);
+  const needsHostSwitch = Boolean(previousServer && callbackServerHost !== requestedHost);
+  const needsPathSwitch = Boolean(previousServer && getOAuthCallbackPath() !== requestedPath);
 
   if (previousServer) {
     if (!needsStrictRebind && !needsHostSwitch) {
@@ -278,97 +278,97 @@ async function ensureCallbackServerLocked(options: EnsureCallbackServerOptions =
         if (pendingAuths.size > 0 || reservedAuthStates.size > 0) {
           throw new Error(
             `OAuth callback server is using path ${getOAuthCallbackPath()}, but callback path ${requestedPath} is required and cannot be switched while authorizations are pending`
-          )
+          );
         }
 
-        setOAuthCallbackPath(requestedPath)
+        setOAuthCallbackPath(requestedPath);
       }
 
       if (options.reserveState && options.oauthState) {
-        reservedAuthStates.add(options.oauthState)
-        reservedState = options.oauthState
+        reservedAuthStates.add(options.oauthState);
+        reservedState = options.oauthState;
       }
 
-      return
+      return;
     }
 
     if (pendingAuths.size > 0 || reservedAuthStates.size > 0) {
       throw new Error(
         `OAuth callback server is running on ${callbackServerHost}:${getOAuthCallbackPort()}, but strict callback endpoint ${requestedHost}:${requiredPort} is required and cannot be switched while authorizations are pending`
-      )
+      );
     }
   }
 
-  const candidateServer = createServer(handleRequest)
-  const listenPort = strictPort ? requiredPort : 0
+  const candidateServer = createServer(handleRequest);
+  const listenPort = strictPort ? requiredPort : 0;
 
   try {
     await new Promise<void>((resolve, reject) => {
-      candidateServer.once("error", (err) => {
-        reject(err)
-      })
+      candidateServer.once('error', (err) => {
+        reject(err);
+      });
 
       candidateServer.listen(listenPort, requestedHost, () => {
-        resolve()
-      })
-    })
+        resolve();
+      });
+    });
 
     if (strictPort) {
-      setOAuthCallbackPort(requiredPort)
+      setOAuthCallbackPort(requiredPort);
     } else {
-      const address = candidateServer.address()
+      const address = candidateServer.address();
 
-      if (!address || typeof address === "string" || typeof address.port !== "number") {
-        throw new Error("OAuth callback server did not report an assigned port")
+      if (!address || typeof address === 'string' || typeof address.port !== 'number') {
+        throw new Error('OAuth callback server did not report an assigned port');
       }
 
-      setOAuthCallbackPort(address.port)
+      setOAuthCallbackPort(address.port);
     }
 
     if (previousServer && (needsStrictRebind || needsHostSwitch)) {
       await new Promise<void>((resolve) => {
-        previousServer.close(() => resolve())
-      })
+        previousServer.close(() => resolve());
+      });
     }
 
-    callbackServerHost = requestedHost
-    setOAuthCallbackPath(requestedPath)
-    server = candidateServer
+    callbackServerHost = requestedHost;
+    setOAuthCallbackPath(requestedPath);
+    server = candidateServer;
 
     if (options.reserveState && options.oauthState) {
-      reservedAuthStates.add(options.oauthState)
-      reservedState = options.oauthState
+      reservedAuthStates.add(options.oauthState);
+      reservedState = options.oauthState;
     }
 
-    server.unref()
+    server.unref();
   } catch (error) {
     if (reservedState) {
-      reservedAuthStates.delete(reservedState)
+      reservedAuthStates.delete(reservedState);
     }
 
-    const nodeError = error as NodeJS.ErrnoException
+    const nodeError = error as NodeJS.ErrnoException;
 
     await new Promise<void>((resolve) => {
-      candidateServer.close(() => resolve())
-    })
+      candidateServer.close(() => resolve());
+    });
 
-    if (strictPort && nodeError.code === "EADDRINUSE") {
+    if (strictPort && nodeError.code === 'EADDRINUSE') {
       throw new Error(
         `OAuth callback port ${requiredPort} is already in use. Pre-registered OAuth clients require an exact redirect URI; set MCP_OAUTH_CALLBACK_PORT to your registered port or free port ${requiredPort}`,
         { cause: error }
-      )
+      );
     }
 
-    throw error
+    throw error;
   }
 }
 
 export function reserveCallbackServer(oauthState: string): void {
-  reservedAuthStates.add(oauthState)
+  reservedAuthStates.add(oauthState);
 }
 
 export function releaseCallbackServer(oauthState: string): void {
-  reservedAuthStates.delete(oauthState)
+  reservedAuthStates.delete(oauthState);
 }
 
 /**
@@ -377,31 +377,31 @@ export function releaseCallbackServer(oauthState: string): void {
  * authorization server sends one, the RFC 9207 `iss` parameter.
  */
 export function waitForCallback(oauthState: string): Promise<OAuthCallbackResult> {
-  reservedAuthStates.delete(oauthState)
+  reservedAuthStates.delete(oauthState);
 
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       if (pendingAuths.has(oauthState)) {
-        pendingAuths.delete(oauthState)
-        reject(new Error("OAuth callback timeout - authorization took too long"))
+        pendingAuths.delete(oauthState);
+        reject(new Error('OAuth callback timeout - authorization took too long'));
       }
-    }, CALLBACK_TIMEOUT_MS)
+    }, CALLBACK_TIMEOUT_MS);
 
-    pendingAuths.set(oauthState, { resolve, reject, timeout })
-  })
+    pendingAuths.set(oauthState, { resolve, reject, timeout });
+  });
 }
 
 /**
  * Cancel a pending authorization by state.
  */
 export function cancelPendingCallback(oauthState: string): void {
-  reservedAuthStates.delete(oauthState)
-  const pending = pendingAuths.get(oauthState)
+  reservedAuthStates.delete(oauthState);
+  const pending = pendingAuths.get(oauthState);
 
   if (pending) {
-    clearTimeout(pending.timeout)
-    pendingAuths.delete(oauthState)
-    pending.reject(new Error("Authorization canceled"))
+    clearTimeout(pending.timeout);
+    pendingAuths.delete(oauthState);
+    pending.reject(new Error('Authorization canceled'));
   }
 }
 
@@ -410,62 +410,62 @@ export function cancelPendingCallback(oauthState: string): void {
  */
 export function stopCallbackServer(): Promise<void> {
   if (stoppingPromise) {
-    return stoppingPromise
+    return stoppingPromise;
   }
 
-  callbackGeneration += 1
+  callbackGeneration += 1;
   const cleanup = (async () => {
     while (bindingPromise) {
-      await bindingPromise.catch(() => {})
+      await bindingPromise.catch(() => {});
     }
 
     if (server) {
       await new Promise<void>((resolve) => {
         server!.close(() => {
-          resolve()
-        })
-      })
-      server = undefined
+          resolve();
+        });
+      });
+      server = undefined;
     }
 
-    setOAuthCallbackPort(getConfiguredOAuthCallbackPort())
-    callbackServerHost = DEFAULT_OAUTH_CALLBACK_HOST
-    setOAuthCallbackPath(DEFAULT_OAUTH_CALLBACK_PATH)
+    setOAuthCallbackPort(getConfiguredOAuthCallbackPort());
+    callbackServerHost = DEFAULT_OAUTH_CALLBACK_HOST;
+    setOAuthCallbackPath(DEFAULT_OAUTH_CALLBACK_PATH);
 
     // Reject all pending auths (defer to allow any pending operations to complete)
-    const pendingList = Array.from(pendingAuths.entries())
+    const pendingList = Array.from(pendingAuths.entries());
 
-    pendingAuths.clear()
-    reservedAuthStates.clear()
+    pendingAuths.clear();
+    reservedAuthStates.clear();
     setTimeout(() => {
       for (const [, pending] of pendingList) {
-        clearTimeout(pending.timeout)
-        pending.reject(new Error("OAuth callback server stopped"))
+        clearTimeout(pending.timeout);
+        pending.reject(new Error('OAuth callback server stopped'));
       }
-    }, 0)
-  })()
+    }, 0);
+  })();
 
   const operation = cleanup.finally(() => {
     if (stoppingPromise === operation) {
-      stoppingPromise = undefined
+      stoppingPromise = undefined;
     }
-  })
+  });
 
-  stoppingPromise = operation
+  stoppingPromise = operation;
 
-  return operation
+  return operation;
 }
 
 /**
  * Check if the callback server is running.
  */
 export function isCallbackServerRunning(): boolean {
-  return server !== undefined
+  return server !== undefined;
 }
 
 /**
  * Get the number of pending authorizations.
  */
 export function getPendingAuthCount(): number {
-  return pendingAuths.size
+  return pendingAuths.size;
 }

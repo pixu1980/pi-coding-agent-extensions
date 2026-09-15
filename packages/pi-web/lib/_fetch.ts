@@ -2,15 +2,15 @@
  * Core fetch pipeline: URL -> validated -> fetched (with timeout, byte cap,
  * manual redirects re-validated per hop) -> Markdown (or plain text).
  */
-import { generateId, Semaphore } from "./_utils.ts";
-import { validateTargetHost } from "./_ssrf.ts";
-import { htmlToMarkdown } from "./_html-to-markdown.ts";
+import { generateId, Semaphore } from './_utils.ts';
+import { validateTargetHost } from './_ssrf.ts';
+import { htmlToMarkdown } from './_html-to-markdown.ts';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 const DEFAULT_MAX_REDIRECTS = 5;
 const DEFAULT_CONCURRENCY = 3;
-const DEFAULT_USER_AGENT = "pi-web/0.1.0 (+https://github.com/pixu1980/pi-coding-agent-extensions)";
+const DEFAULT_USER_AGENT = 'pi-web/0.1.0 (+https://github.com/pixu1980/pi-coding-agent-extensions)';
 
 export interface FetchOptions {
   timeoutMs?: number;
@@ -43,22 +43,22 @@ function errorMessage(err: unknown): string {
 }
 
 function isAbortError(err: unknown): boolean {
-  if (err instanceof DOMException && err.name === "AbortError") {
+  if (err instanceof DOMException && err.name === 'AbortError') {
     return true;
   }
 
   const message = errorMessage(err).toLowerCase();
 
-  return message.includes("abort") || message.includes("timeout");
+  return message.includes('abort') || message.includes('timeout');
 }
 
 function errPage(id: string, url: string, error: string, fetchedAt: number): FetchedPage {
-  return { id, url, title: "", content: "", contentType: "", error, lowQuality: false, fetchedAt, bytesRead: 0 };
+  return { id, url, title: '', content: '', contentType: '', error, lowQuality: false, fetchedAt, bytesRead: 0 };
 }
 
 function extractTextTitle(text: string, url: string): string {
   const firstLine = text
-    .split("\n")
+    .split('\n')
     .map((line) => line.trim())
     .find((line) => line.length > 0);
 
@@ -69,25 +69,25 @@ function extractTextTitle(text: string, url: string): string {
   try {
     const parsed = new URL(url);
 
-    return parsed.pathname.split("/").filter(Boolean).pop() ?? parsed.hostname;
+    return parsed.pathname.split('/').filter(Boolean).pop() ?? parsed.hostname;
   } catch {
     return url;
   }
 }
 
 function decoderFor(contentTypeHeader: string | null): TextDecoder {
-  const match = /charset=([^;]+)/i.exec(contentTypeHeader ?? "");
-  const charset = match?.[1]?.trim().toLowerCase() ?? "";
+  const match = /charset=([^;]+)/i.exec(contentTypeHeader ?? '');
+  const charset = match?.[1]?.trim().toLowerCase() ?? '';
   const candidates: Record<string, string> = {
-    "utf-8": "utf-8",
-    utf8: "utf-8",
-    "us-ascii": "utf-8",
-    ascii: "utf-8",
-    latin1: "latin1",
-    "iso-8859-1": "latin1",
-    "windows-1252": "latin1",
-    "utf-16": "utf-16le",
-    "utf-16le": "utf-16le",
+    'utf-8': 'utf-8',
+    utf8: 'utf-8',
+    'us-ascii': 'utf-8',
+    ascii: 'utf-8',
+    latin1: 'latin1',
+    'iso-8859-1': 'latin1',
+    'windows-1252': 'latin1',
+    'utf-16': 'utf-16le',
+    'utf-16le': 'utf-16le',
   };
   const name = candidates[charset];
 
@@ -104,7 +104,7 @@ function decoderFor(contentTypeHeader: string | null): TextDecoder {
 
 async function readBodyCapped(res: Response, maxBytes: number, contentTypeHeader: string | null): Promise<string> {
   if (!res.body) {
-    return "";
+    return '';
   }
 
   const reader = res.body.getReader();
@@ -123,7 +123,7 @@ async function readBodyCapped(res: Response, maxBytes: number, contentTypeHeader
 
       if (total > maxBytes) {
         await reader.cancel();
-        throw new Error("Response too large");
+        throw new Error('Response too large');
       }
 
       chunks.push(Buffer.from(value));
@@ -163,19 +163,19 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
     try {
       parsed = new URL(currentUrl);
     } catch {
-      return errPage(id, currentUrl, "Invalid URL: must be an absolute http(s) URL", fetchedAt);
+      return errPage(id, currentUrl, 'Invalid URL: must be an absolute http(s) URL', fetchedAt);
     }
 
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return errPage(id, currentUrl, "Unsupported protocol: only http(s) URLs can be fetched", fetchedAt);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return errPage(id, currentUrl, 'Unsupported protocol: only http(s) URLs can be fetched', fetchedAt);
     }
 
     // Node's URL.hostname keeps IPv6 brackets ([::1]) - strip them before validation.
-    const hostname = parsed.hostname.replace(/^\[(.*)\]$/, "$1");
+    const hostname = parsed.hostname.replace(/^\[(.*)\]$/, '$1');
     const validation = await validateTargetHost(hostname, allowRanges);
 
     if (validation.blocked) {
-      return errPage(id, currentUrl, validation.reason ?? "Address blocked", fetchedAt);
+      return errPage(id, currentUrl, validation.reason ?? 'Address blocked', fetchedAt);
     }
 
     let res: Response;
@@ -186,12 +186,12 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
 
       try {
         res = await fetch(currentUrl, {
-          redirect: "manual",
+          redirect: 'manual',
           signal: controller.signal,
           headers: {
-            "user-agent": userAgent,
-            accept: "text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.8,*/*;q=0.5",
-            "accept-language": "en-US,en;q=0.9",
+            'user-agent': userAgent,
+            accept: 'text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.8,*/*;q=0.5',
+            'accept-language': 'en-US,en;q=0.9',
           },
         });
       } finally {
@@ -208,7 +208,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
     const status = res.status;
 
     if (status === 301 || status === 302 || status === 303 || status === 307 || status === 308) {
-      const location = res.headers.get("location");
+      const location = res.headers.get('location');
 
       await drain(res);
 
@@ -226,15 +226,15 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
       return errPage(id, currentUrl, `HTTP ${status} ${res.statusText}`, fetchedAt);
     }
 
-    const contentTypeHeader = res.headers.get("content-type");
-    const contentType = (contentTypeHeader ?? "application/octet-stream").split(";")[0].trim().toLowerCase();
-    const isHtml = contentType === "text/html" || contentType === "application/xhtml+xml";
+    const contentTypeHeader = res.headers.get('content-type');
+    const contentType = (contentTypeHeader ?? 'application/octet-stream').split(';')[0].trim().toLowerCase();
+    const isHtml = contentType === 'text/html' || contentType === 'application/xhtml+xml';
     const isText =
-      contentType.startsWith("text/") ||
-      contentType === "application/json" ||
-      contentType === "application/xml" ||
-      contentType === "application/javascript" ||
-      contentType === "application/x-javascript";
+      contentType.startsWith('text/') ||
+      contentType === 'application/json' ||
+      contentType === 'application/xml' ||
+      contentType === 'application/javascript' ||
+      contentType === 'application/x-javascript';
 
     if (!isHtml && !isText) {
       await drain(res);
@@ -249,7 +249,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
     } catch (err) {
       const reason = isAbortError(err)
         ? `Request timed out after ${timeoutMs}ms`
-        : errorMessage(err).toLowerCase().includes("too large")
+        : errorMessage(err).toLowerCase().includes('too large')
           ? `Response too large (exceeds ${maxResponseBytes} bytes limit)`
           : `Read error: ${errorMessage(err)}`;
 
@@ -257,7 +257,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
     }
 
     const bytesRead = Buffer.byteLength(body);
-    let title = "";
+    let title = '';
     let content = body;
     let lowQuality = false;
 
@@ -279,7 +279,7 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
 
 export async function fetchPages(
   urls: string[],
-  options: FetchOptions & { concurrency?: number } = {},
+  options: FetchOptions & { concurrency?: number } = {}
 ): Promise<FetchedPage[]> {
   const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
   const semaphore = new Semaphore(concurrency);

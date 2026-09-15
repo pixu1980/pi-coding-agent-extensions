@@ -20,11 +20,11 @@
  * cannot answer with plain text.
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { createAskTool } from "./_ask.ts";
-import { createInterviewTool } from "./_interview-tool.ts";
-import { registerAskAutoTrigger, registerAskCommands, registerAskGuardrails } from "./_commands.ts";
-import { registerChatLanguageTracking } from "./_lang.ts";
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import { createAskTool } from './_ask.ts';
+import { createInterviewTool } from './_interview-tool.ts';
+import { registerAskAutoTrigger, registerAskCommands, registerAskGuardrails } from './_commands.ts';
+import { registerChatLanguageTracking } from './_lang.ts';
 
 export default function (pi: ExtensionAPI) {
   pi.registerTool(createAskTool(pi));

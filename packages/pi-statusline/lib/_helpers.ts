@@ -5,22 +5,30 @@
  * estimation and project path resolution.
  */
 
-import * as path from "node:path";
-import * as os from "node:os";
-import { execFile } from "node:child_process";
-import { realpath } from "node:fs/promises";
-import { visibleWidth } from "@earendil-works/pi-tui";
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { execFile } from 'node:child_process';
+import { realpath } from 'node:fs/promises';
+import { visibleWidth } from '@earendil-works/pi-tui';
 
 export function getEffortLabel(level: string): string {
   switch (level) {
-    case "off": return "Off";
-    case "minimal": return "Minimal";
-    case "low": return "Low";
-    case "medium": return "Medium";
-    case "high": return "High";
-    case "xhigh": return "xHigh";
-    case "max": return "Max";
-    default: return level;
+    case 'off':
+      return 'Off';
+    case 'minimal':
+      return 'Minimal';
+    case 'low':
+      return 'Low';
+    case 'medium':
+      return 'Medium';
+    case 'high':
+      return 'High';
+    case 'xhigh':
+      return 'xHigh';
+    case 'max':
+      return 'Max';
+    default:
+      return level;
   }
 }
 
@@ -49,14 +57,22 @@ export function formatEmojiText(emoji: string, text: string): string {
  */
 export function getEffortEmoji(level: string): string {
   switch (level) {
-    case "off": return "⚪";
-    case "minimal": return "💚";
-    case "low": return "💛";
-    case "medium": return "🧡";
-    case "high": return "❤️";
-    case "xhigh": return "❤️‍🔥";
-    case "max": return "🔥";
-    default: return "🧠";
+    case 'off':
+      return '⚪';
+    case 'minimal':
+      return '💚';
+    case 'low':
+      return '💛';
+    case 'medium':
+      return '🧡';
+    case 'high':
+      return '❤️';
+    case 'xhigh':
+      return '❤️‍🔥';
+    case 'max':
+      return '🔥';
+    default:
+      return '🧠';
   }
 }
 
@@ -74,7 +90,7 @@ export function getEffortEmoji(level: string): string {
  * @returns Emoji, level-dependent separator, then the level
  */
 export function formatEffortLevel(level: string): string {
-  const sep = level === "high" || level === "xhigh" ? "  " : " ";
+  const sep = level === 'high' || level === 'xhigh' ? '  ' : ' ';
 
   return `${getEffortEmoji(level)}${sep}${level}`;
 }
@@ -133,15 +149,20 @@ export function getProjectPathStats(): ProjectPathStats {
  */
 function toplevelAsync(cwd: string): Promise<string | null> {
   return new Promise((resolve) => {
-    execFile("git", ["rev-parse", "--show-toplevel"], { encoding: "utf-8", timeout: REFRESH_TIMEOUT_MS, cwd }, (error, stdout) => {
-      if (error) {
-        resolve(null);
-      } else {
-        const root = String(stdout).trim();
+    execFile(
+      'git',
+      ['rev-parse', '--show-toplevel'],
+      { encoding: 'utf-8', timeout: REFRESH_TIMEOUT_MS, cwd },
+      (error, stdout) => {
+        if (error) {
+          resolve(null);
+        } else {
+          const root = String(stdout).trim();
 
-        resolve(root || null);
+          resolve(root || null);
+        }
       }
-    });
+    );
   });
 }
 
@@ -156,7 +177,7 @@ function formatProjectPath(cwd: string, root: string | null, home: string): stri
   const rel = path.relative(root, cwd);
   let result: string;
 
-  if (!rel || rel === ".") {
+  if (!rel || rel === '.') {
     result = path.basename(root);
   } else {
     result = `${path.basename(root)}/${rel}`;
@@ -165,7 +186,7 @@ function formatProjectPath(cwd: string, root: string | null, home: string): stri
   if (root.startsWith(home)) {
     const rootRel = path.relative(home, root);
 
-    result = "~" + (rootRel ? "/" + rootRel : "") + (rel && rel !== "." ? "/" + rel : "");
+    result = '~' + (rootRel ? '/' + rootRel : '') + (rel && rel !== '.' ? '/' + rel : '');
   }
 
   return result;
@@ -203,12 +224,12 @@ function refreshProjectAsync(cwd: string): void {
       cachedRoot && Date.now() - cachedRoot.ts < TOPLEVEL_TTL_MS
         ? Promise.resolve(cachedRoot.root)
         : toplevelAsync(cwd).then((root) => {
-          if (root) {
-            toplevelCache.set(cwd, { root, ts: Date.now() });
-          }
+            if (root) {
+              toplevelCache.set(cwd, { root, ts: Date.now() });
+            }
 
-          return root;
-        });
+            return root;
+          });
     const pending = Promise.all([
       rootPromise,
       // Canonicalize symlinked cwd (e.g. macOS /var -> /private/var) so the
@@ -273,7 +294,7 @@ export function invalidateProjectPathCache(cwd?: string): void {
  * the backfill runs.
  */
 export function getProjectPath(cwd: string, style: string): string {
-  if (style === "dirname") {
+  if (style === 'dirname') {
     return path.basename(cwd);
   }
 

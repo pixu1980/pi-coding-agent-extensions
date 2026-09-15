@@ -2,12 +2,8 @@
  * pi-reasoning - thinking level resolution helpers (private module)
  */
 
-import {
-  ALL_THINKING_LEVELS,
-  STANDARD_THINKING_LEVELS,
-  LEVEL_EMOJI,
-} from "./_constants.ts";
-import type { ThinkingLevel, ReasoningModelCapabilities } from "./_constants.ts";
+import { ALL_THINKING_LEVELS, STANDARD_THINKING_LEVELS, LEVEL_EMOJI } from './_constants.ts';
+import type { ThinkingLevel, ReasoningModelCapabilities } from './_constants.ts';
 
 /**
  * Returns the thinking levels available for a given model.
@@ -21,7 +17,7 @@ import type { ThinkingLevel, ReasoningModelCapabilities } from "./_constants.ts"
  */
 export function getAvailableLevels(model?: ReasoningModelCapabilities): ThinkingLevel[] {
   if (!model?.reasoning) {
-    return ["off"];
+    return ['off'];
   }
 
   return ALL_THINKING_LEVELS.filter((level) => {
@@ -61,13 +57,7 @@ export function formatEmojiText(emoji: string, text: string): string {
  * truth, every surface derives its separator from it. Add a level here to
  * switch it to one space.
  */
-export const SINGLE_SPACE_LEVELS: ReadonlySet<ThinkingLevel> = new Set([
-  "off",
-  "minimal",
-  "low",
-  "medium",
-  "max",
-]);
+export const SINGLE_SPACE_LEVELS: ReadonlySet<ThinkingLevel> = new Set(['off', 'minimal', 'low', 'medium', 'max']);
 
 /**
  * Canonical "emoji + level" render: `❤️  high`, `❤️‍🔥  xhigh`, `🔥 max`.
@@ -75,9 +65,9 @@ export const SINGLE_SPACE_LEVELS: ReadonlySet<ThinkingLevel> = new Set([
  * so a level looks identical wherever it appears.
  */
 export function formatLevelLabel(level: ThinkingLevel): string {
-  const sep = SINGLE_SPACE_LEVELS.has(level) ? " " : "  ";
+  const sep = SINGLE_SPACE_LEVELS.has(level) ? ' ' : '  ';
 
-  return `${LEVEL_EMOJI[level] ?? "🧠"}${sep}${level}`;
+  return `${LEVEL_EMOJI[level] ?? '🧠'}${sep}${level}`;
 }
 
 /**
@@ -85,21 +75,21 @@ export function formatLevelLabel(level: ThinkingLevel): string {
  * Shows only levels the model actually supports + "auto".
  */
 export function buildReasoningMenuOptions(
-  model?: ReasoningModelCapabilities,
-): Array<{ value: ThinkingLevel | "auto"; label: string }> {
+  model?: ReasoningModelCapabilities
+): Array<{ value: ThinkingLevel | 'auto'; label: string }> {
   return [
     ...getAvailableLevels(model).map((level) => ({
       value: level,
       label: formatLevelLabel(level),
     })),
-    { value: "auto" as const, label: formatEmojiText("⚙️", "auto") },
+    { value: 'auto' as const, label: formatEmojiText('⚙️', 'auto') },
   ];
 }
 
 /** Resolve an unsupported request to a supported thinking level. */
 export function resolveThinkingLevel(
   requested: ThinkingLevel,
-  available: readonly ThinkingLevel[],
+  available: readonly ThinkingLevel[]
 ): ThinkingLevel | undefined {
   if (available.length === 0) {
     return undefined;
@@ -111,14 +101,13 @@ export function resolveThinkingLevel(
 
   const requestedIndex = ALL_THINKING_LEVELS.indexOf(requested);
 
-  return available.find((level) => ALL_THINKING_LEVELS.indexOf(level) > requestedIndex)
-    ?? available[available.length - 1];
+  return (
+    available.find((level) => ALL_THINKING_LEVELS.indexOf(level) > requestedIndex) ?? available[available.length - 1]
+  );
 }
 
 export function formatReasoningLevelChange(requested: ThinkingLevel, applied: ThinkingLevel): string {
-  const rounded = requested === applied
-    ? ""
-    : ` (rounded, your choice was ${formatLevelLabel(requested)})`;
+  const rounded = requested === applied ? '' : ` (rounded, your choice was ${formatLevelLabel(requested)})`;
 
   return `Reasoning level → ${formatLevelLabel(applied)}${rounded}`;
 }

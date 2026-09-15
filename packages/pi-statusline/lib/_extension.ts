@@ -17,22 +17,23 @@ import type {
   ExtensionContext,
   ReadonlyFooterDataProvider,
   Theme,
-} from "@earendil-works/pi-coding-agent";
-import { truncateToWidth } from "@earendil-works/pi-tui";
-import type { TUI } from "@earendil-works/pi-tui";
-import type { StatusLineData, StatusLineSettings } from "./_types.ts";
-import { DEFAULT_SETTINGS } from "./_types.ts";
-import { getGitStatus, invalidateGitCache, getGitCacheStats } from "./_git.ts";
+} from '@earendil-works/pi-coding-agent';
+import { truncateToWidth } from '@earendil-works/pi-tui';
+import type { TUI } from '@earendil-works/pi-tui';
+import type { StatusLineData, StatusLineSettings } from './_types.ts';
+import { DEFAULT_SETTINGS } from './_types.ts';
+import { getGitStatus, invalidateGitCache, getGitCacheStats } from './_git.ts';
+import { resolveTemplate, compileTemplate, renderStatusLine, renderResponsive, validateTemplate } from './_template.ts';
+import { loadSettings, saveSettings, openSettingsPanel } from './_settings-ui.ts';
 import {
-  resolveTemplate,
-  compileTemplate,
-  renderStatusLine,
-  renderResponsive,
-  validateTemplate,
-} from "./_template.ts";
-import { loadSettings, saveSettings, openSettingsPanel } from "./_settings-ui.ts";
-import { getProjectPath, getEffortLabel, formatEffortLevel, estWidth, invalidateProjectPathCache, getProjectPathStats } from "./_helpers.ts";
-import { getMcpInfo, getMcpStats } from "./_mcp.ts";
+  getProjectPath,
+  getEffortLabel,
+  formatEffortLevel,
+  estWidth,
+  invalidateProjectPathCache,
+  getProjectPathStats,
+} from './_helpers.ts';
+import { getMcpInfo, getMcpStats } from './_mcp.ts';
 
 // ── Module-level state ─────────────────────────────────────────
 
@@ -44,7 +45,7 @@ let compileError: string | null = null;
 // Memoized first-user-message: buildData runs per TUI frame, scanning the
 // whole session branch each time would be O(n) per frame. The first message
 // never changes unless the branch grows, so cache by branch length.
-let cachedInitialPrompt = "";
+let cachedInitialPrompt = '';
 let cachedBranchLen = -1;
 
 // ── Context usage ─────────────────────────────────────────────
@@ -59,7 +60,9 @@ function computeContextUsage(ctx: ExtensionContext): { used: number; total: numb
     if (usage?.tokens) {
       used = usage.tokens;
     }
-  } catch { /* older pi */ }
+  } catch {
+    /* older pi */
+  }
 
   const pct = total > 0 ? Math.round((used / total) * 100) : 0;
 
@@ -80,7 +83,7 @@ interface UserMessageEntry {
  * @returns `true` when the entry carries a message object.
  */
 function isUserMessageEntry(entry: unknown): entry is UserMessageEntry {
-  return typeof entry === "object" && entry !== null && "message" in entry;
+  return typeof entry === 'object' && entry !== null && 'message' in entry;
 }
 
 function getInitialPrompt(ctx: ExtensionContext): string {
@@ -95,25 +98,25 @@ function getInitialPrompt(ctx: ExtensionContext): string {
     cachedBranchLen = branch.length;
 
     for (const e of branch) {
-      if (e.type === "message" && isUserMessageEntry(e)) {
+      if (e.type === 'message' && isUserMessageEntry(e)) {
         const msg = e.message;
         const texts: string[] = [];
 
         for (const c of msg.content ?? []) {
-          if (c?.type === "text" && typeof c?.text === "string") {
+          if (c?.type === 'text' && typeof c?.text === 'string') {
             texts.push(c.text);
           }
         }
 
-        const text = texts.join(" ");
+        const text = texts.join(' ');
 
-        cachedInitialPrompt = text ? (text.length > 72 ? text.slice(0, 72) + "..." : text) : "";
+        cachedInitialPrompt = text ? (text.length > 72 ? text.slice(0, 72) + '...' : text) : '';
 
         return cachedInitialPrompt;
       }
     }
 
-    cachedInitialPrompt = "";
+    cachedInitialPrompt = '';
 
     return cachedInitialPrompt;
   } catch {
@@ -128,11 +131,11 @@ function getInitialPrompt(ctx: ExtensionContext): string {
  * @returns The string id, or `undefined`.
  */
 function modelIdOf(model: unknown): string | undefined {
-  if (typeof model !== "object" || model === null || !("id" in model)) {
+  if (typeof model !== 'object' || model === null || !('id' in model)) {
     return undefined;
   }
 
-  return typeof model.id === "string" ? model.id : undefined;
+  return typeof model.id === 'string' ? model.id : undefined;
 }
 
 /**
@@ -142,11 +145,11 @@ function modelIdOf(model: unknown): string | undefined {
  * @returns The provider string, or `undefined`.
  */
 function providerOf(model: unknown): string | undefined {
-  if (typeof model !== "object" || model === null || !("provider" in model)) {
+  if (typeof model !== 'object' || model === null || !('provider' in model)) {
     return undefined;
   }
 
-  return typeof model.provider === "string" ? model.provider : undefined;
+  return typeof model.provider === 'string' ? model.provider : undefined;
 }
 
 function buildData(ctx: ExtensionContext): StatusLineData {
@@ -158,9 +161,9 @@ function buildData(ctx: ExtensionContext): StatusLineData {
     project: getProjectPath(ctx.cwd, settings.projectStyle),
     git,
     hasGit,
-    model: ctx.model?.name ?? modelIdOf(ctx.model) ?? "?",
+    model: ctx.model?.name ?? modelIdOf(ctx.model) ?? '?',
     modelContext: ctx.model?.contextWindow ?? 0,
-    effort: getEffortLabel(ctx.thinkingLevel || "high"),
+    effort: getEffortLabel(ctx.thinkingLevel || 'high'),
     contextUsed: usage.used,
     contextTotal: usage.total,
     contextPct: usage.pct,
@@ -172,7 +175,7 @@ function formatLine(ctx: ExtensionContext, width?: number): string {
   const data = buildData(ctx);
 
   // Responsive mode: pick the most verbose level that fits the width.
-  if (settings.format === "preset-auto") {
+  if (settings.format === 'preset-auto') {
     return renderResponsive(data, width ?? 120);
   }
 
@@ -181,7 +184,7 @@ function formatLine(ctx: ExtensionContext, width?: number): string {
   if (cachedTmpl !== tmpl || !compiledRender || compileError) {
     const result = compileTemplate(tmpl);
 
-    if (typeof result === "string") {
+    if (typeof result === 'string') {
       compileError = result;
 
       return result;
@@ -214,29 +217,29 @@ function createFooter(ctx: ExtensionContext) {
       render(width: number): string[] {
         try {
           const mcp = getMcpInfo();
-          const effort = ctx.thinkingLevel || "high";
+          const effort = ctx.thinkingLevel || 'high';
 
           const leftRaw = `🔌 MCP: ${mcp.total} servers enabled (${mcp.connected} connected) ${formatEffortLevel(effort)}`;
-          const left = theme.fg("dim", leftRaw);
+          const left = theme.fg('dim', leftRaw);
 
           const modelObj = ctx.model;
-          const provider = providerOf(modelObj) ?? "?";
-          const modelName = modelObj?.name ?? modelIdOf(modelObj) ?? "?";
+          const provider = providerOf(modelObj) ?? '?';
+          const modelName = modelObj?.name ?? modelIdOf(modelObj) ?? '?';
           const rightRaw = `(${provider}) ${modelName} • ${effort}`;
-          const right = theme.fg("dim", rightRaw);
+          const right = theme.fg('dim', rightRaw);
 
           const leftW = estWidth(left);
           const rightW = estWidth(right);
           const padLen = Math.max(1, width - leftW - rightW);
-          const line = left + " ".repeat(padLen) + right;
+          const line = left + ' '.repeat(padLen) + right;
 
           if (estWidth(line) > width) {
-            return [truncateToWidth(leftRaw + "  " + rightRaw, Math.max(1, width))];
+            return [truncateToWidth(leftRaw + '  ' + rightRaw, Math.max(1, width))];
           }
 
           return [line];
         } catch {
-          return ["pi-statusline"];
+          return ['pi-statusline'];
         }
       },
     };
@@ -246,10 +249,10 @@ function createFooter(ctx: ExtensionContext) {
 // ── Extension entry ───────────────────────────────────────────
 
 export default function (pi: ExtensionAPI): void {
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on('session_start', async (_event, ctx) => {
     // Widget: template-based statusline (project, git, model, context)
     ctx.ui.setWidget(
-      "pi-statusline",
+      'pi-statusline',
       (_tui, _theme) => ({
         render(width: number): string[] {
           const line = formatLine(ctx, width);
@@ -262,7 +265,7 @@ export default function (pi: ExtensionAPI): void {
           compileError = null;
         },
       }),
-      { placement: "belowEditor" },
+      { placement: 'belowEditor' }
     );
 
     // Footer: MCP info (left) + provider/model (right)
@@ -270,22 +273,22 @@ export default function (pi: ExtensionAPI): void {
   });
 
   // Refresh on model/thinking changes
-  pi.on("model_select", async (_event, ctx) => {
+  pi.on('model_select', async (_event, ctx) => {
     ctx.ui.setFooter(createFooter(ctx));
   });
 
-  pi.on("thinking_level_select", async (_event, ctx) => {
+  pi.on('thinking_level_select', async (_event, ctx) => {
     ctx.ui.setFooter(createFooter(ctx));
   });
 
   // ── /statusline command ──────────────────────────────────────
 
-  pi.registerCommand("statusline", {
-    description: "Show statusline or configure it (settings / template / reload)",
+  pi.registerCommand('statusline', {
+    description: 'Show statusline or configure it (settings / template / reload)',
     async handler(args, ctx) {
       const sub = args?.trim();
 
-      if (sub === "settings") {
+      if (sub === 'settings') {
         await openSettingsPanel(ctx);
         settings = loadSettings();
         cachedTmpl = null;
@@ -294,51 +297,51 @@ export default function (pi: ExtensionAPI): void {
         return;
       }
 
-      if (sub === "reload") {
+      if (sub === 'reload') {
         settings = loadSettings();
         cachedTmpl = null;
         compiledRender = null;
-        ctx.ui.notify("Statusline settings reloaded", "info");
+        ctx.ui.notify('Statusline settings reloaded', 'info');
 
         return;
       }
 
-      if (sub === "debug") {
+      if (sub === 'debug') {
         const git = getGitCacheStats();
         const project = getProjectPathStats();
         const mcp = getMcpStats();
         const rate = (n: { hits: number; misses: number; staleServes?: number }) => {
           const total = n.hits + n.misses + (n.staleServes ?? 0);
 
-          return total === 0 ? "0%" : `${Math.round((n.hits / total) * 1000) / 10}%`;
+          return total === 0 ? '0%' : `${Math.round((n.hits / total) * 1000) / 10}%`;
         };
 
         ctx.ui.notify(
           `Cache debug\ngit cache: hits=${git.hits} misses=${git.misses} stale=${git.staleServes} invalidations=${git.invalidations} (hit rate ${rate(git)})\n` +
-          `project cache: hits=${project.hits} misses=${project.misses} stale=${project.staleServes} (hit rate ${rate(project)})\n` +
-          `mcp cache: hits=${mcp.hits} misses=${mcp.misses} (hit rate ${rate(mcp)})`,
-          "info",
+            `project cache: hits=${project.hits} misses=${project.misses} stale=${project.staleServes} (hit rate ${rate(project)})\n` +
+            `mcp cache: hits=${mcp.hits} misses=${mcp.misses} (hit rate ${rate(mcp)})`,
+          'info'
         );
 
         return;
       }
 
-      if (sub?.startsWith("template ")) {
-        const tmpl = sub.slice("template ".length).trim();
+      if (sub?.startsWith('template ')) {
+        const tmpl = sub.slice('template '.length).trim();
         const err = validateTemplate(tmpl);
 
         if (err) {
-          ctx.ui.notify(err, "error");
+          ctx.ui.notify(err, 'error');
 
           return;
         }
 
-        settings.format = "custom";
+        settings.format = 'custom';
         settings.customTemplate = tmpl;
         saveSettings(settings);
         cachedTmpl = null;
         compiledRender = null;
-        ctx.ui.notify(`Custom template set:\n${tmpl}`, "info");
+        ctx.ui.notify(`Custom template set:\n${tmpl}`, 'info');
 
         return;
       }
@@ -346,15 +349,15 @@ export default function (pi: ExtensionAPI): void {
       // Default: print current status info
       const line = formatLine(ctx);
       const mcp = getMcpInfo();
-      const effort = ctx.thinkingLevel || "high";
+      const effort = ctx.thinkingLevel || 'high';
       const modelObj = ctx.model;
-      const provider = providerOf(modelObj) ?? "?";
-      const modelName = modelObj?.name ?? modelIdOf(modelObj) ?? "?";
+      const provider = providerOf(modelObj) ?? '?';
+      const modelName = modelObj?.name ?? modelIdOf(modelObj) ?? '?';
 
       ctx.ui.notify(
         `${line}\n🔌 MCP: ${mcp.total} servers enabled (${mcp.connected} connected) ${formatEffortLevel(effort)}` +
           `  |  (${provider}) ${modelName} • ${effort}`,
-        "info",
+        'info'
       );
     },
   });

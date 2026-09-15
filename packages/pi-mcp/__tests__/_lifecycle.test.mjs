@@ -7,10 +7,10 @@
  * a microtask scheduler so a burst of events causes a single render.
  */
 
-import test from "node:test";
-import assert from "node:assert/strict";
-import { McpLifecycleManager } from "../lib/_lifecycle.ts";
-import { createRenderCoalescer } from "../lib/_utils.ts";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { McpLifecycleManager } from '../lib/_lifecycle.ts';
+import { createRenderCoalescer } from '../lib/_utils.ts';
 
 const HANGING = () => new Promise(() => {});
 
@@ -20,9 +20,9 @@ function fakeManager() {
   return {
     connected,
     manager: {
-      getConnection: (name) => (connected.has(name) ? { status: "connected" } : null),
+      getConnection: (name) => (connected.has(name) ? { status: 'connected' } : null),
       connect: async (name) => {
-        if (name === "slow") {
+        if (name === 'slow') {
           await HANGING();
         }
 
@@ -35,7 +35,7 @@ function fakeManager() {
   };
 }
 
-test("health check: one hung server does not delay the others", { timeout: 3000 }, async () => {
+test('health check: one hung server does not delay the others', { timeout: 3000 }, async () => {
   const { manager, connected } = fakeManager();
   const lm = new McpLifecycleManager(manager, () => false, {
     connectTimeoutMs: 50,
@@ -44,19 +44,19 @@ test("health check: one hung server does not delay the others", { timeout: 3000 
     reconnectLimit: 4,
   });
 
-  lm.registerServer("fast", { command: "fast" });
-  lm.registerServer("slow", { command: "slow" });
-  lm.markKeepAlive("fast", { command: "fast" });
-  lm.markKeepAlive("slow", { command: "slow" });
+  lm.registerServer('fast', { command: 'fast' });
+  lm.registerServer('slow', { command: 'slow' });
+  lm.markKeepAlive('fast', { command: 'fast' });
+  lm.markKeepAlive('slow', { command: 'slow' });
 
   const t0 = Date.now();
 
   await lm.checkConnections();
-  assert.ok(connected.has("fast"), "fast server reconnects while slow hangs");
-  assert.ok(Date.now() - t0 < 2500, "a health pass must finish despite the hung server");
+  assert.ok(connected.has('fast'), 'fast server reconnects while slow hangs');
+  assert.ok(Date.now() - t0 < 2500, 'a health pass must finish despite the hung server');
 });
 
-test("health check: failed reconnect backs off and retries later", { timeout: 3000 }, async () => {
+test('health check: failed reconnect backs off and retries later', { timeout: 3000 }, async () => {
   let attempts = 0;
   const manager = {
     getConnection: () => null,
@@ -75,21 +75,21 @@ test("health check: failed reconnect backs off and retries later", { timeout: 30
     reconnectLimit: 4,
   });
 
-  lm.registerServer("s", { command: "s" });
-  lm.markKeepAlive("s", { command: "s" });
+  lm.registerServer('s', { command: 's' });
+  lm.markKeepAlive('s', { command: 's' });
 
   await lm.checkConnections();
-  assert.equal(attempts, 1, "first pass attempts once");
+  assert.equal(attempts, 1, 'first pass attempts once');
 
   await lm.checkConnections(); // immediately after failure -> backoff skips
-  assert.equal(attempts, 1, "backoff prevents an immediate re-attempt");
+  assert.equal(attempts, 1, 'backoff prevents an immediate re-attempt');
 
   await new Promise((resolve) => setTimeout(resolve, 80)); // beyond max backoff
   await lm.checkConnections();
-  assert.equal(attempts, 2, "a later pass attempts again");
+  assert.equal(attempts, 2, 'a later pass attempts again');
 });
 
-test("render coalescer: a burst of events produces one render", async () => {
+test('render coalescer: a burst of events produces one render', async () => {
   let renders = 0;
   const schedule = createRenderCoalescer(() => renders++);
 
@@ -97,13 +97,13 @@ test("render coalescer: a burst of events produces one render", async () => {
   schedule();
   schedule();
   schedule();
-  assert.equal(renders, 0, "synchronous calls must not render immediately");
+  assert.equal(renders, 0, 'synchronous calls must not render immediately');
 
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(renders, 1, "one render after the tick");
+  assert.equal(renders, 1, 'one render after the tick');
 
   schedule();
   schedule();
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(renders, 2, "a later burst produces exactly one more render");
+  assert.equal(renders, 2, 'a later burst produces exactly one more render');
 });

@@ -1,22 +1,16 @@
 // types.ts - Core type definitions
-import type { Transport as McpTransport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { TextContent, ImageContent } from "@earendil-works/pi-ai";
-import type { UiStreamMode } from "./_ui-stream-types.ts";
+import type { Transport as McpTransport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { TextContent, ImageContent } from '@earendil-works/pi-ai';
+import type { UiStreamMode } from './_ui-stream-types.ts';
 
 export type Transport = McpTransport;
 
 /** Versioned shared-event-bus channel for read-only MCP runtime snapshots. */
-export const MCP_STATUS_EVENT = "pi-mcp-adapter/status/v1";
+export const MCP_STATUS_EVENT = 'pi-mcp-adapter/status/v1';
 
 export const MCP_STATUS_SNAPSHOT_VERSION = 1 as const;
 
-export type McpServerRuntimeStatus =
-  | "connected"
-  | "cached"
-  | "failed"
-  | "needs-auth"
-  | "not-connected"
-  | "disabled";
+export type McpServerRuntimeStatus = 'connected' | 'cached' | 'failed' | 'needs-auth' | 'not-connected' | 'disabled';
 
 export interface McpServerStatusSnapshot {
   readonly name: string;
@@ -118,7 +112,7 @@ export interface UiToolInfo {
 
 export interface UiHostContext {
   toolInfo?: UiToolInfo;
-  theme?: "light" | "dark";
+  theme?: 'light' | 'dark';
   styles?: Record<string, unknown>;
   displayMode?: UiDisplayMode;
   availableDisplayModes?: UiDisplayMode[];
@@ -131,7 +125,7 @@ export interface UiHostContext {
   [key: string]: unknown;
 }
 
-export type UiDisplayMode = "inline" | "fullscreen" | "pip";
+export type UiDisplayMode = 'inline' | 'fullscreen' | 'pip';
 
 // Re-export stream types from the shared lightweight module.
 // This allows the example package to import stream schemas without pulling the full types.ts dependency graph.
@@ -162,12 +156,12 @@ export {
   type UiStreamResultPatchNotification,
   type ServerStreamResultPatchNotification,
   type UiStreamSummary,
-} from "./_ui-stream-types.ts";
+} from './_ui-stream-types.ts';
 
 export interface UiMessageParams {
   role?: string;
   content?: unknown[];
-  type?: "prompt" | "notify" | "intent" | "message";
+  type?: 'prompt' | 'notify' | 'intent' | 'message';
   message?: string;
   prompt?: string;
   intent?: string;
@@ -179,17 +173,19 @@ export interface UiMessageParams {
  * Extract prompt text from either legacy MCP UI message shapes or native AppBridge user messages.
  */
 export function extractUiPromptText(params: UiMessageParams): string | undefined {
-  if (params.type === "prompt" || params.prompt) {
-    const prompt = params.prompt ?? String(params.message ?? "");
+  if (params.type === 'prompt' || params.prompt) {
+    const prompt = params.prompt ?? String(params.message ?? '');
 
     return prompt || undefined;
   }
 
-  if (params.role === "user" && Array.isArray(params.content)) {
+  if (params.role === 'user' && Array.isArray(params.content)) {
     const text = params.content
-      .map((block) => (block && typeof block === "object" && "text" in block ? String((block as { text?: unknown }).text ?? "") : ""))
+      .map((block) =>
+        block && typeof block === 'object' && 'text' in block ? String((block as { text?: unknown }).text ?? '') : ''
+      )
       .filter(Boolean)
-      .join("\n\n");
+      .join('\n\n');
 
     return text || undefined;
   }
@@ -210,7 +206,7 @@ export interface UiPromptHandoff {
  * Parse a canonical named UI handoff encoded as `intent\n{json}`.
  */
 export function parseUiPromptHandoff(prompt: string): UiPromptHandoff | undefined {
-  const newlineIndex = prompt.indexOf("\n");
+  const newlineIndex = prompt.indexOf('\n');
 
   if (newlineIndex <= 0) {
     return undefined;
@@ -230,7 +226,7 @@ export function parseUiPromptHandoff(prompt: string): UiPromptHandoff | undefine
   try {
     const parsed = JSON.parse(payloadText);
 
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return undefined;
     }
 
@@ -276,7 +272,7 @@ export interface UiDisplayModeResult {
 
 // Content types from MCP
 export interface McpContent {
-  type: "text" | "image" | "audio" | "resource" | "resource_link";
+  type: 'text' | 'image' | 'audio' | 'resource' | 'resource_link';
   text?: string;
   data?: string;
   mimeType?: string;
@@ -296,7 +292,7 @@ export type ContentBlock = TextContent | ImageContent;
 // OAuth configuration (SDK handles auto-discovery and dynamic registration)
 export interface OAuthConfig {
   /** OAuth grant type (defaults to authorization_code) */
-  grantType?: "authorization_code" | "client_credentials";
+  grantType?: 'authorization_code' | 'client_credentials';
   /** Pre-registered client ID (optional, dynamic registration used if not provided) */
   clientId?: string;
   /** Client secret for confidential clients */
@@ -324,23 +320,23 @@ export interface ServerEntry {
   // HTTP fields
   url?: string;
   headers?: Record<string, string>;
-  /** 
+  /**
    * Authentication type:
    * - 'oauth' - Use OAuth 2.1 (auto-discovers endpoints, supports dynamic client registration)
    * - 'bearer' - Use static Bearer token
    * - false - Disable authentication
    * If not specified and url is present, OAuth will be auto-detected unless custom headers are configured
    */
-  auth?: "oauth" | "bearer" | false;
+  auth?: 'oauth' | 'bearer' | false;
   bearerToken?: string;
   bearerTokenEnv?: string;
-  /** 
+  /**
    * OAuth configuration (optional).
    * If not provided, the SDK will attempt dynamic client registration.
    * Set to false to explicitly disable OAuth for this server.
    */
   oauth?: OAuthConfig | false;
-  lifecycle?: "keep-alive" | "lazy" | "lazy-keep-alive" | "eager";
+  lifecycle?: 'keep-alive' | 'lazy' | 'lazy-keep-alive' | 'eager';
   idleTimeout?: number; // minutes, overrides global setting
   requestTimeoutMs?: number; // milliseconds, overrides global request timeout when > 0
   // Resource handling
@@ -353,7 +349,7 @@ export interface ServerEntry {
   includeTools?: string[];
   excludeTools?: string[];
   // Debug
-  debug?: boolean;  // Show server stderr (default: false)
+  debug?: boolean; // Show server stderr (default: false)
   /** Enable metadata-only JSONL protocol tracing for this server. */
   trace?: boolean;
   // Keep configuration visible without allowing connections or execution.
@@ -376,8 +372,8 @@ export interface McpOutputGuardSettings {
 }
 
 // Settings
-export type ToolPrefix = "server" | "none" | "short" | "mcp";
-export type McpFooterStatus = "full" | "compact" | "off";
+export type ToolPrefix = 'server' | 'none' | 'short' | 'mcp';
+export type McpFooterStatus = 'full' | 'compact' | 'off';
 
 export interface McpTraceSettings {
   /** Enable tracing for all servers unless a server sets trace to false. */
@@ -455,12 +451,12 @@ export interface McpAdapterOptions {
 export type ServerDefinition = ServerEntry;
 
 export interface ToolMetadata {
-  name: string;           // Prefixed tool name (e.g., "xcodebuild_list_sims")
-  originalName: string;   // Original MCP tool name (e.g., "list_sims")
+  name: string; // Prefixed tool name (e.g., "xcodebuild_list_sims")
+  originalName: string; // Original MCP tool name (e.g., "list_sims")
   description: string;
-  resourceUri?: string;   // For resource tools: the URI to read
+  resourceUri?: string; // For resource tools: the URI to read
   uiResourceUri?: string; // For app-enabled tools: the UI resource URI
-  inputSchema?: unknown;  // JSON Schema for parameters (stored for describe/errors)
+  inputSchema?: unknown; // JSON Schema for parameters (stored for describe/errors)
   uiStreamMode?: UiStreamMode;
 }
 
@@ -486,7 +482,7 @@ export interface DirectToolSpec {
 
 export interface ServerProvenance {
   path: string;
-  kind: "user" | "project" | "import";
+  kind: 'user' | 'project' | 'import';
   importKind?: string;
 }
 
@@ -500,7 +496,7 @@ export interface CachedTool {
   description?: string;
   inputSchema?: unknown;
   uiResourceUri?: string;
-  uiStreamMode?: "eager" | "stream-first";
+  uiStreamMode?: 'eager' | 'stream-first';
 }
 
 export interface CachedResource {
@@ -534,7 +530,7 @@ export interface McpPanelCallbacks {
   reconnect: (serverName: string) => Promise<boolean>;
   canAuthenticate: (serverName: string) => boolean;
   authenticate: (serverName: string) => Promise<McpAuthResult>;
-  getConnectionStatus: (serverName: string) => "connected" | "idle" | "failed" | "needs-auth" | "disabled";
+  getConnectionStatus: (serverName: string) => 'connected' | 'idle' | 'failed' | 'needs-auth' | 'disabled';
   getFailureMessage?: (serverName: string) => string | null;
   refreshCacheAfterReconnect: (serverName: string) => ServerCacheEntry | null;
 }
@@ -547,29 +543,26 @@ export interface McpPanelResult {
 /**
  * Get server prefix based on tool prefix mode.
  */
-export function getServerPrefix(
-  serverName: string,
-  mode: ToolPrefix
-): string {
-  if (mode === "none") {
-    return "";
+export function getServerPrefix(serverName: string, mode: ToolPrefix): string {
+  if (mode === 'none') {
+    return '';
   }
 
-  if (mode === "short") {
-    let short = serverName.replace(/-?mcp$/i, "").replaceAll('-', "_");
+  if (mode === 'short') {
+    let short = serverName.replace(/-?mcp$/i, '').replaceAll('-', '_');
 
     if (!short) {
-      short = "mcp";
+      short = 'mcp';
     }
 
     return short;
   }
 
-  if (mode === "mcp") {
-    return `mcp__${serverName.replaceAll('-', "_")}`;
+  if (mode === 'mcp') {
+    return `mcp__${serverName.replaceAll('-', '_')}`;
   }
 
-  return serverName.replaceAll('-', "_");
+  return serverName.replaceAll('-', '_');
 }
 
 /**
@@ -577,33 +570,26 @@ export function getServerPrefix(
  * With prefix "none" the command is bare and dash-separated
  * (e.g. pix_frontend_vanilla_reactive -> `pix-frontend-vanilla-reactive`).
  */
-export function formatToolName(
-  toolName: string,
-  serverName: string,
-  prefix: ToolPrefix
-): string {
+export function formatToolName(toolName: string, serverName: string, prefix: ToolPrefix): string {
   const p = getServerPrefix(serverName, prefix);
-  const sanitized = toolName.replaceAll('.', "_");
+  const sanitized = toolName.replaceAll('.', '_');
 
   if (!p) {
-    return sanitized.replaceAll('_', "-");
+    return sanitized.replaceAll('_', '-');
   } // "none": bare dash-separated command
 
   return `${p}_${sanitized}`;
 }
 
-export function resolveToolPrefix(
-  definition?: Pick<ServerEntry, "toolPrefix">,
-  globalPrefix?: ToolPrefix,
-): ToolPrefix {
-  return definition?.toolPrefix ?? globalPrefix ?? "server";
+export function resolveToolPrefix(definition?: Pick<ServerEntry, 'toolPrefix'>, globalPrefix?: ToolPrefix): ToolPrefix {
+  return definition?.toolPrefix ?? globalPrefix ?? 'server';
 }
 
 export function sanitizePromptName(name: string): string {
-  const cleaned = name.replaceAll(/[^A-Za-z0-9_-]+/g, "_").replaceAll(/^[_-]+|[_-]+$/g, "");
+  const cleaned = name.replaceAll(/[^A-Za-z0-9_-]+/g, '_').replaceAll(/^[_-]+|[_-]+$/g, '');
 
   if (!cleaned) {
-    return "prompt";
+    return 'prompt';
   }
 
   return /^[0-9]/.test(cleaned) ? `_${cleaned}` : cleaned;
@@ -614,11 +600,7 @@ export function sanitizePromptName(name: string): string {
  * the bare sanitized prompt name (e.g. `pix-code-review`); every other mode
  * keeps the legacy `mcp__<server>__<prompt>` shape.
  */
-export function formatPromptCommandName(
-  promptName: string,
-  serverName: string,
-  prefix: ToolPrefix,
-): string {
+export function formatPromptCommandName(promptName: string, serverName: string, prefix: ToolPrefix): string {
   const serverPart = getServerPrefix(serverName, prefix);
   const sanitized = sanitizePromptName(promptName);
 
@@ -630,21 +612,24 @@ export function formatPromptCommandName(
 }
 
 function normalizeToolName(value: string): string {
-  return value.replaceAll('-', "_");
+  return value.replaceAll('-', '_');
 }
 
 function getToolNameCandidates(toolName: string, serverName: string, prefix: ToolPrefix): Set<string> {
   return new Set<string>([
     normalizeToolName(toolName),
     normalizeToolName(formatToolName(toolName, serverName, prefix)),
-    normalizeToolName(formatToolName(toolName, serverName, "server")),
-    normalizeToolName(formatToolName(toolName, serverName, "short")),
-    normalizeToolName(formatToolName(toolName, serverName, "mcp")),
+    normalizeToolName(formatToolName(toolName, serverName, 'server')),
+    normalizeToolName(formatToolName(toolName, serverName, 'short')),
+    normalizeToolName(formatToolName(toolName, serverName, 'mcp')),
   ]);
 }
 
 function globToRegExp(pattern: string): RegExp {
-  const escaped = pattern.replaceAll(/[.+^${}()|[\]\\]/g, "\\$&").replaceAll('*', ".*").replaceAll('?', ".");
+  const escaped = pattern
+    .replaceAll(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replaceAll('*', '.*')
+    .replaceAll('?', '.');
 
   return new RegExp(`^${escaped}$`);
 }
@@ -655,17 +640,20 @@ function matchesToolPattern(candidates: Set<string>, patterns?: unknown): boolea
   }
 
   for (const pattern of patterns) {
-    if (typeof pattern !== "string") {
+    if (typeof pattern !== 'string') {
       continue;
     }
 
     const normalized = normalizeToolName(pattern);
 
-    if (!normalized.includes("*") && !normalized.includes("?") && candidates.has(normalized)) {
+    if (!normalized.includes('*') && !normalized.includes('?') && candidates.has(normalized)) {
       return true;
     }
 
-    if ((normalized.includes("*") || normalized.includes("?")) && [...candidates].some(candidate => globToRegExp(normalized).test(candidate))) {
+    if (
+      (normalized.includes('*') || normalized.includes('?')) &&
+      [...candidates].some((candidate) => globToRegExp(normalized).test(candidate))
+    ) {
       return true;
     }
   }
@@ -700,8 +688,10 @@ export function isToolAllowed(
   serverName: string,
   prefix: ToolPrefix,
   includeTools?: unknown,
-  excludeTools?: unknown,
+  excludeTools?: unknown
 ): boolean {
-  return isToolIncluded(toolName, serverName, prefix, includeTools)
-    && !isToolExcluded(toolName, serverName, prefix, excludeTools);
+  return (
+    isToolIncluded(toolName, serverName, prefix, includeTools) &&
+    !isToolExcluded(toolName, serverName, prefix, excludeTools)
+  );
 }

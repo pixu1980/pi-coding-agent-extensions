@@ -10,30 +10,30 @@
  * `./`, `~/` or `/` inside `"`, `'` or `` ` `` plus Tab.
  */
 
-import test from "node:test";
-import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import pathPickerExtension from "../../pi-path-picker/index.ts";
-import { createAskTool } from "../lib/_ask.ts";
-import { createInterviewTool } from "../lib/_interview-tool.ts";
-import { createMockPi, makeTheme } from "../../../test/harness.mjs";
+import pathPickerExtension from '../../pi-path-picker/index.ts';
+import { createAskTool } from '../lib/_ask.ts';
+import { createInterviewTool } from '../lib/_interview-tool.ts';
+import { createMockPi, makeTheme } from '../../../test/harness.mjs';
 import {
   attachPathAutocomplete,
   mustRebuildForAutocomplete,
   PATH_PICKER_PROVIDER_CHANNEL,
   resolvePathAutocompleteProvider,
-} from "../lib/_path-provider.ts";
+} from '../lib/_path-provider.ts';
 
-const KEY = { escape: "\x1b", enter: "\r", up: "\x1b[A", down: "\x1b[B" };
+const KEY = { escape: '\x1b', enter: '\r', up: '\x1b[A', down: '\x1b[B' };
 
 function seededCwd() {
-  const cwd = mkdtempSync(join(tmpdir(), "pi-ask-paths-"));
+  const cwd = mkdtempSync(join(tmpdir(), 'pi-ask-paths-'));
 
-  writeFileSync(join(cwd, "alpha.txt"), "");
-  mkdirSync(join(cwd, "subdir"));
+  writeFileSync(join(cwd, 'alpha.txt'), '');
+  mkdirSync(join(cwd, 'subdir'));
 
   return cwd;
 }
@@ -58,7 +58,7 @@ function installDriver(ctx) {
     });
 
   return {
-    render: () => component.render(100).join("\n"),
+    render: () => component.render(100).join('\n'),
     key: (k) => component.handleInput(k),
     type: (text) => {
       for (const ch of text) {
@@ -79,19 +79,19 @@ async function settle() {
 
 // ── Contract plumbing ────────────────────────────────────────────────
 
-test("channel literal matches the producer", () => {
-  assert.equal(PATH_PICKER_PROVIDER_CHANNEL, "pi-path-picker:provider");
+test('channel literal matches the producer', () => {
+  assert.equal(PATH_PICKER_PROVIDER_CHANNEL, 'pi-path-picker:provider');
 });
 
-test("no bus → no provider, no throw", () => {
-  assert.equal(resolvePathAutocompleteProvider(undefined, "/tmp"), undefined);
+test('no bus → no provider, no throw', () => {
+  assert.equal(resolvePathAutocompleteProvider(undefined, '/tmp'), undefined);
 });
 
-test("bus with no listener (path-picker absent) → no provider", () => {
-  assert.equal(resolvePathAutocompleteProvider({ events: { emit() {} } }, "/tmp"), undefined);
+test('bus with no listener (path-picker absent) → no provider', () => {
+  assert.equal(resolvePathAutocompleteProvider({ events: { emit() {} } }, '/tmp'), undefined);
 });
 
-test("the request carries cwd and a reply callback", () => {
+test('the request carries cwd and a reply callback', () => {
   const seen = [];
   const bus = {
     events: {
@@ -101,56 +101,56 @@ test("the request carries cwd and a reply callback", () => {
       },
     },
   };
-  const provider = resolvePathAutocompleteProvider(bus, "/some/cwd");
+  const provider = resolvePathAutocompleteProvider(bus, '/some/cwd');
 
   assert.deepEqual(provider, { sentinel: true });
   assert.equal(seen.length, 1);
   assert.equal(seen[0][0], PATH_PICKER_PROVIDER_CHANNEL);
-  assert.equal(seen[0][1].cwd, "/some/cwd");
-  assert.equal(typeof seen[0][1].reply, "function");
+  assert.equal(seen[0][1].cwd, '/some/cwd');
+  assert.equal(typeof seen[0][1].reply, 'function');
 });
 
-test("a throwing bus is contained", () => {
+test('a throwing bus is contained', () => {
   const bus = {
     events: {
       emit() {
-        throw new Error("bus exploded");
+        throw new Error('bus exploded');
       },
     },
   };
 
-  assert.equal(resolvePathAutocompleteProvider(bus, "/tmp"), undefined);
+  assert.equal(resolvePathAutocompleteProvider(bus, '/tmp'), undefined);
 });
 
-test("attach returns false and touches nothing when no provider answers", () => {
+test('attach returns false and touches nothing when no provider answers', () => {
   const calls = [];
   const editor = { setAutocompleteProvider: (p) => calls.push(p) };
 
-  assert.equal(attachPathAutocomplete(editor, undefined, "/tmp"), false);
-  assert.equal(attachPathAutocomplete(editor, { events: { emit() {} } }, "/tmp"), false);
+  assert.equal(attachPathAutocomplete(editor, undefined, '/tmp'), false);
+  assert.equal(attachPathAutocomplete(editor, { events: { emit() {} } }, '/tmp'), false);
   assert.deepEqual(calls, []);
 });
 
-test("attach returns false when the editor cannot host autocomplete", () => {
+test('attach returns false when the editor cannot host autocomplete', () => {
   const pi = piWithPathPicker();
 
-  assert.equal(attachPathAutocomplete({}, pi, "/tmp"), false);
-  assert.equal(attachPathAutocomplete(undefined, pi, "/tmp"), false);
+  assert.equal(attachPathAutocomplete({}, pi, '/tmp'), false);
+  assert.equal(attachPathAutocomplete(undefined, pi, '/tmp'), false);
 });
 
-test("attach installs the provider on a capable editor", () => {
+test('attach installs the provider on a capable editor', () => {
   const pi = piWithPathPicker();
   const calls = [];
   const editor = { setAutocompleteProvider: (p) => calls.push(p) };
 
-  assert.equal(attachPathAutocomplete(editor, pi, "/tmp"), true);
+  assert.equal(attachPathAutocomplete(editor, pi, '/tmp'), true);
   assert.equal(calls.length, 1);
-  assert.equal(typeof calls[0].getSuggestions, "function");
+  assert.equal(typeof calls[0].getSuggestions, 'function');
 });
 
 // ── Render-cache bypass ──────────────────────────────────────────────
 
-test("cache is only bypassed while the menu is open", () => {
+test('cache is only bypassed while the menu is open', () => {
   assert.equal(mustRebuildForAutocomplete(undefined), false);
   assert.equal(mustRebuildForAutocomplete({}), false);
   assert.equal(mustRebuildForAutocomplete({ isShowingAutocomplete: () => false }), false);
@@ -159,90 +159,96 @@ test("cache is only bypassed while the menu is open", () => {
 
 // ── End to end: `ask` ────────────────────────────────────────────────
 
-test("ask: Tab inside a quoted path renders the picker in the custom-answer field", async () => {
+test('ask: Tab inside a quoted path renders the picker in the custom-answer field', async () => {
   const cwd = seededCwd();
   const pi = piWithPathPicker();
   const tool = createAskTool(pi);
-  const ctx = { mode: "tui", ui: {}, cwd };
+  const ctx = { mode: 'tui', ui: {}, cwd };
   const driver = installDriver(ctx);
 
   const execPromise = tool.execute(
-    "c1",
-    { question: "Where?", options: [{ value: "a", label: "A" }, { value: "b", label: "B" }] },
+    'c1',
+    {
+      question: 'Where?',
+      options: [
+        { value: 'a', label: 'A' },
+        { value: 'b', label: 'B' },
+      ],
+    },
     undefined,
     undefined,
-    ctx,
+    ctx
   );
 
   // Reach the "Type something." row → write mode, editor focused.
   driver.key(KEY.down);
   driver.key(KEY.down);
-  assert.match(driver.render(), /Your answer:/, "editor must be open");
+  assert.match(driver.render(), /Your answer:/, 'editor must be open');
 
-  driver.type("`./`");
-  driver.key("\t");
+  driver.type('`./`');
+  driver.key('\t');
   await settle();
 
   const text = driver.render();
 
   assert.match(text, /alpha\.txt/, `picker must list the cwd contents, got:\n${text}`);
-  assert.match(text, /subdir/, "directories must be listed too");
+  assert.match(text, /subdir/, 'directories must be listed too');
 
   driver.key(KEY.escape);
   driver.key(KEY.escape);
   await execPromise;
 });
 
-test("ask: the rule still holds - Tab outside quotes shows nothing", async () => {
+test('ask: the rule still holds - Tab outside quotes shows nothing', async () => {
   const cwd = seededCwd();
   const pi = piWithPathPicker();
   const tool = createAskTool(pi);
-  const ctx = { mode: "tui", ui: {}, cwd };
+  const ctx = { mode: 'tui', ui: {}, cwd };
   const driver = installDriver(ctx);
 
   const execPromise = tool.execute(
-    "c1",
-    { question: "Where?", options: [{ value: "a", label: "A" }] },
+    'c1',
+    { question: 'Where?', options: [{ value: 'a', label: 'A' }] },
     undefined,
     undefined,
-    ctx,
+    ctx
   );
 
   driver.key(KEY.down); // → "Type something."
-  driver.type("./");
-  driver.key("\t");
+  driver.type('./');
+  driver.key('\t');
   await settle();
 
-  assert.equal(driver.render().includes("alpha.txt"), false, "unquoted paths must not open the picker");
+  assert.equal(driver.render().includes('alpha.txt'), false, 'unquoted paths must not open the picker');
 
   driver.key(KEY.escape);
   driver.key(KEY.escape);
   await execPromise;
 });
 
-test("ask: without pi-path-picker the field behaves exactly as before", async () => {
+test('ask: without pi-path-picker the field behaves exactly as before', async () => {
   const cwd = seededCwd();
   const tool = createAskTool(); // no bus
-  const ctx = { mode: "tui", ui: {}, cwd };
+  const ctx = { mode: 'tui', ui: {}, cwd };
   const driver = installDriver(ctx);
 
   const execPromise = tool.execute(
-    "c1",
-    { question: "Where?", options: [{ value: "a", label: "A" }] },
+    'c1',
+    { question: 'Where?', options: [{ value: 'a', label: 'A' }] },
     undefined,
     undefined,
-    ctx,
+    ctx
   );
 
   driver.key(KEY.down);
-  driver.type("`./`");
-  driver.key("\t");
+  driver.type('`./`');
+  driver.key('\t');
   await settle();
 
   const text = driver.render();
 
-  assert.equal(text.includes("alpha.txt"), false);
-  assert.match(text, /Your answer:/, "editor must still render");
+  assert.equal(text.includes('alpha.txt'), false);
+  assert.match(text, /Your answer:/, 'editor must still render');
 
   driver.key(KEY.escape);
   driver.key(KEY.escape);
@@ -251,27 +257,38 @@ test("ask: without pi-path-picker the field behaves exactly as before", async ()
 
 // ── End to end: `interview` ──────────────────────────────────────────
 
-test("interview: Tab inside a quoted path renders the picker in the custom-answer field", async () => {
+test('interview: Tab inside a quoted path renders the picker in the custom-answer field', async () => {
   const cwd = seededCwd();
   const pi = piWithPathPicker();
   const tool = createInterviewTool(pi);
-  const ctx = { mode: "tui", ui: {}, cwd };
+  const ctx = { mode: 'tui', ui: {}, cwd };
   const driver = installDriver(ctx);
 
   const execPromise = tool.execute(
-    "c1",
-    { questions: [{ id: "q1", prompt: "Where?", options: [{ value: "a", label: "A" }, { value: "b", label: "B" }] }] },
+    'c1',
+    {
+      questions: [
+        {
+          id: 'q1',
+          prompt: 'Where?',
+          options: [
+            { value: 'a', label: 'A' },
+            { value: 'b', label: 'B' },
+          ],
+        },
+      ],
+    },
     undefined,
     undefined,
-    ctx,
+    ctx
   );
 
   driver.key(KEY.down);
   driver.key(KEY.down);
-  assert.match(driver.render(), /Your answer:/, "editor must be open");
+  assert.match(driver.render(), /Your answer:/, 'editor must be open');
 
-  driver.type("`./`");
-  driver.key("\t");
+  driver.type('`./`');
+  driver.key('\t');
   await settle();
 
   const text = driver.render();
@@ -283,29 +300,29 @@ test("interview: Tab inside a quoted path renders the picker in the custom-answe
   await execPromise;
 });
 
-test("interview: Tab outside quotes still switches tabs, not the picker", async () => {
+test('interview: Tab outside quotes still switches tabs, not the picker', async () => {
   const cwd = seededCwd();
   const pi = piWithPathPicker();
   const tool = createInterviewTool(pi);
-  const ctx = { mode: "tui", ui: {}, cwd };
+  const ctx = { mode: 'tui', ui: {}, cwd };
   const driver = installDriver(ctx);
 
   const execPromise = tool.execute(
-    "c1",
+    'c1',
     {
       questions: [
-        { id: "q1", prompt: "First?", options: [{ value: "a", label: "A" }] },
-        { id: "q2", prompt: "Second?", options: [{ value: "b", label: "B" }] },
+        { id: 'q1', prompt: 'First?', options: [{ value: 'a', label: 'A' }] },
+        { id: 'q2', prompt: 'Second?', options: [{ value: 'b', label: 'B' }] },
       ],
     },
     undefined,
     undefined,
-    ctx,
+    ctx
   );
 
-  driver.key("\t");
+  driver.key('\t');
   await settle();
-  assert.equal(driver.render().includes("alpha.txt"), false, "Tab navigation must stay intact");
+  assert.equal(driver.render().includes('alpha.txt'), false, 'Tab navigation must stay intact');
 
   // Escape steps back a tab, then cancels the interview.
   driver.key(KEY.escape);

@@ -8,23 +8,23 @@
  * is unknown to us.
  */
 
-const REDACTED = "[redacted]";
+const REDACTED = '[redacted]';
 
 function escapeRegExp(value: string): string {
-  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Redact credential-looking spans that do not require knowing the key. */
 export function scrubCredentialShapes(text: string): string {
   return (
     text
-    // scheme://user:password@host -> scheme://[redacted]@host
+      // scheme://user:password@host -> scheme://[redacted]@host
       .replaceAll(/\b([a-z][a-z0-9+.-]*:\/\/)[^\s/?#]*@(?=[^\s/?#]+)/gi, `$1${REDACTED}@`)
       .replaceAll(/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, `Bearer ${REDACTED}`)
       .replaceAll(/((?:^|[\s,{])cookie["']?\s*[:=]\s*["']?)[^\n]+/gi, `$1${REDACTED}`)
       .replaceAll(
         /((?:authorization|api[_-]?key|apiKey|token|secret|password)["']?\s*[:=]\s*["']?)[^"'\s,;}]+/gi,
-        `$1${REDACTED}`,
+        `$1${REDACTED}`
       )
   );
 }
@@ -35,7 +35,7 @@ export function scrubCredentialShapes(text: string): string {
  */
 export function scrubSecrets(text: string, apiKey?: string): string {
   const trimmedKey = apiKey?.trim();
-  const withoutKey = trimmedKey ? text.replaceAll(new RegExp(escapeRegExp(trimmedKey), "g"), REDACTED) : text;
+  const withoutKey = trimmedKey ? text.replaceAll(new RegExp(escapeRegExp(trimmedKey), 'g'), REDACTED) : text;
 
   return scrubCredentialShapes(withoutKey);
 }
@@ -45,7 +45,7 @@ export function maskApiKey(apiKey: string | undefined): string {
   const trimmed = apiKey?.trim();
 
   if (!trimmed) {
-    return "(none)";
+    return '(none)';
   }
 
   if (trimmed.length <= 8) {
@@ -58,23 +58,23 @@ export function maskApiKey(apiKey: string | undefined): string {
 /** Normalize a thrown value into a scrubbed single-line message. */
 export function scrubError(error: unknown, apiKey?: string): string {
   if (error === undefined || error === null) {
-    return "unknown error";
+    return 'unknown error';
   }
 
   const raw =
     error instanceof Error
       ? error.message
-      : typeof error === "string"
+      : typeof error === 'string'
         ? error
         : (() => {
-          try {
-            const json = JSON.stringify(error);
+            try {
+              const json = JSON.stringify(error);
 
-            return typeof json === "string" ? json : String(error);
-          } catch {
-            return String(error);
-          }
-        })();
+              return typeof json === 'string' ? json : String(error);
+            } catch {
+              return String(error);
+            }
+          })();
 
-  return scrubSecrets(raw, apiKey).replaceAll(/\s+/g, " ").trim() || "unknown error";
+  return scrubSecrets(raw, apiKey).replaceAll(/\s+/g, ' ').trim() || 'unknown error';
 }

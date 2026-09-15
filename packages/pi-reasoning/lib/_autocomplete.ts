@@ -6,20 +6,20 @@
  * delegated to the wrapped provider unchanged.
  */
 
-import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-tui";
-import { buildReasoningMenuOptions } from "./_levels.ts";
-import type { ReasoningModelCapabilities } from "./_constants.ts";
+import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from '@earendil-works/pi-tui';
+import { buildReasoningMenuOptions } from './_levels.ts';
+import type { ReasoningModelCapabilities } from './_constants.ts';
 
 export type ReasoningModelRef = ReasoningModelCapabilities & { provider?: string; id?: string };
 
 const TYPED_ONLY_COMMANDS = [
-  { value: "map", label: "map  - Show active model→level mappings" },
-  { value: "reset", label: "reset  - Restore default model mappings" },
+  { value: 'map', label: 'map  - Show active model→level mappings' },
+  { value: 'reset', label: 'reset  - Restore default model mappings' },
 ];
 
 export function createReasoningAutocompleteProvider(
   current: AutocompleteProvider,
-  getCurrentModel: () => ReasoningModelRef | undefined,
+  getCurrentModel: () => ReasoningModelRef | undefined
 ): AutocompleteProvider {
   return {
     triggerCharacters: current.triggerCharacters,
@@ -28,23 +28,21 @@ export function createReasoningAutocompleteProvider(
       lines: string[],
       cursorLine: number,
       cursorCol: number,
-      options: { signal: AbortSignal; force?: boolean },
+      options: { signal: AbortSignal; force?: boolean }
     ): Promise<AutocompleteSuggestions | null> {
-      const currentLine = lines[cursorLine] ?? "";
+      const currentLine = lines[cursorLine] ?? '';
       const textBeforeCursor = currentLine.slice(0, cursorCol);
 
       // Intercept ONLY "/reasoning " or "/effort " followed by optional prefix
       const match = textBeforeCursor.match(/^\/(?:reasoning|effort)\s+(.*)$/);
 
       if (match) {
-        const userPrefix = match[1] ?? "";
+        const userPrefix = match[1] ?? '';
         const menuOptions = buildReasoningMenuOptions(getCurrentModel());
         const allOptions = [...menuOptions, ...TYPED_ONLY_COMMANDS];
 
         const lowerPrefix = userPrefix.trim().toLowerCase();
-        const filtered = lowerPrefix
-          ? allOptions.filter((opt) => opt.value.startsWith(lowerPrefix))
-          : menuOptions;
+        const filtered = lowerPrefix ? allOptions.filter((opt) => opt.value.startsWith(lowerPrefix)) : menuOptions;
 
         if (filtered.length === 0) {
           return null;
@@ -57,9 +55,7 @@ export function createReasoningAutocompleteProvider(
           items: filtered.map((opt) => ({
             value: opt.value,
             label: opt.label,
-            description: currentModel
-              ? `${currentModel.provider}/${currentModel.id}`
-              : "current model",
+            description: currentModel ? `${currentModel.provider}/${currentModel.id}` : 'current model',
           })),
         };
       }
@@ -68,25 +64,19 @@ export function createReasoningAutocompleteProvider(
       return current.getSuggestions(lines, cursorLine, cursorCol, options);
     },
 
-    applyCompletion(
-      lines: string[],
-      cursorLine: number,
-      cursorCol: number,
-      item: AutocompleteItem,
-      prefix: string,
-    ) {
+    applyCompletion(lines: string[], cursorLine: number, cursorCol: number, item: AutocompleteItem, prefix: string) {
       // Delegate applyCompletion to the wrapped provider
       if (current.applyCompletion) {
         return current.applyCompletion(lines, cursorLine, cursorCol, item, prefix);
       }
 
       // Fallback: simple replacement
-      const currentLine = lines[cursorLine] ?? "";
+      const currentLine = lines[cursorLine] ?? '';
       const before = currentLine.slice(0, cursorCol - prefix.length);
       const after = currentLine.slice(cursorCol);
       const newLines = [...lines];
 
-      newLines[cursorLine] = before + item.value + " " + after;
+      newLines[cursorLine] = before + item.value + ' ' + after;
 
       return {
         lines: newLines,
@@ -96,7 +86,7 @@ export function createReasoningAutocompleteProvider(
     },
 
     shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
-      const currentLine = lines[cursorLine] ?? "";
+      const currentLine = lines[cursorLine] ?? '';
 
       // Allow forced refreshes (for example Tab) for /reasoning and /effort too.
       if (currentLine.match(/^\/(?:reasoning|effort)\s/)) {

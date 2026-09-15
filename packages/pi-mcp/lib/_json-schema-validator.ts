@@ -1,36 +1,32 @@
-import { Ajv } from "ajv";
-import Ajv2020Import from "ajv/dist/2020.js";
-import addFormatsImport from "ajv-formats";
-import { AjvJsonSchemaValidator } from "@modelcontextprotocol/sdk/validation/ajv";
+import { Ajv } from 'ajv';
+import Ajv2020Import from 'ajv/dist/2020.js';
+import addFormatsImport from 'ajv-formats';
+import { AjvJsonSchemaValidator } from '@modelcontextprotocol/sdk/validation/ajv';
 import type {
   JsonSchemaType,
   JsonSchemaValidator,
   jsonSchemaValidator as JsonSchemaValidatorProvider,
-} from "@modelcontextprotocol/sdk/validation/types.js";
+} from '@modelcontextprotocol/sdk/validation/types.js';
 
 // ajv-formats types target its bundled ajv; the runtime accepts both instances.
 const addFormats = addFormatsImport as (instance: Ajv) => void;
 
-type SchemaDialect =
-  | { status: "unstamped" }
-  | { status: "stamped"; uri: string };
+type SchemaDialect = { status: 'unstamped' } | { status: 'stamped'; uri: string };
 
 const DRAFT_07_SCHEMA_URIS: ReadonlySet<string> = new Set([
-  "http://json-schema.org/draft-07/schema",
-  "https://json-schema.org/draft-07/schema",
+  'http://json-schema.org/draft-07/schema',
+  'https://json-schema.org/draft-07/schema',
 ]);
-const DRAFT_2020_12_SCHEMA_URIS: ReadonlySet<string> = new Set([
-  "https://json-schema.org/draft/2020-12/schema",
-]);
+const DRAFT_2020_12_SCHEMA_URIS: ReadonlySet<string> = new Set(['https://json-schema.org/draft/2020-12/schema']);
 
 function schemaDialect(schema: JsonSchemaType): SchemaDialect {
-  if (!("$schema" in schema) || typeof schema.$schema !== "string") {
-    return { status: "unstamped" };
+  if (!('$schema' in schema) || typeof schema.$schema !== 'string') {
+    return { status: 'unstamped' };
   }
 
   return {
-    status: "stamped",
-    uri: schema.$schema.endsWith("#") ? schema.$schema.slice(0, -1) : schema.$schema,
+    status: 'stamped',
+    uri: schema.$schema.endsWith('#') ? schema.$schema.slice(0, -1) : schema.$schema,
   };
 }
 
@@ -42,7 +38,7 @@ export function createJsonSchemaValidator(): JsonSchemaValidatorProvider {
     getValidator<T>(schema: JsonSchemaType): JsonSchemaValidator<T> {
       const dialect = schemaDialect(schema);
 
-      if (dialect.status === "unstamped" || DRAFT_2020_12_SCHEMA_URIS.has(dialect.uri)) {
+      if (dialect.status === 'unstamped' || DRAFT_2020_12_SCHEMA_URIS.has(dialect.uri)) {
         draft2020Validator ??= (() => {
           const Ajv2020 = Ajv2020Import as typeof Ajv;
           const ajv = new Ajv2020({ strict: false, allErrors: true });

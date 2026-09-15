@@ -99,8 +99,7 @@ test('publishes packages locally from the release process', () => {
  */
 function makeFixtureRepo(t) {
   const dir = mkdtempSync(join(tmpdir(), 'release-detect-'));
-  const run = (cmd) =>
-    execSync(cmd, { cwd: dir, encoding: 'utf-8', stdio: 'pipe' }).trim();
+  const run = (cmd) => execSync(cmd, { cwd: dir, encoding: 'utf-8', stdio: 'pipe' }).trim();
 
   run('git init -b main');
   run('git config user.email test@example.com');
@@ -145,9 +144,7 @@ test('source changes since the last tag do trigger a release', (t) => {
   repo.run('git add .');
   repo.run('git commit -m c2');
 
-  assert.deepEqual(changedFilesSinceTag('pkga@0.1.0', 'packages/a', repo.run), [
-    'packages/a/lib.js',
-  ]);
+  assert.deepEqual(changedFilesSinceTag('pkga@0.1.0', 'packages/a', repo.run), ['packages/a/lib.js']);
 });
 
 test('changes in other packages do not trigger a release', (t) => {

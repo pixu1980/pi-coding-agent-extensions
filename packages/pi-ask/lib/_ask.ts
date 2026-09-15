@@ -10,8 +10,16 @@
  * Escape closes editors first, then cancels.
  */
 
-import type { ThemeColor, ToolDefinition } from "@earendil-works/pi-coding-agent";
-import { Editor, type EditorTheme, Key, matchesKey, Text, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import type { ThemeColor, ToolDefinition } from '@earendil-works/pi-coding-agent';
+import {
+  Editor,
+  type EditorTheme,
+  Key,
+  matchesKey,
+  Text,
+  visibleWidth,
+  wrapTextWithAnsi,
+} from '@earendil-works/pi-tui';
 
 import {
   AskParams,
@@ -23,9 +31,9 @@ import {
   type AskDetails,
   type DisplayOption,
   type SelectAnswer,
-} from "./_types.ts";
-import { parseDigitKey, selectionFromCustom, selectionFromIndex, toggleIndex, withNote } from "./_logic.ts";
-import { attachPathAutocomplete, mustRebuildForAutocomplete, type PathProviderBus } from "./_path-provider.ts";
+} from './_types.ts';
+import { parseDigitKey, selectionFromCustom, selectionFromIndex, toggleIndex, withNote } from './_logic.ts';
+import { attachPathAutocomplete, mustRebuildForAutocomplete, type PathProviderBus } from './_path-provider.ts';
 
 interface AskState {
   optionIndex: number;
@@ -45,10 +53,10 @@ interface AskState {
  */
 export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskParams, AskDetails> {
   return {
-    name: "ask",
-    label: "Ask",
+    name: 'ask',
+    label: 'Ask',
     description:
-			"Ask the user a single question and let them pick from options, type a custom answer, or attach a note. Use when you need a decision, preference, or confirmation to proceed.",
+      'Ask the user a single question and let them pick from options, type a custom answer, or attach a note. Use when you need a decision, preference, or confirmation to proceed.',
     parameters: AskParams,
 
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
@@ -56,9 +64,9 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
       const multi = params.multiSelect === true;
       const allowNote = params.allowNote !== false;
 
-      if (ctx.mode !== "tui") {
+      if (ctx.mode !== 'tui') {
         return {
-          content: [{ type: "text", text: "Error: UI not available (running in non-interactive mode)" }],
+          content: [{ type: 'text', text: 'Error: UI not available (running in non-interactive mode)' }],
           details: {
             question: params.question,
             options: options.map((o) => o.label),
@@ -71,7 +79,7 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
 
       if (options.length === 0) {
         return {
-          content: [{ type: "text", text: "Error: No options provided" }],
+          content: [{ type: 'text', text: 'Error: No options provided' }],
           details: {
             question: params.question,
             options: [],
@@ -83,8 +91,8 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
       }
 
       const displayOptions = buildDisplayOptions({
-        id: "ask",
-        label: "Q",
+        id: 'ask',
+        label: 'Q',
         prompt: params.question,
         options,
         allowOther: params.allowOther !== false,
@@ -97,20 +105,20 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
           optionIndex: 0,
           editMode: false,
           noteMode: false,
-          noteText: "",
+          noteText: '',
           multi: new Set(),
           customEntry: null,
         };
         let cachedLines: string[] | undefined;
 
         const editorTheme: EditorTheme = {
-          borderColor: (s) => theme.fg("accent", s),
+          borderColor: (s) => theme.fg('accent', s),
           selectList: {
-            selectedPrefix: (t) => theme.fg("accent", t),
-            selectedText: (t) => theme.fg("accent", t),
-            description: (t) => theme.fg("muted", t),
-            scrollInfo: (t) => theme.fg("dim", t),
-            noMatch: (t) => theme.fg("warning", t),
+            selectedPrefix: (t) => theme.fg('accent', t),
+            selectedText: (t) => theme.fg('accent', t),
+            description: (t) => theme.fg('muted', t),
+            scrollInfo: (t) => theme.fg('dim', t),
+            noMatch: (t) => theme.fg('warning', t),
           },
         };
         const editor = new Editor(tui, editorTheme);
@@ -128,7 +136,7 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
             } // empty → stay in editor
 
             state.editMode = false;
-            editor.setText("");
+            editor.setText('');
 
             if (multi) {
               state.customEntry = custom;
@@ -139,7 +147,7 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
           } else if (state.noteMode) {
             state.noteText = value.trim();
             state.noteMode = false;
-            editor.setText("");
+            editor.setText('');
             refresh();
           }
         };
@@ -154,14 +162,14 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
         }
 
         /**
-				 * Move the highlight. When "Type something." becomes the
-				 * highlighted option it enters write mode; when it loses the
-				 * highlight the write mode closes and the field clears.
-				 */
+         * Move the highlight. When "Type something." becomes the
+         * highlighted option it enters write mode; when it loses the
+         * highlight the write mode closes and the field clears.
+         */
         function moveCursor(index: number) {
           state.optionIndex = index;
           state.editMode = displayOptions[index]?.isOther === true;
-          editor.setText("");
+          editor.setText('');
           refresh();
         }
 
@@ -202,7 +210,7 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
           if (state.noteMode) {
             if (matchesKey(data, Key.escape)) {
               state.noteMode = false;
-              editor.setText("");
+              editor.setText('');
               refresh();
             } else {
               editor.handleInput(data);
@@ -217,7 +225,7 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
               // exit write mode and move off "Type something." so it
               // does not immediately re-enter
               state.editMode = false;
-              editor.setText("");
+              editor.setText('');
               moveCursor(Math.max(0, state.optionIndex - 1));
 
               return;
@@ -230,7 +238,7 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
 
               // loses highlight → write mode closes, field clears
               state.editMode = false;
-              editor.setText("");
+              editor.setText('');
               moveCursor(next);
 
               return;
@@ -286,7 +294,7 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
             return;
           }
 
-          if (matchesKey(data, "n") && allowNote && !state.editMode) {
+          if (matchesKey(data, 'n') && allowNote && !state.editMode) {
             state.noteMode = true;
             editor.setText(state.noteText);
             refresh();
@@ -335,16 +343,16 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
             }
 
             const wrapped = wrapTextWithAnsi(text, renderWidth - prefixWidth);
-            const continuationPrefix = " ".repeat(prefixWidth);
+            const continuationPrefix = ' '.repeat(prefixWidth);
 
             for (let i = 0; i < wrapped.length; i++) {
               lines.push(`${i === 0 ? prefix : continuationPrefix}${wrapped[i]}`);
             }
           }
 
-          lines.push(theme.fg("accent", "─".repeat(renderWidth)));
-          addWrappedWithPrefix(" ", theme.fg("text", params.question));
-          lines.push("");
+          lines.push(theme.fg('accent', '─'.repeat(renderWidth)));
+          addWrappedWithPrefix(' ', theme.fg('text', params.question));
+          lines.push('');
 
           for (let i = 0; i < displayOptions.length; i++) {
             const opt = displayOptions[i];
@@ -356,72 +364,72 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
 
             if (multi) {
               const checked = state.multi.has(i);
-              const mark = checked ? "[x] " : "[ ] ";
+              const mark = checked ? '[x] ' : '[ ] ';
 
-              prefix = navigated ? theme.fg("accent", `> ${mark}`) : theme.fg("dim", `  ${mark}`);
-              color = checked ? "success" : navigated ? "accent" : "text";
+              prefix = navigated ? theme.fg('accent', `> ${mark}`) : theme.fg('dim', `  ${mark}`);
+              color = checked ? 'success' : navigated ? 'accent' : 'text';
             } else {
-              prefix = navigated ? theme.fg("accent", "> ") : "  ";
-              color = navigated ? "accent" : "text";
+              prefix = navigated ? theme.fg('accent', '> ') : '  ';
+              color = navigated ? 'accent' : 'text';
             }
 
-            const label = `${i + 1}. ${opt.label}${isOther && state.editMode ? " ✎" : ""}`;
+            const label = `${i + 1}. ${opt.label}${isOther && state.editMode ? ' ✎' : ''}`;
 
             addWrappedWithPrefix(prefix, theme.fg(color, label));
 
             if (opt.description) {
-              addWrappedWithPrefix("     ", theme.fg("muted", opt.description));
+              addWrappedWithPrefix('     ', theme.fg('muted', opt.description));
             }
           }
 
           // Custom answer entry (multi-select)
           if (multi && state.customEntry) {
-            lines.push("");
-            addWrappedWithPrefix(" ", theme.fg("success", "✎ ") + theme.fg("text", state.customEntry.label));
+            lines.push('');
+            addWrappedWithPrefix(' ', theme.fg('success', '✎ ') + theme.fg('text', state.customEntry.label));
           }
 
           // Armed note
           if (state.noteText) {
-            lines.push("");
-            addWrappedWithPrefix(" ", theme.fg("muted", `note: ${state.noteText} (attached to your answer)`));
+            lines.push('');
+            addWrappedWithPrefix(' ', theme.fg('muted', `note: ${state.noteText} (attached to your answer)`));
           }
 
           // Editors
           if (state.editMode) {
-            lines.push("");
-            addWrappedWithPrefix(" ", theme.fg("muted", "Your answer:"));
+            lines.push('');
+            addWrappedWithPrefix(' ', theme.fg('muted', 'Your answer:'));
 
             for (const line of editor.render(Math.max(1, renderWidth - 2))) {
               lines.push(` ${line}`);
             }
 
-            lines.push("");
-            addWrappedWithPrefix(" ", theme.fg("dim", "Enter to submit • ↑↓/Esc to leave"));
+            lines.push('');
+            addWrappedWithPrefix(' ', theme.fg('dim', 'Enter to submit • ↑↓/Esc to leave'));
           } else if (state.noteMode) {
-            lines.push("");
-            addWrappedWithPrefix(" ", theme.fg("muted", "Note (optional, attached to your answer):"));
+            lines.push('');
+            addWrappedWithPrefix(' ', theme.fg('muted', 'Note (optional, attached to your answer):'));
 
             for (const line of editor.render(Math.max(1, renderWidth - 2))) {
               lines.push(` ${line}`);
             }
 
-            lines.push("");
-            addWrappedWithPrefix(" ", theme.fg("dim", "Enter to arm note • Esc to skip"));
+            lines.push('');
+            addWrappedWithPrefix(' ', theme.fg('dim', 'Enter to arm note • Esc to skip'));
           } else {
-            lines.push("");
+            lines.push('');
 
             if (multi) {
-              const hint = "↑↓/1-9 move • Space toggle • Enter submit • n note • Esc clear/cancel";
+              const hint = '↑↓/1-9 move • Space toggle • Enter submit • n note • Esc clear/cancel';
 
-              addWrappedWithPrefix(" ", theme.fg("dim", hint));
+              addWrappedWithPrefix(' ', theme.fg('dim', hint));
             } else {
-              const hint = `↑↓/1-9 move • Enter confirm${allowNote ? " • n note" : ""} • Esc cancel`;
+              const hint = `↑↓/1-9 move • Enter confirm${allowNote ? ' • n note' : ''} • Esc cancel`;
 
-              addWrappedWithPrefix(" ", theme.fg("dim", hint));
+              addWrappedWithPrefix(' ', theme.fg('dim', hint));
             }
           }
 
-          lines.push(theme.fg("accent", "─".repeat(renderWidth)));
+          lines.push(theme.fg('accent', '─'.repeat(renderWidth)));
 
           cachedLines = lines;
 
@@ -440,32 +448,34 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
       const details: AskDetails = {
         question: params.question,
         options: options.map((o) => o.label),
-        answer: multi ? null : result.answers[0] ?? null,
+        answer: multi ? null : (result.answers[0] ?? null),
         selections: multi ? (result.answers.length > 0 ? result.answers : null) : null,
         canceled: result.canceled,
       };
 
       if (result.canceled || result.answers.length === 0) {
         return {
-          content: [{ type: "text", text: "User canceled the question" }],
+          content: [{ type: 'text', text: 'User canceled the question' }],
           details,
         };
       }
 
-      const text = multi ? `User selected: ${summarizeAnswers(result.answers)}` : `User answered: ${formatSelectionAnswer(result.answers[0])}`;
+      const text = multi
+        ? `User selected: ${summarizeAnswers(result.answers)}`
+        : `User answered: ${formatSelectionAnswer(result.answers[0])}`;
 
-      return { content: [{ type: "text", text }], details };
+      return { content: [{ type: 'text', text }], details };
     },
 
     renderCall(args, theme, _context) {
-      let text = theme.fg("toolTitle", theme.bold("ask ")) + theme.fg("muted", args.question);
+      let text = theme.fg('toolTitle', theme.bold('ask ')) + theme.fg('muted', args.question);
       const opts = Array.isArray(args.options) ? args.options : [];
 
       if (opts.length) {
         const labels = opts.map((o) => o.label);
         const numbered = [...labels, OTHER_LABEL].map((o, i) => `${i + 1}. ${o}`);
 
-        text += `\n${theme.fg("dim", `  Options: ${numbered.join(", ")}`)}`;
+        text += `\n${theme.fg('dim', `  Options: ${numbered.join(', ')}`)}`;
       }
 
       return new Text(text, 0, 0);
@@ -477,26 +487,26 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
       if (!details) {
         const text = result.content[0];
 
-        return new Text(text?.type === "text" ? text.text : "", 0, 0);
+        return new Text(text?.type === 'text' ? text.text : '', 0, 0);
       }
 
       if (details.canceled) {
-        return new Text(theme.fg("warning", "Canceled"), 0, 0);
+        return new Text(theme.fg('warning', 'Canceled'), 0, 0);
       }
 
       if (details.answer) {
         const label = formatSelectionAnswer(details.answer);
 
-        return new Text(theme.fg("success", "✓ ") + theme.fg("accent", label), 0, 0);
+        return new Text(theme.fg('success', '✓ ') + theme.fg('accent', label), 0, 0);
       }
 
       if (details.selections?.length) {
         const label = summarizeAnswers(details.selections);
 
-        return new Text(theme.fg("success", "✓ ") + theme.fg("accent", label), 0, 0);
+        return new Text(theme.fg('success', '✓ ') + theme.fg('accent', label), 0, 0);
       }
 
-      return new Text(theme.fg("warning", "No answer"), 0, 0);
+      return new Text(theme.fg('warning', 'No answer'), 0, 0);
     },
   };
 }

@@ -2,16 +2,16 @@
 
 export function resourceNameToToolName(name: string): string {
   let result = name
-    .replaceAll(/[^a-zA-Z0-9]/g, "_")
-    .replaceAll(/_+/g, "_")
-    .replace(/^_+/, "")  // Remove leading underscores
-    .replace(/_+$/, "")  // Remove trailing underscores
+    .replaceAll(/[^a-zA-Z0-9]/g, '_')
+    .replaceAll(/_+/g, '_')
+    .replace(/^_+/, '') // Remove leading underscores
+    .replace(/_+$/, '') // Remove trailing underscores
     .toLowerCase();
-  
+
   // Ensure we have a valid name
   if (!result || /^\d/.test(result)) {
-    result = "resource" + (result ? "_" + result : "");
+    result = 'resource' + (result ? '_' + result : '');
   }
-  
+
   return result;
 }

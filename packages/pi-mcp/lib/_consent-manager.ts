@@ -1,19 +1,19 @@
-import { ConsentError } from "./_errors.ts";
-import { logger } from "./_logger.ts";
+import { ConsentError } from './_errors.ts';
+import { logger } from './_logger.ts';
 
-export type ToolConsentMode = "never" | "once-per-server" | "always";
+export type ToolConsentMode = 'never' | 'once-per-server' | 'always';
 
 export class ConsentManager {
   private approvedServers = new Set<string>();
   private deniedServers = new Set<string>();
-  private log = logger.child({ component: "ConsentManager" });
+  private log = logger.child({ component: 'ConsentManager' });
 
-  constructor(private mode: ToolConsentMode = "once-per-server") {
-    this.log.debug("Initialized", { mode });
+  constructor(private mode: ToolConsentMode = 'once-per-server') {
+    this.log.debug('Initialized', { mode });
   }
 
   requiresPrompt(serverName: string): boolean {
-    if (this.mode === "never") {
+    if (this.mode === 'never') {
       return false;
     }
 
@@ -21,7 +21,7 @@ export class ConsentManager {
       return true;
     }
 
-    if (this.mode === "always") {
+    if (this.mode === 'always') {
       return true;
     }
 
@@ -29,7 +29,7 @@ export class ConsentManager {
   }
 
   shouldCacheConsent(): boolean {
-    return this.mode !== "always";
+    return this.mode !== 'always';
   }
 
   registerDecision(serverName: string, approved: boolean): void {
@@ -38,17 +38,17 @@ export class ConsentManager {
 
     if (approved) {
       this.approvedServers.add(serverName);
-      this.log.debug("Consent granted", { server: serverName });
+      this.log.debug('Consent granted', { server: serverName });
 
       return;
     }
 
     this.deniedServers.add(serverName);
-    this.log.debug("Consent denied", { server: serverName });
+    this.log.debug('Consent denied', { server: serverName });
   }
 
   ensureApproved(serverName: string): void {
-    if (this.mode === "never") {
+    if (this.mode === 'never') {
       return;
     }
 
@@ -60,7 +60,7 @@ export class ConsentManager {
       throw new ConsentError(serverName, { requiresApproval: true });
     }
 
-    if (this.mode === "always") {
+    if (this.mode === 'always') {
       this.approvedServers.delete(serverName);
     }
   }
@@ -69,13 +69,13 @@ export class ConsentManager {
     if (serverName) {
       this.approvedServers.delete(serverName);
       this.deniedServers.delete(serverName);
-      this.log.debug("Cleared consent for server", { server: serverName });
+      this.log.debug('Cleared consent for server', { server: serverName });
 
       return;
     }
 
     this.approvedServers.clear();
     this.deniedServers.clear();
-    this.log.debug("Cleared all consent records");
+    this.log.debug('Cleared all consent records');
   }
 }

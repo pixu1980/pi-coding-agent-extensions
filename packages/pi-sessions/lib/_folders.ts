@@ -2,7 +2,7 @@
  * pi-sessions - folder grouping (private module)
  */
 
-import type { SessionSummary, FolderSummary } from "./_types.ts";
+import type { SessionSummary, FolderSummary } from './_types.ts';
 
 /**
  * Group sessions by project directory (cwd).
@@ -12,7 +12,7 @@ export function groupSessionsByFolder(sessions: SessionSummary[]): FolderSummary
   const groups = new Map<string, SessionSummary[]>();
 
   for (const session of sessions) {
-    const folder = session.cwd || "unknown";
+    const folder = session.cwd || 'unknown';
     const existing = groups.get(folder);
 
     if (existing) {

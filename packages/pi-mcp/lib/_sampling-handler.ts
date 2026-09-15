@@ -1,9 +1,9 @@
-import { complete } from "@earendil-works/pi-ai/compat";
-import type { Api, AssistantMessage, Message, Model, TextContent } from "@earendil-works/pi-ai";
-import { truncateAtWord } from "./_utils.ts";
-import { throwIfAborted } from "./_abort.ts";
-import type { ExtensionUIContext, ModelRegistry } from "@earendil-works/pi-coding-agent";
-import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { complete } from '@earendil-works/pi-ai/compat';
+import type { Api, AssistantMessage, Message, Model, TextContent } from '@earendil-works/pi-ai';
+import { truncateAtWord } from './_utils.ts';
+import { throwIfAborted } from './_abort.ts';
+import type { ExtensionUIContext, ModelRegistry } from '@earendil-works/pi-coding-agent';
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import {
   CreateMessageRequestSchema,
   type CreateMessageRequest,
@@ -11,7 +11,7 @@ import {
   type ModelPreferences,
   type SamplingMessage,
   type SamplingMessageContentBlock,
-} from "@modelcontextprotocol/sdk/types.js";
+} from '@modelcontextprotocol/sdk/types.js';
 
 export interface SamplingHandlerOptions {
   serverName: string;
@@ -22,41 +22,41 @@ export interface SamplingHandlerOptions {
   getSignal: () => AbortSignal | undefined;
 }
 
-export type ServerSamplingConfig = Omit<SamplingHandlerOptions, "serverName">;
+export type ServerSamplingConfig = Omit<SamplingHandlerOptions, 'serverName'>;
 
 export function registerSamplingHandler(client: Client, options: SamplingHandlerOptions): void {
-  client.setRequestHandler(CreateMessageRequestSchema, request => {
+  client.setRequestHandler(CreateMessageRequestSchema, (request) => {
     return handleSamplingRequest(options, request);
   });
 }
 
 export async function handleSamplingRequest(
   options: SamplingHandlerOptions,
-  request: CreateMessageRequest,
+  request: CreateMessageRequest
 ): Promise<CreateMessageResult> {
   const params = request.params;
   const signal = options.getSignal();
 
   throwIfAborted(signal);
 
-  if ("task" in params && params.task) {
-    throw new Error("MCP sampling tasks are not supported");
+  if ('task' in params && params.task) {
+    throw new Error('MCP sampling tasks are not supported');
   }
 
-  if (params.includeContext && params.includeContext !== "none") {
-    throw new Error("MCP sampling context inclusion is not supported");
+  if (params.includeContext && params.includeContext !== 'none') {
+    throw new Error('MCP sampling context inclusion is not supported');
   }
 
   if (params.tools?.length) {
-    throw new Error("MCP sampling tool use is not supported");
+    throw new Error('MCP sampling tool use is not supported');
   }
 
   if (params.toolChoice) {
-    throw new Error("MCP sampling tool choice is not supported");
+    throw new Error('MCP sampling tool choice is not supported');
   }
 
   if (params.stopSequences?.length) {
-    throw new Error("MCP sampling stop sequences are not supported");
+    throw new Error('MCP sampling stop sequences are not supported');
   }
 
   const messages = params.messages.map(convertSamplingMessage);
@@ -65,8 +65,8 @@ export async function handleSamplingRequest(
   throwIfAborted(signal);
   await confirmSampling(
     options,
-    "Approve MCP sampling request",
-    formatRequestApproval(options.serverName, `${model.provider}/${model.id}`, params.systemPrompt, messages),
+    'Approve MCP sampling request',
+    formatRequestApproval(options.serverName, `${model.provider}/${model.id}`, params.systemPrompt, messages)
   );
   throwIfAborted(signal);
 
@@ -83,17 +83,13 @@ export async function handleSamplingRequest(
       temperature: params.temperature,
       metadata: params.metadata as Record<string, unknown> | undefined,
       signal,
-    },
+    }
   );
 
   const converted = convertAssistantResult(result);
 
   throwIfAborted(signal);
-  await confirmSampling(
-    options,
-    "Return MCP sampling response",
-    formatResponseApproval(options.serverName, converted),
-  );
+  await confirmSampling(options, 'Return MCP sampling response', formatResponseApproval(options.serverName, converted));
 
   return converted;
 }
@@ -102,9 +98,11 @@ function formatRequestApproval(
   serverName: string,
   modelName: string,
   systemPrompt: string | undefined,
-  messages: Message[],
+  messages: Message[]
 ): string {
-  const lines = [`${serverName} wants to sample ${messages.length} message${messages.length === 1 ? "" : "s"} with ${modelName}.`];
+  const lines = [
+    `${serverName} wants to sample ${messages.length} message${messages.length === 1 ? '' : 's'} with ${modelName}.`,
+  ];
 
   if (systemPrompt) {
     lines.push(`System: ${truncateAtWord(systemPrompt, 400)}`);
@@ -114,44 +112,46 @@ function formatRequestApproval(
     lines.push(`${index + 1}. ${message.role}: ${truncateAtWord(messageText(message), 400)}`);
   }
 
-  return lines.join("\n\n");
+  return lines.join('\n\n');
 }
 
 function formatResponseApproval(serverName: string, response: CreateMessageResult): string {
-  const text = response.content.type === "text" ? response.content.text : `[${response.content.type} content]`;
+  const text = response.content.type === 'text' ? response.content.text : `[${response.content.type} content]`;
 
   return `${serverName} will receive this response from ${response.model}:\n\n${truncateAtWord(text, 1000)}`;
 }
 
 function messageText(message: Message): string {
-  if (typeof message.content === "string") {
+  if (typeof message.content === 'string') {
     return message.content;
   }
 
-  return message.content.map((block) => {
-    if (block.type === "text") {
-      return block.text;
-    }
+  return message.content
+    .map((block) => {
+      if (block.type === 'text') {
+        return block.text;
+      }
 
-    if (block.type === "image") {
-      return `[image: ${block.mimeType}]`;
-    }
+      if (block.type === 'image') {
+        return `[image: ${block.mimeType}]`;
+      }
 
-    if (block.type === "thinking") {
-      return "[thinking]";
-    }
+      if (block.type === 'thinking') {
+        return '[thinking]';
+      }
 
-    if (block.type === "toolCall") {
-      return `[tool call: ${block.name}]`;
-    }
+      if (block.type === 'toolCall') {
+        return `[tool call: ${block.name}]`;
+      }
 
-    return "[content]";
-  }).join("\n");
+      return '[content]';
+    })
+    .join('\n');
 }
 
 async function resolveSamplingModel(
   options: SamplingHandlerOptions,
-  modelPreferences: ModelPreferences | undefined,
+  modelPreferences: ModelPreferences | undefined
 ): Promise<{
   model: Model<Api>;
   apiKey?: string;
@@ -204,10 +204,10 @@ async function resolveSamplingModel(
   }
 
   if (errors.length > 0) {
-    throw new Error(`No configured auth for MCP sampling model. ${errors.join("; ")}`);
+    throw new Error(`No configured auth for MCP sampling model. ${errors.join('; ')}`);
   }
 
-  throw new Error("No Pi model is available for MCP sampling");
+  throw new Error('No Pi model is available for MCP sampling');
 }
 
 function addSamplingCandidate(candidates: Model<Api>[], model: Model<Api>): void {
@@ -222,109 +222,111 @@ async function confirmSampling(options: SamplingHandlerOptions, title: string, m
   }
 
   if (!options.ui) {
-    throw new Error("MCP sampling requires interactive approval. Set settings.samplingAutoApprove to true to allow it without UI.");
+    throw new Error(
+      'MCP sampling requires interactive approval. Set settings.samplingAutoApprove to true to allow it without UI.'
+    );
   }
 
   const approved = await options.ui.confirm(title, message);
 
   if (!approved) {
-    throw new Error("MCP sampling request was declined");
+    throw new Error('MCP sampling request was declined');
   }
 }
 
 function convertSamplingMessage(message: SamplingMessage): Message {
   const blocks = Array.isArray(message.content) ? message.content : [message.content];
 
-  if (message.role === "user") {
+  if (message.role === 'user') {
     return {
-      role: "user",
+      role: 'user',
       content: blocks.map(convertUserContent),
       timestamp: Date.now(),
     };
   }
 
   return {
-    role: "assistant",
+    role: 'assistant',
     content: blocks.map(convertAssistantContent),
-    api: "mcp-sampling",
-    provider: "mcp",
-    model: "sampling-request",
+    api: 'mcp-sampling',
+    provider: 'mcp',
+    model: 'sampling-request',
     usage: zeroUsage(),
-    stopReason: "stop",
+    stopReason: 'stop',
     timestamp: Date.now(),
   };
 }
 
 function convertUserContent(block: SamplingMessageContentBlock): TextContent {
-  if (block.type === "text") {
-    return { type: "text", text: block.text };
+  if (block.type === 'text') {
+    return { type: 'text', text: block.text };
   }
 
   throw new Error(`MCP sampling ${block.type} content is not supported`);
 }
 
 function convertAssistantContent(block: SamplingMessageContentBlock): TextContent {
-  if (block.type === "text") {
-    return { type: "text", text: block.text };
+  if (block.type === 'text') {
+    return { type: 'text', text: block.text };
   }
 
   throw new Error(`MCP sampling assistant ${block.type} content is not supported`);
 }
 
 function convertAssistantResult(message: AssistantMessage): CreateMessageResult {
-  if (message.stopReason === "error") {
-    throw new Error(message.errorMessage ?? "MCP sampling model call failed");
+  if (message.stopReason === 'error') {
+    throw new Error(message.errorMessage ?? 'MCP sampling model call failed');
   }
 
-  if (message.stopReason === "aborted") {
-    throw new Error(message.errorMessage ?? "MCP sampling model call was aborted");
+  if (message.stopReason === 'aborted') {
+    throw new Error(message.errorMessage ?? 'MCP sampling model call was aborted');
   }
 
   const text = message.content
     .map((block) => {
-      if (block.type === "text") {
+      if (block.type === 'text') {
         return block.text;
       }
 
-      if (block.type === "thinking") {
+      if (block.type === 'thinking') {
         return undefined;
       }
 
       throw new Error(`MCP sampling result ${block.type} content is not supported`);
     })
     .filter((value): value is string => value !== undefined)
-    .join("\n\n")
+    .join('\n\n')
     .trim();
 
   if (!text) {
-    throw new Error("MCP sampling result did not contain text content");
+    throw new Error('MCP sampling result did not contain text content');
   }
 
   return {
-    role: "assistant",
-    content: { type: "text", text },
+    role: 'assistant',
+    content: { type: 'text', text },
     model: `${message.provider}/${message.model}`,
     stopReason: mapStopReason(message.stopReason),
   };
 }
 
-function mapStopReason(reason: AssistantMessage["stopReason"]): CreateMessageResult["stopReason"] {
-  if (reason === "stop") {
-    return "endTurn";
+function mapStopReason(reason: AssistantMessage['stopReason']): CreateMessageResult['stopReason'] {
+  if (reason === 'stop') {
+    return 'endTurn';
   }
 
-  if (reason === "length") {
-    return "maxTokens";
+  if (reason === 'length') {
+    return 'maxTokens';
   }
 
-  if (reason === "toolUse") {
-    return "toolUse";
+  if (reason === 'toolUse') {
+    return 'toolUse';
   }
 
   return reason;
 }
 
-function zeroUsage(): AssistantMessage["usage"] {
+function zeroUsage(): AssistantMessage['usage'] {
   return {
     input: 0,
     output: 0,

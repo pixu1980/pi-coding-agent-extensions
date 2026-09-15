@@ -11,7 +11,7 @@
  * provider; `@cursor/sdk`'s own `~/.cursor/sdk/auth.json` is never used.
  */
 
-import { CURSOR_API_KEY_ENV, CURSOR_API_KEY_PLACEHOLDER, CURSOR_PROVIDER_ID } from "./_types.ts";
+import { CURSOR_API_KEY_ENV, CURSOR_API_KEY_PLACEHOLDER, CURSOR_PROVIDER_ID } from './_types.ts';
 
 export type KeyEnv = Record<string, string | undefined>;
 
@@ -19,15 +19,15 @@ export type KeyEnv = Record<string, string | undefined>;
 function isPlaceholder(value: string): boolean {
   return (
     value === CURSOR_API_KEY_PLACEHOLDER ||
-		value === CURSOR_API_KEY_ENV ||
-		value === `$${CURSOR_API_KEY_ENV}` ||
-		value === `\${${CURSOR_API_KEY_ENV}}`
+    value === CURSOR_API_KEY_ENV ||
+    value === `$${CURSOR_API_KEY_ENV}` ||
+    value === `\${${CURSOR_API_KEY_ENV}}`
   );
 }
 
 /** Trim a candidate key, rejecting blanks and the registration sentinel. */
 export function normalizeApiKey(value: unknown): string | undefined {
-  if (typeof value !== "string") {
+  if (typeof value !== 'string') {
     return undefined;
   }
 
@@ -53,10 +53,10 @@ export function readEnvApiKey(env: KeyEnv = process.env): string | undefined {
  */
 export async function readStoredApiKey(authPath?: string): Promise<string | undefined> {
   try {
-    const { readStoredCredential } = await import("@earendil-works/pi-coding-agent");
+    const { readStoredCredential } = await import('@earendil-works/pi-coding-agent');
     const credential = readStoredCredential(CURSOR_PROVIDER_ID, authPath);
 
-    return credential?.type === "api_key" ? normalizeApiKey(credential.key) : undefined;
+    return credential?.type === 'api_key' ? normalizeApiKey(credential.key) : undefined;
   } catch {
     return undefined;
   }
@@ -102,19 +102,19 @@ export async function resolveCursorApiKey(options: ResolveApiKeyOptions = {}): P
  * Name of the source a key came from, for status output. Never returns the key.
  */
 export async function describeApiKeySource(
-  options: ResolveApiKeyOptions = {},
-): Promise<"request" | "environment" | "stored" | "none"> {
+  options: ResolveApiKeyOptions = {}
+): Promise<'request' | 'environment' | 'stored' | 'none'> {
   if (normalizeApiKey(options.explicit)) {
-    return "request";
+    return 'request';
   }
 
   if (readEnvApiKey(options.env ?? process.env)) {
-    return "environment";
+    return 'environment';
   }
 
   if (options.allowStored === false) {
-    return "none";
+    return 'none';
   }
 
-  return (await readStoredApiKey(options.authPath)) ? "stored" : "none";
+  return (await readStoredApiKey(options.authPath)) ? 'stored' : 'none';
 }

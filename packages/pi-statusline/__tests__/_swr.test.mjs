@@ -7,29 +7,29 @@
  * background refresh backfills the cache single-flight per cwd.
  */
 
-import test from "node:test";
-import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, basename } from "node:path";
-import { execSync } from "node:child_process";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, basename } from 'node:path';
+import { execSync } from 'node:child_process';
 
-import { getGitStatus, invalidateGitCache, flushGitRefreshes } from "../lib/_git.ts";
-import { getProjectPath, invalidateProjectPathCache, flushProjectPathRefreshes } from "../lib/_helpers.ts";
+import { getGitStatus, invalidateGitCache, flushGitRefreshes } from '../lib/_git.ts';
+import { getProjectPath, invalidateProjectPathCache, flushProjectPathRefreshes } from '../lib/_helpers.ts';
 
 function makeTempRepo() {
-  const dir = mkdtempSync(join(tmpdir(), "pi-statusline-swr-"));
+  const dir = mkdtempSync(join(tmpdir(), 'pi-statusline-swr-'));
 
-  execSync("git init -q -b main", { cwd: dir });
-  execSync("git config user.email test@example.com", { cwd: dir });
-  execSync("git config user.name Tester", { cwd: dir });
-  writeFileSync(join(dir, "file.txt"), "hello\n");
-  execSync("git add . && git commit -qm init", { cwd: dir });
+  execSync('git init -q -b main', { cwd: dir });
+  execSync('git config user.email test@example.com', { cwd: dir });
+  execSync('git config user.name Tester', { cwd: dir });
+  writeFileSync(join(dir, 'file.txt'), 'hello\n');
+  execSync('git add . && git commit -qm init', { cwd: dir });
 
   return dir;
 }
 
-test("git cold cache serves fallback synchronously and backfills async", async () => {
+test('git cold cache serves fallback synchronously and backfills async', async () => {
   const dir = makeTempRepo();
 
   invalidateGitCache(dir);
@@ -45,10 +45,10 @@ test("git cold cache serves fallback synchronously and backfills async", async (
   const warm = getGitStatus(dir);
 
   assert.equal(warm.hasGit, true);
-  assert.equal(warm.status?.branch, "main");
+  assert.equal(warm.status?.branch, 'main');
 });
 
-test("git stale entry is served while refresh updates it in background", async () => {
+test('git stale entry is served while refresh updates it in background', async () => {
   const dir = makeTempRepo();
 
   invalidateGitCache(dir);
@@ -60,7 +60,7 @@ test("git stale entry is served while refresh updates it in background", async (
 
   // Dirty the tree, then expire the entry by dropping it: the next call is
   // cold again, so it must serve the fallback, not block on git.
-  writeFileSync(join(dir, "file.txt"), "changed\n");
+  writeFileSync(join(dir, 'file.txt'), 'changed\n');
   invalidateGitCache(dir);
   const served = getGitStatus(dir);
 
@@ -74,31 +74,31 @@ test("git stale entry is served while refresh updates it in background", async (
   assert.equal(fresh.status?.dirty, 1);
 });
 
-test("project path cold cache serves basename and backfills async", async () => {
+test('project path cold cache serves basename and backfills async', async () => {
   const dir = makeTempRepo();
-  const sub = join(dir, "sub");
+  const sub = join(dir, 'sub');
 
   mkdirSync(sub);
   invalidateProjectPathCache(dir);
   invalidateProjectPathCache(sub);
 
   // Cold: synchronous basename fallback, zero spawns.
-  const cold = getProjectPath(sub, "git-relative");
+  const cold = getProjectPath(sub, 'git-relative');
 
   assert.equal(cold, basename(sub));
 
   await flushProjectPathRefreshes();
-  const warm = getProjectPath(sub, "git-relative");
+  const warm = getProjectPath(sub, 'git-relative');
 
   assert.equal(warm, `${basename(dir)}/sub`);
 });
 
-test("force=true keeps synchronous resolution", () => {
+test('force=true keeps synchronous resolution', () => {
   const dir = makeTempRepo();
 
   invalidateGitCache(dir);
   const result = getGitStatus(dir, true);
 
   assert.equal(result.hasGit, true);
-  assert.equal(result.status?.branch, "main");
+  assert.equal(result.status?.branch, 'main');
 });

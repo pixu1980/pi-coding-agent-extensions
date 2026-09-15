@@ -2,7 +2,7 @@
  * pi-sessions - internal constants (private module)
  */
 
-export const SESSION_DIR_NAME = "sessions";
+export const SESSION_DIR_NAME = 'sessions';
 export const MAX_NAME_LENGTH = 60;
 /** Match the centered /mcp panel width. */
 export const MODAL_WIDTH = 82;

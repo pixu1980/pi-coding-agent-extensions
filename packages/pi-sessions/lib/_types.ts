@@ -42,6 +42,6 @@ export interface FolderSummary {
 
 /** Type guard for a text content block in a message content array. */
 export interface TextContentBlock {
-  type: "text";
+  type: 'text';
   text: string;
 }

@@ -1,8 +1,8 @@
-import { isServerDisabled, type ServerDefinition } from "./_types.ts";
-import type { McpServerManager } from "./_server-manager.ts";
-import { hasPendingAuth } from "./_mcp-auth-flow.ts";
-import { logger } from "./_logger.ts";
-import { formatTerminalError, parallelLimit, sanitizeTerminalText } from "./_utils.ts";
+import { isServerDisabled, type ServerDefinition } from './_types.ts';
+import type { McpServerManager } from './_server-manager.ts';
+import { hasPendingAuth } from './_mcp-auth-flow.ts';
+import { logger } from './_logger.ts';
+import { formatTerminalError, parallelLimit, sanitizeTerminalText } from './_utils.ts';
 
 export type ReconnectCallback = (serverName: string) => void;
 export type ReconnectFailureCallback = (serverName: string, error: unknown) => void;
@@ -43,7 +43,7 @@ export class McpLifecycleManager {
   constructor(
     private readonly manager: McpServerManager,
     private readonly hasPendingAuthForServer = hasPendingAuth,
-    private readonly options: LifecycleOptions = {},
+    private readonly options: LifecycleOptions = {}
   ) {}
 
   private get opt(): Required<LifecycleOptions> {
@@ -92,8 +92,8 @@ export class McpLifecycleManager {
   }
 
   startHealthChecks(signalOrInterval?: AbortSignal | number, maybeIntervalMs = 30000): void {
-    const signal = typeof signalOrInterval === "number" ? undefined : signalOrInterval;
-    const intervalMs = typeof signalOrInterval === "number" ? signalOrInterval : maybeIntervalMs;
+    const signal = typeof signalOrInterval === 'number' ? undefined : signalOrInterval;
+    const intervalMs = typeof signalOrInterval === 'number' ? signalOrInterval : maybeIntervalMs;
 
     this.stopped = false;
     this.healthSignal = signal;
@@ -115,15 +115,15 @@ export class McpLifecycleManager {
       this.healthCheckInterval = undefined;
     };
 
-    signal?.addEventListener("abort", stop, { once: true });
-    this.removeHealthAbortListener = () => signal?.removeEventListener("abort", stop);
+    signal?.addEventListener('abort', stop, { once: true });
+    this.removeHealthAbortListener = () => signal?.removeEventListener('abort', stop);
     this.healthCheckInterval = setInterval(() => {
       if (this.stopped || signal?.aborted || this.activeHealthCheck) {
         return;
       }
 
       const check = this.checkConnections(signal)
-        .catch(error => {
+        .catch((error) => {
           console.error(`MCP: Health check failed: ${formatTerminalError(error)}`);
         })
         .finally(() => {
@@ -162,7 +162,7 @@ export class McpLifecycleManager {
 
       const connection = this.manager.getConnection(name);
 
-      return !connection || connection.status !== "connected";
+      return !connection || connection.status !== 'connected';
     });
 
     await parallelLimit(candidates, options.reconnectLimit, async ([name, definition]) => {
@@ -235,28 +235,29 @@ export class McpLifecycleManager {
     name: string,
     definition: ServerDefinition,
     signal: AbortSignal | undefined,
-    timeoutMs: number,
+    timeoutMs: number
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const controller = new AbortController();
       const onAbort = () => controller.abort();
 
-      signal?.addEventListener("abort", onAbort, { once: true });
+      signal?.addEventListener('abort', onAbort, { once: true });
       const timer = setTimeout(() => {
         controller.abort();
         reject(new Error(`MCP: reconnect to ${name} timed out after ${timeoutMs}ms`));
       }, timeoutMs);
 
       timer.unref();
-      this.manager.connect(name, definition, controller.signal)
+      this.manager
+        .connect(name, definition, controller.signal)
         .then(() => {
           clearTimeout(timer);
-          signal?.removeEventListener("abort", onAbort);
+          signal?.removeEventListener('abort', onAbort);
           resolve();
         })
         .catch((error) => {
           clearTimeout(timer);
-          signal?.removeEventListener("abort", onAbort);
+          signal?.removeEventListener('abort', onAbort);
           reject(error);
         });
     });
@@ -299,7 +300,7 @@ export class McpLifecycleManager {
     this.onReconnectFailure = undefined;
     this.onIdleShutdown = undefined;
 
-    if (typeof this.manager.closeAll === "function") {
+    if (typeof this.manager.closeAll === 'function') {
       await this.manager.closeAll();
     }
   }

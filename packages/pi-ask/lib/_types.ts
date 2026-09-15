@@ -7,50 +7,55 @@
  * which keeps this module unit-testable without a terminal.
  */
 
-import { Type } from "typebox";
+import { Type } from 'typebox';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
 
 export const OptionSchema = Type.Object({
   value: Type.Optional(
-    Type.String({ description: "Value returned to the model when selected (defaults to the label)" }),
+    Type.String({ description: 'Value returned to the model when selected (defaults to the label)' })
   ),
-  label: Type.String({ description: "Display label for the option" }),
-  description: Type.Optional(Type.String({ description: "Optional description shown below the label" })),
+  label: Type.String({ description: 'Display label for the option' }),
+  description: Type.Optional(Type.String({ description: 'Optional description shown below the label' })),
 });
 
 export const AskParams = Type.Object({
-  question: Type.String({ description: "The question to ask the user" }),
-  options: Type.Array(OptionSchema, { description: "Answer options", minItems: 1 }),
-  allowOther: Type.Optional(Type.Boolean({ description: "Allow a typed custom answer (default: true)" })),
-  multiSelect: Type.Optional(Type.Boolean({ description: "Allow multiple selections (default: false)" })),
-  allowNote: Type.Optional(Type.Boolean({ description: "Allow attaching a note to the answer (default: true)" })),
+  question: Type.String({ description: 'The question to ask the user' }),
+  options: Type.Array(OptionSchema, { description: 'Answer options', minItems: 1 }),
+  allowOther: Type.Optional(Type.Boolean({ description: 'Allow a typed custom answer (default: true)' })),
+  multiSelect: Type.Optional(Type.Boolean({ description: 'Allow multiple selections (default: false)' })),
+  allowNote: Type.Optional(Type.Boolean({ description: 'Allow attaching a note to the answer (default: true)' })),
 });
 
 export const QuestionSchema = Type.Object({
-  id: Type.String({ description: "Unique identifier for the question" }),
-  label: Type.Optional(Type.String({ description: "Short label for the tab bar (defaults to Q1, Q2, ...)" })),
-  prompt: Type.String({ description: "The full question text" }),
-  options: Type.Array(OptionSchema, { description: "Answer options", minItems: 1 }),
-  allowOther: Type.Optional(Type.Boolean({ description: "Allow a typed custom answer (default: true)" })),
-  multiSelect: Type.Optional(Type.Boolean({ description: "Allow multiple selections (default: false)" })),
-  allowNote: Type.Optional(Type.Boolean({ description: "Allow attaching a note to the answer (default: true)" })),
+  id: Type.String({ description: 'Unique identifier for the question' }),
+  label: Type.Optional(Type.String({ description: 'Short label for the tab bar (defaults to Q1, Q2, ...)' })),
+  prompt: Type.String({ description: 'The full question text' }),
+  options: Type.Array(OptionSchema, { description: 'Answer options', minItems: 1 }),
+  allowOther: Type.Optional(Type.Boolean({ description: 'Allow a typed custom answer (default: true)' })),
+  multiSelect: Type.Optional(Type.Boolean({ description: 'Allow multiple selections (default: false)' })),
+  allowNote: Type.Optional(Type.Boolean({ description: 'Allow attaching a note to the answer (default: true)' })),
 });
 
 export const WaveSchema = Type.Object({
   label: Type.Optional(Type.String({ description: "Optional wave label (e.g. 'Wave 1 - Baseline')" })),
-  questions: Type.Array(QuestionSchema, { description: "Questions in this wave", minItems: 1 }),
+  questions: Type.Array(QuestionSchema, { description: 'Questions in this wave', minItems: 1 }),
 });
 
 export const InterviewParams = Type.Object({
-  title: Type.Optional(Type.String({ description: "Optional interview title" })),
+  title: Type.Optional(Type.String({ description: 'Optional interview title' })),
   waves: Type.Optional(
     Type.Array(WaveSchema, {
-      description: "One or more waves of questions (e.g. baseline + follow-up). Each wave is a labeled group of questions.",
+      description:
+        'One or more waves of questions (e.g. baseline + follow-up). Each wave is a labeled group of questions.',
       minItems: 1,
-    }),
+    })
   ),
-  questions: Type.Optional(Type.Array(QuestionSchema, { description: "Flat questions (treated as a single wave). Shorthand for a one-wave interview." })),
+  questions: Type.Optional(
+    Type.Array(QuestionSchema, {
+      description: 'Flat questions (treated as a single wave). Shorthand for a one-wave interview.',
+    })
+  ),
 });
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -127,8 +132,8 @@ export interface InterviewDetails {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-export const OTHER_VALUE = "__other__";
-export const OTHER_LABEL = "Type something.";
+export const OTHER_VALUE = '__other__';
+export const OTHER_LABEL = 'Type something.';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -146,7 +151,7 @@ export function normalizeOptions(options: AskOption[]): NormalizedOption[] {
       continue;
     }
 
-    const value = (opt.value ?? "").trim() || label;
+    const value = (opt.value ?? '').trim() || label;
 
     if (!value) {
       continue;
@@ -179,7 +184,7 @@ export function normalizeQuestions(
     multiSelect?: boolean;
     allowNote?: boolean;
   }>,
-  startIndex = 1,
+  startIndex = 1
 ): NormalizedQuestion[] {
   return raw.map((q, i) => ({
     id: q.id,
@@ -200,8 +205,27 @@ export function normalizeQuestions(
  */
 export function normalizeInterview(params: {
   title?: string;
-  waves?: Array<{ label?: string; questions: Array<{ id: string; label?: string; prompt: string; options: AskOption[]; allowOther?: boolean; multiSelect?: boolean; allowNote?: boolean }> }>;
-  questions?: Array<{ id: string; label?: string; prompt: string; options: AskOption[]; allowOther?: boolean; multiSelect?: boolean; allowNote?: boolean }>;
+  waves?: Array<{
+    label?: string;
+    questions: Array<{
+      id: string;
+      label?: string;
+      prompt: string;
+      options: AskOption[];
+      allowOther?: boolean;
+      multiSelect?: boolean;
+      allowNote?: boolean;
+    }>;
+  }>;
+  questions?: Array<{
+    id: string;
+    label?: string;
+    prompt: string;
+    options: AskOption[];
+    allowOther?: boolean;
+    multiSelect?: boolean;
+    allowNote?: boolean;
+  }>;
 }): { title?: string; waves: NormalizedWave[] } {
   const waves: NormalizedWave[] = [];
 
@@ -242,14 +266,14 @@ export function buildDisplayOptions(q: NormalizedQuestion): DisplayOption[] {
  * an attached note is appended: "2. Frontend - note: ...".
  */
 export function formatSelectionAnswer(a: SelectAnswer): string {
-  const base = a.wasCustom ? `(wrote) ${a.label}` : `${a.index ?? "?"}. ${a.label}`;
+  const base = a.wasCustom ? `(wrote) ${a.label}` : `${a.index ?? '?'}. ${a.label}`;
 
   return a.note ? `${base} - note: ${a.note}` : base;
 }
 
 /** Join multiple answers with ", ". */
 export function summarizeAnswers(answers: SelectAnswer[]): string {
-  return answers.map(formatSelectionAnswer).join(", ");
+  return answers.map(formatSelectionAnswer).join(', ');
 }
 
 /** "Scope: 2. Frontend - note: ..." - one line of an interview result. */

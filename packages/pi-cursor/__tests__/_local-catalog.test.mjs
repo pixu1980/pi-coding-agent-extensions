@@ -8,8 +8,8 @@
  * SDK's documented override; this suite pins the shape we publish.
  */
 
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
 import {
   applyLocalModelCatalogEnv,
   buildLocalCatalogJson,
@@ -17,68 +17,73 @@ import {
   registerCatalog,
   resetModelCatalog,
   toSdkLocalCatalog,
-} from "../lib/_models.ts";
-import { CURSOR_LOCAL_CATALOG_ENV } from "../lib/_types.ts";
+} from '../lib/_models.ts';
+import { CURSOR_LOCAL_CATALOG_ENV } from '../lib/_types.ts';
 
 const CATALOG = [
-  { id: "grok-4.6", displayName: "Grok 4.6", aliases: ["grok"] },
-  { id: "default", displayName: "Auto" },
-  { id: "  ", displayName: "Blank" },
+  { id: 'grok-4.6', displayName: 'Grok 4.6', aliases: ['grok'] },
+  { id: 'default', displayName: 'Auto' },
+  { id: '  ', displayName: 'Blank' },
 ];
 
-describe("toSdkLocalCatalog", () => {
-  it("keeps canonical ids and aliases, and drops blank entries", () => {
-    assert.deepEqual(toSdkLocalCatalog(CATALOG), [{ id: "grok-4.6", aliases: ["grok"] }, { id: "default" }]);
+describe('toSdkLocalCatalog', () => {
+  it('keeps canonical ids and aliases, and drops blank entries', () => {
+    assert.deepEqual(toSdkLocalCatalog(CATALOG), [{ id: 'grok-4.6', aliases: ['grok'] }, { id: 'default' }]);
   });
 
-  it("does not carry display metadata the validator ignores", () => {
+  it('does not carry display metadata the validator ignores', () => {
     for (const entry of toSdkLocalCatalog(CATALOG)) {
-      assert.deepEqual(Object.keys(entry).sort(), Object.keys(entry).filter((key) => ["id", "aliases"].includes(key)).sort());
+      assert.deepEqual(
+        Object.keys(entry).sort(),
+        Object.keys(entry)
+          .filter((key) => ['id', 'aliases'].includes(key))
+          .sort()
+      );
     }
   });
 });
 
-describe("buildLocalCatalogJson", () => {
-  it("serializes the registered catalog", () => {
+describe('buildLocalCatalogJson', () => {
+  it('serializes the registered catalog', () => {
     registerCatalog(CATALOG);
-    assert.equal(
-      buildLocalCatalogJson(),
-      JSON.stringify([{ id: "grok-4.6", aliases: ["grok"] }, { id: "default" }]),
-    );
+    assert.equal(buildLocalCatalogJson(), JSON.stringify([{ id: 'grok-4.6', aliases: ['grok'] }, { id: 'default' }]));
   });
 
-  it("returns undefined when there is nothing to publish", () => {
+  it('returns undefined when there is nothing to publish', () => {
     resetModelCatalog();
     assert.equal(buildLocalCatalogJson(), undefined);
   });
 });
 
-describe("applyLocalModelCatalogEnv", () => {
+describe('applyLocalModelCatalogEnv', () => {
   it("publishes the catalog the SDK's local validator reads", () => {
     const env = {};
 
     assert.equal(applyLocalModelCatalogEnv({ env, items: FALLBACK_CURSOR_MODELS }), true);
     const parsed = JSON.parse(env[CURSOR_LOCAL_CATALOG_ENV]);
 
-    assert.ok(parsed.some((entry) => entry.id === "default"), "Auto must be selectable");
+    assert.ok(
+      parsed.some((entry) => entry.id === 'default'),
+      'Auto must be selectable'
+    );
   });
 
-  it("never overwrites a value the user set", () => {
+  it('never overwrites a value the user set', () => {
     const env = { [CURSOR_LOCAL_CATALOG_ENV]: '[{"id":"custom"}]' };
 
     assert.equal(applyLocalModelCatalogEnv({ env, items: FALLBACK_CURSOR_MODELS }), false);
     assert.equal(env[CURSOR_LOCAL_CATALOG_ENV], '[{"id":"custom"}]');
   });
 
-  it("refreshes its own previous value", () => {
+  it('refreshes its own previous value', () => {
     const env = {};
 
-    applyLocalModelCatalogEnv({ env, items: [{ id: "one", displayName: "One" }] });
-    applyLocalModelCatalogEnv({ env, items: [{ id: "two", displayName: "Two" }] });
-    assert.deepEqual(JSON.parse(env[CURSOR_LOCAL_CATALOG_ENV]), [{ id: "two" }]);
+    applyLocalModelCatalogEnv({ env, items: [{ id: 'one', displayName: 'One' }] });
+    applyLocalModelCatalogEnv({ env, items: [{ id: 'two', displayName: 'Two' }] });
+    assert.deepEqual(JSON.parse(env[CURSOR_LOCAL_CATALOG_ENV]), [{ id: 'two' }]);
   });
 
-  it("refuses to publish an empty catalog", () => {
+  it('refuses to publish an empty catalog', () => {
     const env = {};
 
     assert.equal(applyLocalModelCatalogEnv({ env, items: [] }), false);
@@ -86,10 +91,10 @@ describe("applyLocalModelCatalogEnv", () => {
   });
 });
 
-describe("fallback catalog", () => {
-  it("includes Auto, the only model a Free plan can run", () => {
-    const auto = FALLBACK_CURSOR_MODELS.find((item) => item.id === "default");
+describe('fallback catalog', () => {
+  it('includes Auto, the only model a Free plan can run', () => {
+    const auto = FALLBACK_CURSOR_MODELS.find((item) => item.id === 'default');
 
-    assert.equal(auto?.displayName, "Auto");
+    assert.equal(auto?.displayName, 'Auto');
   });
 });

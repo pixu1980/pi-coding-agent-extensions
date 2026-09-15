@@ -20,12 +20,12 @@
 //     many things other than "your session is gone"
 //   - treat generic -32000/ConnectionClosed errors as session expiry
 //   - treat AbortError/cancellation as a session failure
-import { StreamableHTTPError } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
-import { logger } from "./_logger.ts";
-import { throwIfAborted } from "./_abort.ts";
-import { isServerDisabled, type McpConfig } from "./_types.ts";
-import type { McpServerManager, ServerConnection } from "./_server-manager.ts";
+import { StreamableHTTPError } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { logger } from './_logger.ts';
+import { throwIfAborted } from './_abort.ts';
+import { isServerDisabled, type McpConfig } from './_types.ts';
+import type { McpServerManager, ServerConnection } from './_server-manager.ts';
 
 /**
  * True when `err` is a stale Streamable HTTP session signal for a request
@@ -49,15 +49,19 @@ export function isTerminatedSession(err: unknown, hadSessionId: boolean): boolea
   }
 
   if (err instanceof StreamableHTTPError) {
-    return err.code === 404
-      || (err.code === 400
-        && /"code"\s*:\s*-32000/.test(err.message)
-        && /"message"\s*:\s*"Bad Request: Server not initialized"/.test(err.message));
+    return (
+      err.code === 404 ||
+      (err.code === 400 &&
+        /"code"\s*:\s*-32000/.test(err.message) &&
+        /"message"\s*:\s*"Bad Request: Server not initialized"/.test(err.message))
+    );
   }
 
-  return err instanceof McpError
-    && err.code === ErrorCode.ConnectionClosed
-    && SERVER_NOT_INITIALIZED_MCP_MESSAGES.has(err.message);
+  return (
+    err instanceof McpError &&
+    err.code === ErrorCode.ConnectionClosed &&
+    SERVER_NOT_INITIALIZED_MCP_MESSAGES.has(err.message)
+  );
 }
 
 function hasSessionId(connection: ServerConnection): boolean {
@@ -70,9 +74,12 @@ function hasSessionId(connection: ServerConnection): boolean {
 }
 
 export class SessionRecoveryAuthRequiredError extends Error {
-  constructor(readonly serverName: string, readonly authMessage?: string) {
+  constructor(
+    readonly serverName: string,
+    readonly authMessage?: string
+  ) {
     super(authMessage ?? `MCP server "${serverName}" requires OAuth authentication after reconnect.`);
-    this.name = "SessionRecoveryAuthRequiredError";
+    this.name = 'SessionRecoveryAuthRequiredError';
   }
 }
 
@@ -97,7 +104,7 @@ export interface SessionRecoveryDeps {
 export async function withSessionRecovery<T>(
   deps: SessionRecoveryDeps,
   serverName: string,
-  fn: (conn: ServerConnection) => Promise<T>,
+  fn: (conn: ServerConnection) => Promise<T>
 ): Promise<T> {
   if (isServerDisabled(deps.config.mcpServers[serverName])) {
     throw new Error(`MCP server "${serverName}" is disabled`);
@@ -138,16 +145,16 @@ export async function withSessionRecovery<T>(
 
     throwIfAborted(deps.signal);
 
-    if (freshConnection.status === "needs-auth") {
-      freshConnection = await deps.onNeedsAuth?.(serverName) ?? freshConnection;
+    if (freshConnection.status === 'needs-auth') {
+      freshConnection = (await deps.onNeedsAuth?.(serverName)) ?? freshConnection;
       throwIfAborted(deps.signal);
     }
 
-    if (freshConnection.status === "needs-auth") {
+    if (freshConnection.status === 'needs-auth') {
       throw new SessionRecoveryAuthRequiredError(serverName);
     }
 
-    if (freshConnection.status !== "connected") {
+    if (freshConnection.status !== 'connected') {
       throw err;
     }
 

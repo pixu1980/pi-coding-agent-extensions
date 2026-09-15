@@ -1,8 +1,8 @@
-import { randomBytes } from "node:crypto";
-import { mkdtemp, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import type { ContentBlock, McpSettings } from "./_types.ts";
+import { randomBytes } from 'node:crypto';
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import type { ContentBlock, McpSettings } from './_types.ts';
 
 export const DEFAULT_MCP_OUTPUT_MAX_BYTES = 50 * 1024;
 export const DEFAULT_MCP_OUTPUT_MAX_LINES = 2000;
@@ -63,12 +63,14 @@ export interface GuardedMcpOutput {
   mcpResult?: unknown;
 }
 
-export function resolveMcpOutputGuardOptions(settings?: McpSettings): Pick<McpOutputGuardOptions, "enabled" | "maxBytes" | "maxLines" | "detailsMaxBytes"> {
+export function resolveMcpOutputGuardOptions(
+  settings?: McpSettings
+): Pick<McpOutputGuardOptions, 'enabled' | 'maxBytes' | 'maxLines' | 'detailsMaxBytes'> {
   const configured = settings?.outputGuard;
-  const tuning = typeof configured === "object" && configured !== null ? configured : undefined;
+  const tuning = typeof configured === 'object' && configured !== null ? configured : undefined;
 
   return {
-    enabled: envKillSwitch("MCP_OUTPUT_GUARD") ?? configured !== false,
+    enabled: envKillSwitch('MCP_OUTPUT_GUARD') ?? configured !== false,
     maxBytes: positiveInt(tuning?.maxBytes) ?? DEFAULT_MCP_OUTPUT_MAX_BYTES,
     maxLines: positiveInt(tuning?.maxLines) ?? DEFAULT_MCP_OUTPUT_MAX_LINES,
     detailsMaxBytes: positiveInt(tuning?.detailsMaxBytes) ?? DEFAULT_MCP_DETAILS_MAX_BYTES,
@@ -90,19 +92,19 @@ export function guardedMcpDetails(guarded: GuardedMcpOutput): Record<string, unk
  */
 export async function guardMcpOutput(
   content: ContentBlock[],
-  options: McpOutputGuardOptions = {},
+  options: McpOutputGuardOptions = {}
 ): Promise<GuardedMcpOutput> {
   const maxBytes = options.maxBytes ?? DEFAULT_MCP_OUTPUT_MAX_BYTES;
   const maxLines = options.maxLines ?? DEFAULT_MCP_OUTPUT_MAX_LINES;
   const detailsMaxBytes = options.detailsMaxBytes ?? DEFAULT_MCP_DETAILS_MAX_BYTES;
-  const prefix = options.prefix ?? "";
-  const suffix = options.suffix ?? "";
+  const prefix = options.prefix ?? '';
+  const suffix = options.suffix ?? '';
 
   const normalizedContent = withEmptyTextFallback(
     content.length > 0
       ? sanitizeContent(content)
-      : [{ type: "text" as const, text: options.emptyTextFallback ?? "(empty result)" }],
-    options.emptyTextFallback,
+      : [{ type: 'text' as const, text: options.emptyTextFallback ?? '(empty result)' }],
+    options.emptyTextFallback
   );
 
   if (options.enabled === false) {
@@ -112,11 +114,11 @@ export async function guardMcpOutput(
     };
   }
 
-  const imageBlocks = normalizedContent.filter((block) => block.type === "image");
+  const imageBlocks = normalizedContent.filter((block) => block.type === 'image');
   const textOutput = normalizedContent
-    .filter((block) => block.type === "text")
+    .filter((block) => block.type === 'text')
     .map((block) => (block as { text: string }).text)
-    .join("\n");
+    .join('\n');
   const composedOutput = `${prefix}${textOutput}${suffix}`;
   const stats = textStats(composedOutput);
 
@@ -124,14 +126,14 @@ export async function guardMcpOutput(
   let outputGuard: McpOutputGuardDetails | undefined;
 
   if (stats.bytes > maxBytes || stats.lines > maxLines) {
-    const { path: fullOutputPath, error: writeError } = await saveArtifact("output", composedOutput);
+    const { path: fullOutputPath, error: writeError } = await saveArtifact('output', composedOutput);
     const notice = formatTruncationNotice(stats, fullOutputPath, writeError);
     const previewBudget = reserveBudget(maxBytes, maxLines, notice);
     const preview = truncateHead(composedOutput, previewBudget.maxBytes, previewBudget.maxLines);
     const finalText = `${preview.content}\n\n${notice}`;
     const finalStats = textStats(finalText);
 
-    guardedContent = [{ type: "text" as const, text: finalText }, ...imageBlocks];
+    guardedContent = [{ type: 'text' as const, text: finalText }, ...imageBlocks];
     outputGuard = {
       truncated: true,
       originalBytes: stats.bytes,
@@ -144,22 +146,20 @@ export async function guardMcpOutput(
     };
   }
 
-  const mcpResult = options.rawMcpResult === undefined
-    ? undefined
-    : await boundMcpResult(options.rawMcpResult, detailsMaxBytes);
+  const mcpResult =
+    options.rawMcpResult === undefined ? undefined : await boundMcpResult(options.rawMcpResult, detailsMaxBytes);
 
   return { content: guardedContent, outputGuard, mcpResult };
 }
 
 function sanitizeContent(content: ContentBlock[]): ContentBlock[] {
   return content.map((block) => {
-    if (block.type !== "image") {
+    if (block.type !== 'image') {
       return block;
     }
 
-    const mimeType = typeof block.mimeType === "string" && block.mimeType.trim()
-      ? block.mimeType.trim().slice(0, 100)
-      : "image/png";
+    const mimeType =
+      typeof block.mimeType === 'string' && block.mimeType.trim() ? block.mimeType.trim().slice(0, 100) : 'image/png';
 
     return { ...block, mimeType };
   });
@@ -171,15 +171,15 @@ function withEmptyTextFallback(content: ContentBlock[], fallback: string | undef
   }
 
   const textOutput = content
-    .filter((block) => block.type === "text")
+    .filter((block) => block.type === 'text')
     .map((block) => (block as { text: string }).text)
-    .join("\n");
+    .join('\n');
 
   if (textOutput) {
     return content;
   }
 
-  return [{ type: "text", text: fallback }, ...content.filter((block) => block.type === "image")];
+  return [{ type: 'text', text: fallback }, ...content.filter((block) => block.type === 'image')];
 }
 
 function addAffixes(content: ContentBlock[], prefix: string, suffix: string): ContentBlock[] {
@@ -190,13 +190,13 @@ function addAffixes(content: ContentBlock[], prefix: string, suffix: string): Co
   const next: ContentBlock[] = [...content];
 
   if (prefix) {
-    const index = next.findIndex((block) => block.type === "text");
+    const index = next.findIndex((block) => block.type === 'text');
     const block = next[index];
 
-    if (index >= 0 && block.type === "text") {
+    if (index >= 0 && block.type === 'text') {
       next[index] = { ...block, text: `${prefix}${block.text}` };
     } else {
-      next.unshift({ type: "text", text: prefix });
+      next.unshift({ type: 'text', text: prefix });
     }
   }
 
@@ -204,7 +204,7 @@ function addAffixes(content: ContentBlock[], prefix: string, suffix: string): Co
     let index = -1;
 
     for (let i = next.length - 1; i >= 0; i--) {
-      if (next[i].type === "text") {
+      if (next[i].type === 'text') {
         index = i;
         break;
       }
@@ -212,10 +212,10 @@ function addAffixes(content: ContentBlock[], prefix: string, suffix: string): Co
 
     const block = next[index];
 
-    if (index >= 0 && block.type === "text") {
+    if (index >= 0 && block.type === 'text') {
       next[index] = { ...block, text: `${block.text}${suffix}` };
     } else {
-      next.push({ type: "text", text: suffix });
+      next.push({ type: 'text', text: suffix });
     }
   }
 
@@ -231,8 +231,12 @@ function reserveBudget(maxBytes: number, maxLines: number, notice: string): { ma
   };
 }
 
-function truncateHead(text: string, maxBytes: number, maxLines: number): { content: string; bytes: number; lines: number } {
-  const lines = text.split("\n");
+function truncateHead(
+  text: string,
+  maxBytes: number,
+  maxLines: number
+): { content: string; bytes: number; lines: number } {
+  const lines = text.split('\n');
   const output: string[] = [];
   let bytes = 0;
 
@@ -258,7 +262,7 @@ function truncateHead(text: string, maxBytes: number, maxLines: number): { conte
     bytes += separatorBytes + lineBytes;
   }
 
-  const content = output.join("\n");
+  const content = output.join('\n');
   const stats = textStats(content);
 
   return { content, bytes: stats.bytes, lines: stats.lines };
@@ -269,20 +273,20 @@ function truncateStringToBytes(value: string, maxBytes: number): string {
     return value;
   }
 
-  const buffer = Buffer.from(value, "utf8");
+  const buffer = Buffer.from(value, 'utf8');
   let end = Math.max(0, maxBytes);
 
   while (end > 0 && (buffer[end] & 0xc0) === 0x80) {
     end--;
   }
 
-  return buffer.subarray(0, end).toString("utf8");
+  return buffer.subarray(0, end).toString('utf8');
 }
 
 function formatTruncationNotice(
   stats: { bytes: number; lines: number },
   fullOutputPath: string | undefined,
-  writeError: string | undefined,
+  writeError: string | undefined
 ): string {
   const base = `[MCP text output truncated: original ${stats.lines.toLocaleString()} lines / ${formatSize(stats.bytes)}.`;
 
@@ -290,7 +294,7 @@ function formatTruncationNotice(
     return `${base} Full text saved to: ${fullOutputPath} - use read with offset/limit or grep to inspect.]`;
   }
 
-  return `${base} Full output could not be saved: ${writeError ?? "unknown error"}]`;
+  return `${base} Full output could not be saved: ${writeError ?? 'unknown error'}]`;
 }
 
 /**
@@ -310,13 +314,14 @@ async function boundMcpResult(result: unknown, detailsMaxBytes: number): Promise
 }
 
 async function summarizeMcpResult(result: unknown, raw: string, rawBytes: number): Promise<McpResultSummary> {
-  const { path: fullResultPath, error: resultWriteError } = await saveArtifact("mcp-result", raw);
+  const { path: fullResultPath, error: resultWriteError } = await saveArtifact('mcp-result', raw);
 
   const record = asRecord(result);
   const content = Array.isArray(record?.content) ? record.content : [];
   const summary: McpResultSummary = {
     omitted: true,
-    reason: "Raw MCP result exceeded the details size limit and was replaced with this summary to keep session context bounded.",
+    reason:
+      'Raw MCP result exceeded the details size limit and was replaced with this summary to keep session context bounded.',
     isError: record?.isError === true,
     contentBlocks: content.length,
     contentSummary: summarizeContent(content),
@@ -325,20 +330,25 @@ async function summarizeMcpResult(result: unknown, raw: string, rawBytes: number
     resultWriteError,
   };
 
-  if (record && "structuredContent" in record) {
+  if (record && 'structuredContent' in record) {
     summary.structuredContent = summarizeValue(record.structuredContent);
   }
 
-  if (record && "_meta" in record) {
+  if (record && '_meta' in record) {
     summary.meta = summarizeValue(record._meta);
   }
 
   if (record) {
-    const standard = new Set(["content", "isError", "structuredContent", "_meta"]);
+    const standard = new Set(['content', 'isError', 'structuredContent', '_meta']);
     const extraFields = Object.keys(record)
       .filter((key) => !standard.has(key))
       .slice(0, KEY_PREVIEW_LIMIT)
-      .map((key) => ({ key: truncateKey(key), type: typeof record[key], estimatedBytes: estimateValueBytes(record[key]), omitted: true }));
+      .map((key) => ({
+        key: truncateKey(key),
+        type: typeof record[key],
+        estimatedBytes: estimateValueBytes(record[key]),
+        omitted: true,
+      }));
 
     if (extraFields.length > 0) {
       summary.extraFields = extraFields;
@@ -356,23 +366,32 @@ function summarizeContent(content: unknown[]): Array<Record<string, unknown>> {
       return { type: typeof block, omitted: true };
     }
 
-    if (record.type === "text") {
-      const text = typeof record.text === "string" ? record.text : "";
+    if (record.type === 'text') {
+      const text = typeof record.text === 'string' ? record.text : '';
 
-      return { type: "text", bytes: byteLength(text), lines: textStats(text).lines, textOmitted: true };
+      return { type: 'text', bytes: byteLength(text), lines: textStats(text).lines, textOmitted: true };
     }
 
-    if (record.type === "image") {
-      const data = typeof record.data === "string" ? record.data : "";
+    if (record.type === 'image') {
+      const data = typeof record.data === 'string' ? record.data : '';
 
-      return { type: "image", mimeType: typeof record.mimeType === "string" ? record.mimeType : undefined, dataBytes: byteLength(data), dataOmitted: true };
+      return {
+        type: 'image',
+        mimeType: typeof record.mimeType === 'string' ? record.mimeType : undefined,
+        dataBytes: byteLength(data),
+        dataOmitted: true,
+      };
     }
 
-    return { type: typeof record.type === "string" ? record.type : "unknown", estimatedBytes: estimateValueBytes(record), omitted: true };
+    return {
+      type: typeof record.type === 'string' ? record.type : 'unknown',
+      estimatedBytes: estimateValueBytes(record),
+      omitted: true,
+    };
   });
 
   if (content.length > CONTENT_SUMMARY_LIMIT) {
-    summaries.push({ type: "omitted", count: content.length - CONTENT_SUMMARY_LIMIT });
+    summaries.push({ type: 'omitted', count: content.length - CONTENT_SUMMARY_LIMIT });
   }
 
   return summaries;
@@ -382,13 +401,13 @@ function summarizeValue(value: unknown): Record<string, unknown> {
   const record = asRecord(value);
 
   if (!record) {
-    return { type: value === null ? "null" : typeof value, estimatedBytes: estimateValueBytes(value), omitted: true };
+    return { type: value === null ? 'null' : typeof value, estimatedBytes: estimateValueBytes(value), omitted: true };
   }
 
   const keys = Object.keys(record);
 
   return {
-    type: Array.isArray(value) ? "array" : "object",
+    type: Array.isArray(value) ? 'array' : 'object',
     estimatedBytes: estimateValueBytes(value),
     keyCount: keys.length,
     keysPreview: keys.slice(0, KEY_PREVIEW_LIMIT).map(truncateKey),
@@ -401,11 +420,11 @@ function estimateValueBytes(value: unknown, depth = 0): number {
     return 0;
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     return byteLength(value);
   }
 
-  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return byteLength(String(value));
   }
 
@@ -415,7 +434,9 @@ function estimateValueBytes(value: unknown, depth = 0): number {
     return 0;
   }
 
-  const values = Array.isArray(value) ? value.slice(0, KEY_PREVIEW_LIMIT) : Object.values(record).slice(0, KEY_PREVIEW_LIMIT);
+  const values = Array.isArray(value)
+    ? value.slice(0, KEY_PREVIEW_LIMIT)
+    : Object.values(record).slice(0, KEY_PREVIEW_LIMIT);
 
   return values.reduce((total, item) => total + estimateValueBytes(item, depth + 1), 0);
 }
@@ -426,10 +447,10 @@ function truncateKey(key: string): string {
 
 async function saveArtifact(kind: string, text: string): Promise<{ path?: string; error?: string }> {
   try {
-    const dir = await mkdtemp(join(tmpdir(), "pi-mcp-output-"));
-    const path = join(dir, `${kind}-${randomBytes(4).toString("hex")}.txt`);
+    const dir = await mkdtemp(join(tmpdir(), 'pi-mcp-output-'));
+    const path = join(dir, `${kind}-${randomBytes(4).toString('hex')}.txt`);
 
-    await writeFile(path, text, { encoding: "utf8", mode: 0o600 });
+    await writeFile(path, text, { encoding: 'utf8', mode: 0o600 });
 
     return { path };
   } catch (error) {
@@ -438,7 +459,7 @@ async function saveArtifact(kind: string, text: string): Promise<{ path?: string
 }
 
 function asRecord(value: unknown): Recordish | undefined {
-  return typeof value === "object" && value !== null ? value as Recordish : undefined;
+  return typeof value === 'object' && value !== null ? (value as Recordish) : undefined;
 }
 
 function safeStringify(value: unknown): string {
@@ -451,15 +472,15 @@ function safeStringify(value: unknown): string {
 }
 
 function textStats(text: string): { bytes: number; lines: number } {
-  return { bytes: byteLength(text), lines: text.length === 0 ? 0 : text.split("\n").length };
+  return { bytes: byteLength(text), lines: text.length === 0 ? 0 : text.split('\n').length };
 }
 
 function byteLength(text: string): number {
-  return Buffer.byteLength(text, "utf8");
+  return Buffer.byteLength(text, 'utf8');
 }
 
 function positiveInt(value: unknown): number | undefined {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
     return undefined;
   }
 
@@ -475,11 +496,11 @@ function envKillSwitch(name: string): boolean | undefined {
     return undefined;
   }
 
-  if (["0", "false", "no", "off"].includes(value)) {
+  if (['0', 'false', 'no', 'off'].includes(value)) {
     return false;
   }
 
-  if (["1", "true", "yes", "on"].includes(value)) {
+  if (['1', 'true', 'yes', 'on'].includes(value)) {
     return true;
   }
 

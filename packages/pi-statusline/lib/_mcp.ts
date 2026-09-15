@@ -5,9 +5,9 @@
  * with a short TTL cache.
  */
 
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { getAgentDir } from '@earendil-works/pi-coding-agent';
 
 export interface McpInfo {
   total: number;
@@ -41,26 +41,28 @@ export function getMcpInfo(): McpInfo {
   mcpCacheStats.misses++;
 
   const agentDir = getAgentDir();
-  const mcpConfigPath = path.join(agentDir, "mcp.json");
-  const mcpCachePath = path.join(agentDir, "mcp-cache.json");
+  const mcpConfigPath = path.join(agentDir, 'mcp.json');
+  const mcpCachePath = path.join(agentDir, 'mcp-cache.json');
 
   let total = 0;
   let connected = 0;
 
   try {
-    const config = JSON.parse(fs.readFileSync(mcpConfigPath, "utf-8"));
+    const config = JSON.parse(fs.readFileSync(mcpConfigPath, 'utf-8'));
 
     total = Object.keys(config.mcpServers || {}).length;
-  } catch { /* mcp.json not found */ }
+  } catch {
+    /* mcp.json not found */
+  }
 
   try {
-    const cache = JSON.parse(fs.readFileSync(mcpCachePath, "utf-8"));
+    const cache = JSON.parse(fs.readFileSync(mcpCachePath, 'utf-8'));
     const servers: Record<string, any> = cache.servers || {};
 
-    connected = Object.values(servers).filter(
-      (s) => Array.isArray(s.tools) && s.tools.length > 0,
-    ).length;
-  } catch { /* cache not found */ }
+    connected = Object.values(servers).filter((s) => Array.isArray(s.tools) && s.tools.length > 0).length;
+  } catch {
+    /* cache not found */
+  }
 
   const data = { total, connected };
 

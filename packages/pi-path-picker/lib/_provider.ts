@@ -32,8 +32,8 @@
  * presses can never fire there.
  */
 
-import { dirname, basename } from "node:path";
-import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from "@earendil-works/pi-tui";
+import { dirname, basename } from 'node:path';
+import type { AutocompleteItem, AutocompleteProvider, AutocompleteSuggestions } from '@earendil-works/pi-tui';
 import {
   findQuoteRegion,
   extractPathToken,
@@ -41,7 +41,7 @@ import {
   listPathItems,
   joinPath,
   type QuoteRegion,
-} from "./_helpers.ts";
+} from './_helpers.ts';
 
 /** Text of the quote region that touches the cursor. */
 function regionText(line: string, region: QuoteRegion, col: number): string {
@@ -80,10 +80,7 @@ function tokenRange(line: string, col: number): { token: string; start: number; 
  * Create an autocomplete provider for file paths.
  * Wraps the built-in provider and adds ~ expansion and path-aware completion.
  */
-export function createPathAutocompleteProvider(
-  current: AutocompleteProvider,
-  cwd: string,
-): AutocompleteProvider {
+export function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: string): AutocompleteProvider {
   return {
     // Non aggiunge trigger characters: preserva esclusivamente quelli nativi.
     // Il path picker viene attivato solo da Tab, dentro una regione quotata,
@@ -94,9 +91,9 @@ export function createPathAutocompleteProvider(
       lines: string[],
       cursorLine: number,
       cursorCol: number,
-      options: { signal: AbortSignal; force?: boolean },
+      options: { signal: AbortSignal; force?: boolean }
     ): Promise<AutocompleteSuggestions | null> {
-      const currentLine = lines[cursorLine] ?? "";
+      const currentLine = lines[cursorLine] ?? '';
       const region = findQuoteRegion(currentLine, cursorCol);
 
       // With no quoted region under the cursor the wrapper stays transparent.
@@ -120,7 +117,7 @@ export function createPathAutocompleteProvider(
 
       // Nessun token di percorso (o "~" senza slash) chiude eventuali menu
       // aperti, senza passare dal provider nativo.
-      if (!token || !token.path.includes("/")) {
+      if (!token || !token.path.includes('/')) {
         return null;
       }
 
@@ -137,19 +134,19 @@ export function createPathAutocompleteProvider(
         let dirPath: string;
         let filePrefix: string;
 
-        if (path.endsWith("/") || path === "~") {
+        if (path.endsWith('/') || path === '~') {
           // Directory token: complete contents of that folder
           dirPath = resolvePath(path, cwd);
-          filePrefix = "";
+          filePrefix = '';
         } else {
           // Partial name: parent dir, filtered by the typed prefix
           filePrefix = basename(path);
           const parentDir = dirname(path);
 
-          dirPath = parentDir === "." ? cwd : resolvePath(parentDir, cwd);
+          dirPath = parentDir === '.' ? cwd : resolvePath(parentDir, cwd);
         }
 
-        const items = listPathItems(dirPath, filePrefix, { includeHidden: filePrefix === "" });
+        const items = listPathItems(dirPath, filePrefix, { includeHidden: filePrefix === '' });
 
         if (items.length === 0 || options.signal.aborted) {
           return null;
@@ -157,13 +154,13 @@ export function createPathAutocompleteProvider(
 
         // Convert to autocomplete items
         const autocompleteItems: AutocompleteItem[] = items.map((item) => {
-          const suffix = item.isDir ? "/" : "";
-          const base = path.endsWith("/") ? path : dirname(path);
+          const suffix = item.isDir ? '/' : '';
+          const base = path.endsWith('/') ? path : dirname(path);
 
           return {
             value: joinPath(base, `${item.name}${suffix}`),
             label: item.isDir ? `📁 ${item.name}/` : `📄 ${item.name}`,
-            description: item.isDir ? "directory" : "file",
+            description: item.isDir ? 'directory' : 'file',
           };
         });
 
@@ -181,9 +178,9 @@ export function createPathAutocompleteProvider(
       cursorLine: number,
       cursorCol: number,
       item: AutocompleteItem,
-      prefix: string,
+      prefix: string
     ): { lines: string[]; cursorLine: number; cursorCol: number } {
-      const currentLine = lines[cursorLine] ?? "";
+      const currentLine = lines[cursorLine] ?? '';
       const range = tokenRange(currentLine, cursorCol);
 
       // When the suggestions come from a provider that is not the path picker
@@ -211,7 +208,7 @@ export function createPathAutocompleteProvider(
     },
 
     shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
-      const currentLine = lines[cursorLine] ?? "";
+      const currentLine = lines[cursorLine] ?? '';
       const region = findQuoteRegion(currentLine, cursorCol);
 
       // Fuori dalla regione preserva esattamente il comportamento nativo.

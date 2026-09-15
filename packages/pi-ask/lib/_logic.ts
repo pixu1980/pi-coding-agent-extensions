@@ -5,7 +5,7 @@
  * No TUI imports: unit-testable without a terminal.
  */
 
-import type { DisplayOption, SelectAnswer } from "./_types.ts";
+import type { DisplayOption, SelectAnswer } from './_types.ts';
 
 /**
  * Map a digit key press to an option index.
@@ -13,11 +13,11 @@ import type { DisplayOption, SelectAnswer } from "./_types.ts";
  */
 export function parseDigitKey(key: string): number | null {
   if (key.length === 1) {
-    if (key >= "1" && key <= "9") {
+    if (key >= '1' && key <= '9') {
       return key.charCodeAt(0) - 49;
     }
 
-    if (key === "0") {
+    if (key === '0') {
       return 9;
     }
   }

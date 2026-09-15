@@ -17,12 +17,12 @@
  *   echo "src" | node --experimental-strip-types pick-path.ts  # Pipe a starting path
  */
 
-import { readdirSync, statSync, realpathSync } from "node:fs";
-import { resolve, relative, sep, basename, dirname, join } from "node:path";
-import { homedir } from "node:os";
+import { readdirSync, statSync, realpathSync } from 'node:fs';
+import { resolve, relative, sep, basename, dirname, join } from 'node:path';
+import { homedir } from 'node:os';
 
 // ── Config ─────────────────────────────────────────────────────────
-const SHOW_HIDDEN: boolean = process.env.PICK_SHOW_HIDDEN === "1";
+const SHOW_HIDDEN: boolean = process.env.PICK_SHOW_HIDDEN === '1';
 const MAX_VISIBLE: number = 20;
 const FUZZY_THRESHOLD: number = 0.3;
 
@@ -54,38 +54,49 @@ interface ScoredItem {
  *   - All other special regex characters are escaped
  */
 function globToRegex(pattern: string): RegExp {
-  let regexStr = "";
+  let regexStr = '';
   let i = 0;
 
   while (i < pattern.length) {
     const ch = pattern[i];
 
     // **/ pattern (globstar) matches zero or more directory levels
-    if (ch === "*" && i + 2 < pattern.length && pattern[i + 1] === "*" && pattern[i + 2] === "/") {
-      regexStr += "(.+/)?";
+    if (ch === '*' && i + 2 < pattern.length && pattern[i + 1] === '*' && pattern[i + 2] === '/') {
+      regexStr += '(.+/)?';
       i += 3;
       continue;
     }
 
     // * matches any characters except slash
-    if (ch === "*") {
-      regexStr += "[^/]*";
+    if (ch === '*') {
+      regexStr += '[^/]*';
       i++;
       continue;
     }
 
     // ? matches any single character except slash
-    if (ch === "?") {
-      regexStr += "[^/]";
+    if (ch === '?') {
+      regexStr += '[^/]';
       i++;
       continue;
     }
 
     // Escape special regex characters
-    if (ch === "." || ch === "+" || ch === "^" || ch === "$" ||
-        ch === "{" || ch === "}" || ch === "(" || ch === ")" ||
-        ch === "|" || ch === "[" || ch === "]" || ch === "\\") {
-      regexStr += "\\" + ch;
+    if (
+      ch === '.' ||
+      ch === '+' ||
+      ch === '^' ||
+      ch === '$' ||
+      ch === '{' ||
+      ch === '}' ||
+      ch === '(' ||
+      ch === ')' ||
+      ch === '|' ||
+      ch === '[' ||
+      ch === ']' ||
+      ch === '\\'
+    ) {
+      regexStr += '\\' + ch;
     } else {
       regexStr += ch;
     }
@@ -93,7 +104,7 @@ function globToRegex(pattern: string): RegExp {
     i++;
   }
 
-  return new RegExp("^" + regexStr + "$");
+  return new RegExp('^' + regexStr + '$');
 }
 
 /**
@@ -111,9 +122,9 @@ function globFiles(rootDir: string, pattern: string): string[] {
     let dirResolved: string;
 
     try {
-      dirResolved = realpathSync(dir); 
+      dirResolved = realpathSync(dir);
     } catch {
-      return; 
+      return;
     }
 
     if (visited.has(dirResolved)) {
@@ -125,13 +136,13 @@ function globFiles(rootDir: string, pattern: string): string[] {
     let entries: string[];
 
     try {
-      entries = readdirSync(dir); 
+      entries = readdirSync(dir);
     } catch {
-      return; 
+      return;
     }
 
     for (const entry of entries) {
-      if (!SHOW_HIDDEN && entry.startsWith(".")) {
+      if (!SHOW_HIDDEN && entry.startsWith('.')) {
         continue;
       }
 
@@ -146,7 +157,9 @@ function globFiles(rootDir: string, pattern: string): string[] {
         if (statSync(fullPath).isDirectory()) {
           walk(fullPath);
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
   };
 
@@ -164,7 +177,7 @@ function listDir(dirPath: string): FileItem[] {
     const items: FileItem[] = [];
 
     for (const entry of entries) {
-      if (!SHOW_HIDDEN && entry.startsWith(".")) {
+      if (!SHOW_HIDDEN && entry.startsWith('.')) {
         continue;
       }
 
@@ -180,7 +193,9 @@ function listDir(dirPath: string): FileItem[] {
           size: s.size,
           mtime: s.mtimeMs,
         });
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
     // Sort: dirs first, then by name
@@ -243,15 +258,13 @@ function filterItems(items: FileItem[], query: string): FileItem[] {
     return items;
   }
 
-  const scored: ScoredItem[] = items.map(item => ({
+  const scored: ScoredItem[] = items.map((item) => ({
     item,
-    score: Math.max(
-      fuzzyScore(query, item.name),
-    ),
+    score: Math.max(fuzzyScore(query, item.name)),
   }));
 
   return scored
-    .filter(s => s.score >= FUZZY_THRESHOLD)
+    .filter((s) => s.score >= FUZZY_THRESHOLD)
     .sort((a, b) => {
       if (a.score !== b.score) {
         return b.score - a.score;
@@ -259,7 +272,7 @@ function filterItems(items: FileItem[], query: string): FileItem[] {
 
       return a.item.name.localeCompare(b.item.name);
     })
-    .map(s => s.item);
+    .map((s) => s.item);
 }
 
 // ── Interactive Mode ───────────────────────────────────────────────
@@ -269,8 +282,8 @@ function filterItems(items: FileItem[], query: string): FileItem[] {
  * Returns the selected path or null.
  */
 async function interactivePick(startDir: string): Promise<string | null> {
-  let currentDir = resolve(startDir || ".");
-  let query = "";
+  let currentDir = resolve(startDir || '.');
+  let query = '';
   let selectedIndex = 0;
   let scrollOffset = 0;
 
@@ -284,10 +297,12 @@ async function interactivePick(startDir: string): Promise<string | null> {
     // Save terminal state
     try {
       stdin.setRawMode(true);
-    } catch { /* not a TTY */ }
+    } catch {
+      /* not a TTY */
+    }
 
     stdin.resume();
-    stdin.setEncoding("utf8");
+    stdin.setEncoding('utf8');
 
     // ── Render ──────────────────────────────────────────────────
     function render(): void {
@@ -299,42 +314,42 @@ async function interactivePick(startDir: string): Promise<string | null> {
       const lines: string[] = [];
 
       // Title bar
-      const dir = currentDir.replace(homedir(), "~");
+      const dir = currentDir.replace(homedir(), '~');
 
-      lines.push("\x1b[36m📁 " + dir + "\x1b[0m");
-      const hint = query ? "🔍 " + query : "Type to filter  ↑↓ navigate  ↵ select  ⭾ browse  ⎋ cancel";
+      lines.push('\x1b[36m📁 ' + dir + '\x1b[0m');
+      const hint = query ? '🔍 ' + query : 'Type to filter  ↑↓ navigate  ↵ select  ⭾ browse  ⎋ cancel';
 
-      lines.push("\x1b[90m" + hint + "\x1b[0m");
-      lines.push("");
+      lines.push('\x1b[90m' + hint + '\x1b[0m');
+      lines.push('');
 
       // Items
       if (total === 0) {
-        lines.push("  \x1b[90m(no matches)\x1b[0m");
+        lines.push('  \x1b[90m(no matches)\x1b[0m');
       } else {
         for (let i = 0; i < displayItems.length; i++) {
           const item = displayItems[i];
           const idx = scrollOffset + i;
-          const prefix = idx === selectedIndex ? "\x1b[7m" : " ";
-          const suffix = idx === selectedIndex ? "\x1b[0m" : " ";
-          const icon = item.isDir ? "📁" : (item.name.match(/\.(js|ts|jsx|tsx|json|md|css|html)$/i) ? "📄" : "📎");
+          const prefix = idx === selectedIndex ? '\x1b[7m' : ' ';
+          const suffix = idx === selectedIndex ? '\x1b[0m' : ' ';
+          const icon = item.isDir ? '📁' : item.name.match(/\.(js|ts|jsx|tsx|json|md|css|html)$/i) ? '📄' : '📎';
 
-          lines.push(prefix + " " + icon + " " + item.name + suffix);
+          lines.push(prefix + ' ' + icon + ' ' + item.name + suffix);
         }
       }
 
       // Footer with count
       if (total > 0) {
-        lines.push("");
-        lines.push("\x1b[90m" + (selectedIndex + 1) + "/" + total + " items\x1b[0m");
+        lines.push('');
+        lines.push('\x1b[90m' + (selectedIndex + 1) + '/' + total + ' items\x1b[0m');
       }
 
       // Clear and render
-      stdout.write("\x1b[2J\x1b[H" + lines.join("\n"));
+      stdout.write('\x1b[2J\x1b[H' + lines.join('\n'));
     }
 
     // ── Input handler ───────────────────────────────────────────
     function onData(data: string): void {
-      const bytes = Buffer.from(data, "utf8");
+      const bytes = Buffer.from(data, 'utf8');
 
       // Escape sequences
       if (bytes[0] === 0x1b && bytes[1] === 0x5b) {
@@ -350,10 +365,7 @@ async function interactivePick(startDir: string): Promise<string | null> {
 
             return;
           case 0x42: // ↓
-            selectedIndex = Math.min(
-              filterItems(allItems, query).length - 1,
-              selectedIndex + 1
-            );
+            selectedIndex = Math.min(filterItems(allItems, query).length - 1, selectedIndex + 1);
 
             if (selectedIndex >= scrollOffset + MAX_VISIBLE) {
               scrollOffset = selectedIndex - MAX_VISIBLE + 1;
@@ -409,7 +421,7 @@ async function interactivePick(startDir: string): Promise<string | null> {
       // Printable characters
       const char = data.toString();
 
-      if (char.length === 1 && char >= " ") {
+      if (char.length === 1 && char >= ' ') {
         query += char;
         selectedIndex = 0;
         scrollOffset = 0;
@@ -423,7 +435,7 @@ async function interactivePick(startDir: string): Promise<string | null> {
       if (parent !== currentDir) {
         currentDir = parent;
         allItems = listDir(currentDir);
-        query = "";
+        query = '';
         selectedIndex = 0;
         scrollOffset = 0;
         render();
@@ -442,7 +454,7 @@ async function interactivePick(startDir: string): Promise<string | null> {
         // Enter directory
         currentDir = selected.path;
         allItems = listDir(currentDir);
-        query = "";
+        query = '';
         selectedIndex = 0;
         scrollOffset = 0;
         render();
@@ -458,12 +470,12 @@ async function interactivePick(startDir: string): Promise<string | null> {
     function cleanup(result: string | null): void {
       stdin.setRawMode(false);
       stdin.pause();
-      stdin.removeListener("data", onData);
-      stdout.write("\x1b[2J\x1b[H");
+      stdin.removeListener('data', onData);
+      stdout.write('\x1b[2J\x1b[H');
       resolvePick(result);
     }
 
-    stdin.on("data", onData);
+    stdin.on('data', onData);
     render();
   });
 }
@@ -472,20 +484,20 @@ async function interactivePick(startDir: string): Promise<string | null> {
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const isQuick = args.includes("--quick");
-  const quickArgs = isQuick ? args.filter((a: string) => a !== "--quick") : args;
+  const isQuick = args.includes('--quick');
+  const quickArgs = isQuick ? args.filter((a: string) => a !== '--quick') : args;
 
   // Quick mode with glob pattern
   if (isQuick) {
-    const pattern = quickArgs[0] || "**/*";
-    const results = globFiles(".", pattern);
+    const pattern = quickArgs[0] || '**/*';
+    const results = globFiles('.', pattern);
 
-    console.log(results.join("\n"));
+    console.log(results.join('\n'));
     process.exit(0);
   }
 
   // Determine starting path
-  let startPath = ".";
+  let startPath = '.';
 
   // Check for piped input
   if (!process.stdin.isTTY) {
@@ -505,7 +517,7 @@ async function main(): Promise<void> {
   }
 
   // Resolve starting path
-  if (startPath.startsWith("~")) {
+  if (startPath.startsWith('~')) {
     startPath = join(homedir(), startPath.slice(1));
   }
 
@@ -519,7 +531,7 @@ async function main(): Promise<void> {
     try {
       const rel = relative(process.cwd(), selected);
 
-      console.log(rel || ".");
+      console.log(rel || '.');
     } catch {
       console.log(selected);
     }
@@ -531,6 +543,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err: Error) => {
-  console.error("Error:", err.message);
+  console.error('Error:', err.message);
   process.exit(1);
 });

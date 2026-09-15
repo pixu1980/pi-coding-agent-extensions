@@ -72,7 +72,7 @@ export class OAuthCredentialStoreError extends Error {
   constructor(
     message: string,
     readonly operation: 'read' | 'write' | 'remove',
-    cause: unknown,
+    cause: unknown
   ) {
     super(message, { cause });
     this.name = 'OAuthCredentialStoreError';
@@ -80,9 +80,7 @@ export class OAuthCredentialStoreError extends Error {
 }
 
 export type OAuthCredentialStatus =
-  | { status: 'present'; entry: AuthEntry }
-  | { status: 'absent' }
-  | { status: 'unavailable'; message: string };
+  { status: 'present'; entry: AuthEntry } | { status: 'absent' } | { status: 'unavailable'; message: string };
 
 function causeChainContains(error: unknown, pattern: RegExp): boolean {
   const seen = new Set<unknown>();
@@ -96,7 +94,11 @@ function causeChainContains(error: unknown, pattern: RegExp): boolean {
     seen.add(current);
     const candidate = current as { name?: unknown; message?: unknown; code?: unknown; cause?: unknown };
 
-    if ([candidate.name, candidate.message, candidate.code].some(value => typeof value === 'string' && pattern.test(value))) {
+    if (
+      [candidate.name, candidate.message, candidate.code].some(
+        (value) => typeof value === 'string' && pattern.test(value)
+      )
+    ) {
       return true;
     }
 
@@ -205,25 +207,39 @@ function getKeyringEntry(account: string): KeyringEntry {
 
     return new KeyringEntryClass(AUTH_SECRET_SERVICE, account);
   } catch (error) {
-    throw new Error('OAuth secure credential storage is unavailable. Configure the OS credential store and retry authentication.', { cause: error });
+    throw new Error(
+      'OAuth secure credential storage is unavailable. Configure the OS credential store and retry authentication.',
+      { cause: error }
+    );
   }
 }
 
-function loadKeyringEntryClass(keyringRequire: KeyringRequire = require, platform: NodeJS.Platform = process.platform, arch: NodeJS.Architecture = process.arch): KeyringEntryConstructor {
+function loadKeyringEntryClass(
+  keyringRequire: KeyringRequire = require,
+  platform: NodeJS.Platform = process.platform,
+  arch: NodeJS.Architecture = process.arch
+): KeyringEntryConstructor {
   try {
     return (keyringRequire('@napi-rs/keyring') as KeyringModule).Entry;
   } catch (loaderError) {
     try {
       return loadKeyringNativeBindingFallback(keyringRequire, platform, arch).Entry;
     } catch (fallbackError) {
-      throw new Error(`Failed to load @napi-rs/keyring; absolute-path native binding fallback also failed: ${formatErrorMessage(fallbackError)}`, {
-        cause: loaderError,
-      });
+      throw new Error(
+        `Failed to load @napi-rs/keyring; absolute-path native binding fallback also failed: ${formatErrorMessage(fallbackError)}`,
+        {
+          cause: loaderError,
+        }
+      );
     }
   }
 }
 
-function loadKeyringNativeBindingFallback(keyringRequire: KeyringRequire, platform: NodeJS.Platform, arch: NodeJS.Architecture): KeyringModule {
+function loadKeyringNativeBindingFallback(
+  keyringRequire: KeyringRequire,
+  platform: NodeJS.Platform,
+  arch: NodeJS.Architecture
+): KeyringModule {
   const targets = getKeyringNativeBindingTargets(platform, arch);
 
   if (targets.length === 0) {
@@ -245,8 +261,11 @@ function loadKeyringNativeBindingFallback(keyringRequire: KeyringRequire, platfo
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-function getKeyringNativeBindingTargets(platform: NodeJS.Platform, arch: NodeJS.Architecture): { packageName: string; bindingFile: string }[] {
-  return getKeyringNativeBindingSuffixes(platform, arch).map(suffix => ({
+function getKeyringNativeBindingTargets(
+  platform: NodeJS.Platform,
+  arch: NodeJS.Architecture
+): { packageName: string; bindingFile: string }[] {
+  return getKeyringNativeBindingSuffixes(platform, arch).map((suffix) => ({
     packageName: `@napi-rs/keyring-${suffix}`,
     bindingFile: `keyring.${suffix}.node`,
   }));
@@ -306,7 +325,11 @@ function formatErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function loadTestKeyringEntryClass(keyringRequire: KeyringRequire, platform: NodeJS.Platform, arch: NodeJS.Architecture): KeyringEntryConstructor {
+export function loadTestKeyringEntryClass(
+  keyringRequire: KeyringRequire,
+  platform: NodeJS.Platform,
+  arch: NodeJS.Architecture
+): KeyringEntryConstructor {
   return loadKeyringEntryClass(keyringRequire, platform, arch);
 }
 
@@ -373,12 +396,14 @@ function isAuthEntryChunkManifest(value: unknown): value is AuthEntryChunkManife
 
   const manifest = value as Partial<AuthEntryChunkManifest>;
 
-  return manifest[AUTH_CHUNK_MANIFEST_KEY] === 1
-    && typeof manifest.chunkCount === 'number'
-    && Number.isInteger(manifest.chunkCount)
-    && manifest.chunkCount > 0
-    && typeof manifest.chunkDigest === 'string'
-    && /^[a-f0-9]{16}$/.test(manifest.chunkDigest);
+  return (
+    manifest[AUTH_CHUNK_MANIFEST_KEY] === 1 &&
+    typeof manifest.chunkCount === 'number' &&
+    Number.isInteger(manifest.chunkCount) &&
+    manifest.chunkCount > 0 &&
+    typeof manifest.chunkDigest === 'string' &&
+    /^[a-f0-9]{16}$/.test(manifest.chunkDigest)
+  );
 }
 
 function getAuthEntryChunkAccount(account: string, manifest: AuthEntryChunkManifest, index: number): string {
@@ -389,17 +414,27 @@ function getAuthEntryChunkAccounts(account: string, manifest: AuthEntryChunkMani
   return Array.from({ length: manifest.chunkCount }, (_, index) => getAuthEntryChunkAccount(account, manifest, index));
 }
 
-function readChunkManifestFromPayload(serverName: string, payload: string, source: string): AuthEntryChunkManifest | undefined {
+function readChunkManifestFromPayload(
+  serverName: string,
+  payload: string,
+  source: string
+): AuthEntryChunkManifest | undefined {
   const parsed = parseJsonPayload(serverName, payload, source);
 
   return isAuthEntryChunkManifest(parsed) ? parsed : undefined;
 }
 
-function readExistingChunkManifest(store: AuthSecretStore, serverName: string, account: string): AuthEntryChunkManifest | undefined {
+function readExistingChunkManifest(
+  store: AuthSecretStore,
+  serverName: string,
+  account: string
+): AuthEntryChunkManifest | undefined {
   try {
     const payload = store.read(account);
 
-    return payload === undefined ? undefined : readChunkManifestFromPayload(serverName, payload, 'OS secure credential store');
+    return payload === undefined
+      ? undefined
+      : readChunkManifestFromPayload(serverName, payload, 'OS secure credential store');
   } catch {
     return undefined;
   }
@@ -411,7 +446,11 @@ function removeChunkPayloads(store: AuthSecretStore, account: string, manifest: 
   }
 }
 
-function tryRemoveChunkPayloads(store: AuthSecretStore, account: string, manifest: AuthEntryChunkManifest | undefined): void {
+function tryRemoveChunkPayloads(
+  store: AuthSecretStore,
+  account: string,
+  manifest: AuthEntryChunkManifest | undefined
+): void {
   if (!manifest) {
     return;
   }
@@ -446,7 +485,7 @@ function readChunkedAuthEntry(serverName: string, account: string, manifest: Aut
       throw new OAuthCredentialStoreError(
         `Failed to read OAuth credentials for ${serverName} from the OS secure credential store`,
         'read',
-        error,
+        error
       );
     }
   });
@@ -476,7 +515,9 @@ function removeLegacyAuthEntry(serverName: string, options?: AuthStorageOptions)
   try {
     rmSync(filePath, { force: true });
   } catch (error) {
-    throw new Error(`Failed to remove legacy plaintext OAuth credentials for ${serverName} at ${filePath}`, { cause: error });
+    throw new Error(`Failed to remove legacy plaintext OAuth credentials for ${serverName} at ${filePath}`, {
+      cause: error,
+    });
   }
 
   const dir = getServerDir(serverName, options);
@@ -517,7 +558,7 @@ function writeSecureAuthEntry(serverName: string, entry: AuthEntry): void {
     throw new OAuthCredentialStoreError(
       `Failed to write OAuth credentials for ${serverName} to the OS secure credential store`,
       'write',
-      error,
+      error
     );
   }
 }
@@ -529,7 +570,7 @@ function writeSecureAuthEntry(serverName: string, entry: AuthEntry): void {
 function readAuthEntry(
   serverName: string,
   options?: AuthStorageOptions,
-  behavior: { migrateLegacy?: boolean } = {},
+  behavior: { migrateLegacy?: boolean } = {}
 ): AuthEntry | undefined {
   const account = getAuthEntryAccount(serverName);
   let payload: string | undefined;
@@ -540,7 +581,7 @@ function readAuthEntry(
     throw new OAuthCredentialStoreError(
       `Failed to read OAuth credentials for ${serverName} from the OS secure credential store`,
       'read',
-      error,
+      error
     );
   }
 
@@ -582,7 +623,11 @@ export function getAuthEntry(serverName: string, options?: AuthStorageOptions): 
  * Get auth entry and validate it's for the correct URL.
  * Returns undefined if URL has changed (credentials are invalid).
  */
-export function getAuthForUrl(serverName: string, serverUrl: string, options?: AuthStorageOptions): AuthEntry | undefined {
+export function getAuthForUrl(
+  serverName: string,
+  serverUrl: string,
+  options?: AuthStorageOptions
+): AuthEntry | undefined {
   const entry = getAuthEntry(serverName, options);
 
   if (!entry) {
@@ -610,7 +655,7 @@ export function getAuthForUrl(serverName: string, serverUrl: string, options?: A
 export function inspectAuthForUrl(
   serverName: string,
   serverUrl: string,
-  options?: AuthStorageOptions,
+  options?: AuthStorageOptions
 ): OAuthCredentialStatus {
   try {
     const entry = readAuthEntry(serverName, options, { migrateLegacy: false });
@@ -632,7 +677,12 @@ export function inspectAuthForUrl(
 /**
  * Save auth entry for a server.
  */
-export function saveAuthEntry(serverName: string, entry: AuthEntry, serverUrl?: string, options?: AuthStorageOptions): void {
+export function saveAuthEntry(
+  serverName: string,
+  entry: AuthEntry,
+  serverUrl?: string,
+  options?: AuthStorageOptions
+): void {
   // Always update serverUrl if provided
   if (serverUrl) {
     entry.serverUrl = serverUrl;
@@ -651,7 +701,10 @@ export function removeAuthEntry(serverName: string, options?: AuthStorageOptions
 
   try {
     const payload = store.read(account);
-    const manifest = payload === undefined ? undefined : readChunkManifestFromPayload(serverName, payload, 'OS secure credential store');
+    const manifest =
+      payload === undefined
+        ? undefined
+        : readChunkManifestFromPayload(serverName, payload, 'OS secure credential store');
 
     if (manifest) {
       removeChunkPayloads(store, account, manifest);
@@ -662,7 +715,7 @@ export function removeAuthEntry(serverName: string, options?: AuthStorageOptions
     throw new OAuthCredentialStoreError(
       `Failed to remove OAuth credentials for ${serverName} from the OS secure credential store`,
       'remove',
-      error,
+      error
     );
   }
 
@@ -714,7 +767,12 @@ export function updateClientInfo(
 /**
  * Update code verifier for a server.
  */
-export function updateCodeVerifier(serverName: string, codeVerifier: string, serverUrl?: string, options?: AuthStorageOptions): void {
+export function updateCodeVerifier(
+  serverName: string,
+  codeVerifier: string,
+  serverUrl?: string,
+  options?: AuthStorageOptions
+): void {
   const entry = getAuthEntry(serverName, options) ?? {};
 
   if (serverUrl && entry.serverUrl !== serverUrl) {
@@ -742,7 +800,12 @@ export function clearCodeVerifier(serverName: string, options?: AuthStorageOptio
 /**
  * Update OAuth state for a server.
  */
-export function updateOAuthState(serverName: string, state: string, serverUrl?: string, options?: AuthStorageOptions): void {
+export function updateOAuthState(
+  serverName: string,
+  state: string,
+  serverUrl?: string,
+  options?: AuthStorageOptions
+): void {
   const entry = getAuthEntry(serverName, options) ?? {};
 
   if (serverUrl && entry.serverUrl !== serverUrl) {

@@ -1,19 +1,16 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import {
-  StreamableHTTPClientTransport,
-  StreamableHTTPError,
-} from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
-import type { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport, StreamableHTTPError } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js';
+import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import {
   ElicitationCompleteNotificationSchema,
   type GetPromptResult,
   type ReadResourceResult,
   type UrlElicitationRequiredError,
-} from "@modelcontextprotocol/sdk/types.js";
-import { UnixSocketClientTransport } from "./_unix-socket-transport.ts";
+} from '@modelcontextprotocol/sdk/types.js';
+import { UnixSocketClientTransport } from './_unix-socket-transport.ts';
 import {
   isServerDisabled,
   type McpTool,
@@ -24,28 +21,28 @@ import {
   type Transport,
   type McpTraceSettings,
   serverStreamResultPatchNotificationSchema,
-} from "./_types.ts";
-import { resolveNpxBinary } from "./_npx-resolver.ts";
-import { createJsonSchemaValidator } from "./_json-schema-validator.ts";
-import { logger } from "./_logger.ts";
-import { McpOAuthProvider } from "./_mcp-oauth-provider.ts";
-import { extractOAuthConfig, supportsOAuth, type McpOAuthRuntime } from "./_mcp-auth-flow.ts";
-import type { AuthStorageOptions } from "./_mcp-auth.ts";
-import { registerSamplingHandler, type ServerSamplingConfig } from "./_sampling-handler.ts";
+} from './_types.ts';
+import { resolveNpxBinary } from './_npx-resolver.ts';
+import { createJsonSchemaValidator } from './_json-schema-validator.ts';
+import { logger } from './_logger.ts';
+import { McpOAuthProvider } from './_mcp-oauth-provider.ts';
+import { extractOAuthConfig, supportsOAuth, type McpOAuthRuntime } from './_mcp-auth-flow.ts';
+import type { AuthStorageOptions } from './_mcp-auth.ts';
+import { registerSamplingHandler, type ServerSamplingConfig } from './_sampling-handler.ts';
 import {
   handleUrlElicitation,
   registerElicitationHandler,
   type ServerElicitationConfig,
-} from "./_elicitation-handler.ts";
+} from './_elicitation-handler.ts';
 import {
   resolveBearerToken,
   resolveCommandSecret,
   resolveCommandSecretsRecord,
   resolveConfigPath,
   resolveServerUrl,
-} from "./_utils.ts";
-import { abortable, throwIfAborted } from "./_abort.ts";
-import { combineAbortSignals } from "./_runtime-owner.ts";
+} from './_utils.ts';
+import { abortable, throwIfAborted } from './_abort.ts';
+import { combineAbortSignals } from './_runtime-owner.ts';
 import {
   createMcpTraceWriter,
   isMcpTraceEnabled,
@@ -53,17 +50,17 @@ import {
   type McpTraceObserver,
   traceTransportKind,
   wrapTransportWithMcpTrace,
-} from "./_mcp-trace.ts";
+} from './_mcp-trace.ts';
 
 const MAX_CAPTURED_STDERR_BYTES = 8 * 1024;
 const MAX_CAPTURED_STDERR_LINES = 3;
 const abortCleanupPromises = new WeakMap<object, Promise<void>>();
 
 type HttpAuthProviderState =
-  | { status: "disabled" }
-  | { status: "implicit-deferred" }
-  | { status: "explicit"; provider: McpOAuthProvider }
-  | { status: "implicit-challenged"; provider: McpOAuthProvider };
+  | { status: 'disabled' }
+  | { status: 'implicit-deferred' }
+  | { status: 'explicit'; provider: McpOAuthProvider }
+  | { status: 'implicit-challenged'; provider: McpOAuthProvider };
 
 function isUnauthorizedHttpError(error: unknown): boolean {
   return error instanceof UnauthorizedError || (error instanceof StreamableHTTPError && error.code === 401);
@@ -78,10 +75,8 @@ function boundedStderrChunk(chunk: Buffer | string): Buffer {
 
   // Limit string conversion before encoding; Buffer.from(largeString) would
   // otherwise allocate the entire stderr event before applying the cap.
-  const suffix = chunk.length > MAX_CAPTURED_STDERR_BYTES
-    ? chunk.slice(-MAX_CAPTURED_STDERR_BYTES)
-    : chunk;
-  const bytes = Buffer.from(suffix, "utf8");
+  const suffix = chunk.length > MAX_CAPTURED_STDERR_BYTES ? chunk.slice(-MAX_CAPTURED_STDERR_BYTES) : chunk;
+  const bytes = Buffer.from(suffix, 'utf8');
 
   return bytes.byteLength > MAX_CAPTURED_STDERR_BYTES
     ? Buffer.from(bytes.subarray(bytes.byteLength - MAX_CAPTURED_STDERR_BYTES))
@@ -118,10 +113,10 @@ export interface ServerConnection {
   instructions?: string;
   lastUsedAt: number;
   inFlight: number;
-  status: "connected" | "closed" | "needs-auth";
+  status: 'connected' | 'closed' | 'needs-auth';
 }
 
-type UiStreamListener = (serverName: string, notification: ServerStreamResultPatchNotification["params"]) => void;
+type UiStreamListener = (serverName: string, notification: ServerStreamResultPatchNotification['params']) => void;
 type MetadataListChangedListener = (serverName: string, reason: string) => void;
 
 export class McpServerManager {
@@ -193,10 +188,7 @@ export class McpServerManager {
     return this.defaultRequestTimeoutMs;
   }
 
-  private buildRequestOptions(
-    definition?: ServerDefinition,
-    signal?: AbortSignal,
-  ): RequestOptions | undefined {
+  private buildRequestOptions(definition?: ServerDefinition, signal?: AbortSignal): RequestOptions | undefined {
     const timeout = this.getResolvedRequestTimeoutMs(definition);
     const ownedSignal = combineAbortSignals(this.runtimeSignal, signal);
 
@@ -216,7 +208,7 @@ export class McpServerManager {
     }
 
     if (this.stopped) {
-      throw new Error("MCP server manager is closed");
+      throw new Error('MCP server manager is closed');
     }
 
     const ownedSignal = combineAbortSignals(this.runtimeSignal, signal);
@@ -237,7 +229,7 @@ export class McpServerManager {
 
     const existing = this.connections.get(name);
 
-    if (existing?.status === "connected") {
+    if (existing?.status === 'connected') {
       existing.lastUsedAt = Date.now();
 
       return existing;
@@ -287,14 +279,14 @@ export class McpServerManager {
     name: string,
     definition: ServerDefinition,
     staleConnection: ServerConnection,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<ServerConnection> {
     if (isServerDisabled(definition)) {
       throw new Error(`MCP server "${name}" is disabled`);
     }
 
     if (this.stopped) {
-      throw new Error("MCP server manager is closed");
+      throw new Error('MCP server manager is closed');
     }
 
     const ownedSignal = combineAbortSignals(this.runtimeSignal, signal);
@@ -321,7 +313,7 @@ export class McpServerManager {
     name: string,
     definition: ServerDefinition,
     staleConnection: ServerConnection,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<ServerConnection> {
     throwIfAborted(signal);
     const current = this.connections.get(name);
@@ -347,7 +339,7 @@ export class McpServerManager {
     name: string,
     definition: ServerDefinition,
     signal?: AbortSignal,
-    requestSignal?: AbortSignal,
+    requestSignal?: AbortSignal
   ): Promise<ServerConnection> {
     throwIfAborted(signal);
     const client = this.createClient(name);
@@ -357,13 +349,14 @@ export class McpServerManager {
       ? (this.traceWriter ??= createMcpTraceWriter(this.defaultCwd, this.traceSettings ?? {}))
       : undefined;
     const traceObserver: McpTraceObserver | undefined = traceWriter
-      ? { record: event => traceWriter.write(event) }
+      ? { record: (event) => traceWriter.write(event) }
       : undefined;
 
     let transport: Transport;
     let stderrTail: Buffer<ArrayBufferLike> = Buffer.alloc(0);
-    const configuredTransports = [definition.command, definition.url, definition.socket]
-      .filter(value => typeof value === "string" && value.length > 0);
+    const configuredTransports = [definition.command, definition.url, definition.socket].filter(
+      (value) => typeof value === 'string' && value.length > 0
+    );
 
     if (configuredTransports.length !== 1) {
       throw new Error(`Server ${name} must configure exactly one of command, url, or socket`);
@@ -373,11 +366,11 @@ export class McpServerManager {
       let command = definition.command;
       let args = definition.args ?? [];
 
-      if (command === "npx" || command === "npm") {
+      if (command === 'npx' || command === 'npm') {
         const resolved = await resolveNpxBinary(command, args, signal);
 
         if (resolved) {
-          command = resolved.isJs ? "node" : resolved.binPath;
+          command = resolved.isJs ? 'node' : resolved.binPath;
           args = resolved.isJs ? [resolved.binPath, ...resolved.extraArgs] : resolved.extraArgs;
           logger.debug(`${name} resolved to ${resolved.binPath} (skipping npm parent)`);
         }
@@ -390,13 +383,13 @@ export class McpServerManager {
         args,
         env: await resolveEnv(definition.env, name),
         cwd: resolveConfigPath(definition.cwd) ?? this.defaultCwd,
-        stderr: definition.debug ? "inherit" : "pipe",
+        stderr: definition.debug ? 'inherit' : 'pipe',
       });
 
       // Keep non-debug child diagnostics available for connection failures without
       // retaining an unbounded stream or changing the existing debug behavior.
       if (stdioTransport.stderr) {
-        stdioTransport.stderr.on("data", (chunk: Buffer | string) => {
+        stdioTransport.stderr.on('data', (chunk: Buffer | string) => {
           stderrTail = appendStderrTail(stderrTail, chunk);
         });
       }
@@ -432,7 +425,7 @@ export class McpServerManager {
         instructions: client.getInstructions?.(),
         lastUsedAt: Date.now(),
         inFlight: 0,
-        status: "connected",
+        status: 'connected',
       };
 
       // Reflect the SDK's own close signal in connection status, guarded by
@@ -447,7 +440,7 @@ export class McpServerManager {
       // SSE stream failing) that don't mean the connection is closed.
       client.onclose = () => {
         if (this.connections.get(name) === connection) {
-          connection.status = "closed";
+          connection.status = 'closed';
         }
       };
 
@@ -470,17 +463,16 @@ export class McpServerManager {
       // Otherwise the SDK client owns its transport, so client.close() is the
       // single cleanup operation rather than closing the transport twice.
       const abortCleanup = abortCleanupPromises.get(transport);
-      const abortCleanupFailed = error instanceof AggregateError && error.message === "MCP connection abort cleanup failed";
+      const abortCleanupFailed =
+        error instanceof AggregateError && error.message === 'MCP connection abort cleanup failed';
       const cleanupResults = abortCleanupFailed
         ? []
-        : await Promise.allSettled([
-          abortCleanup ?? Promise.resolve().then(() => client.close()),
-        ]);
-      const cleanupFailures = cleanupResults.flatMap(result => result.status === "rejected" ? [result.reason] : []);
+        : await Promise.allSettled([abortCleanup ?? Promise.resolve().then(() => client.close())]);
+      const cleanupFailures = cleanupResults.flatMap((result) => (result.status === 'rejected' ? [result.reason] : []));
       let reportedError: unknown = error;
 
       if (cleanupFailures.length > 0) {
-        reportedError = new AggregateError([error, ...cleanupFailures], "MCP connection setup failed");
+        reportedError = new AggregateError([error, ...cleanupFailures], 'MCP connection setup failed');
       }
 
       // Check for UnauthorizedError - server requires OAuth. A cleanup failure
@@ -495,17 +487,20 @@ export class McpServerManager {
           prompts: [],
           lastUsedAt: Date.now(),
           inFlight: 0,
-          status: "needs-auth",
+          status: 'needs-auth',
         };
       }
 
       if (stderrTail.length > 0) {
-        const stderrText = stderrTail.toString("utf8").trim();
-        const lines = stderrText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+        const stderrText = stderrTail.toString('utf8').trim();
+        const lines = stderrText
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
 
         if (lines.length > 0) {
           const baseMessage = reportedError instanceof Error ? reportedError.message : String(reportedError);
-          const detail = lines.slice(-MAX_CAPTURED_STDERR_LINES).join(" - ");
+          const detail = lines.slice(-MAX_CAPTURED_STDERR_LINES).join(' - ');
 
           throw new Error(`${baseMessage} (${detail})`, { cause: reportedError });
         }
@@ -519,7 +514,7 @@ export class McpServerManager {
     client: Client,
     transport: Transport,
     requestOptions?: RequestOptions,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<void> {
     throwIfAborted(signal);
     let abortCleanup: Promise<void> | undefined;
@@ -528,7 +523,7 @@ export class McpServerManager {
       abortCleanupPromises.set(transport, abortCleanup);
     };
 
-    signal?.addEventListener("abort", closeTransport, { once: true });
+    signal?.addEventListener('abort', closeTransport, { once: true });
 
     try {
       await abortable(client.connect(transport, requestOptions), signal);
@@ -538,13 +533,13 @@ export class McpServerManager {
         try {
           await abortCleanup;
         } catch (cleanupError) {
-          throw new AggregateError([error, cleanupError], "MCP connection abort cleanup failed");
+          throw new AggregateError([error, cleanupError], 'MCP connection abort cleanup failed');
         }
       }
 
       throw error;
     } finally {
-      signal?.removeEventListener("abort", closeTransport);
+      signal?.removeEventListener('abort', closeTransport);
     }
   }
 
@@ -553,11 +548,11 @@ export class McpServerManager {
       ...(this.samplingConfig ? { sampling: {} } : {}),
       ...(this.elicitationConfig
         ? {
-          elicitation: {
-            form: {},
-            ...(this.elicitationConfig.allowUrl ? { url: {} } : {}),
-          },
-        }
+            elicitation: {
+              form: {},
+              ...(this.elicitationConfig.allowUrl ? { url: {} } : {}),
+            },
+          }
         : {}),
     };
   }
@@ -567,7 +562,7 @@ export class McpServerManager {
     let client: Client;
 
     client = new Client(
-      { name: `pi-mcp-${serverName}`, version: "1.0.0" },
+      { name: `pi-mcp-${serverName}`, version: '1.0.0' },
       {
         jsonSchemaValidator: createJsonSchemaValidator(),
         ...(Object.keys(capabilities).length > 0 ? { capabilities } : {}),
@@ -588,7 +583,7 @@ export class McpServerManager {
             },
           },
         },
-      },
+      }
     );
 
     if (this.samplingConfig) {
@@ -599,11 +594,11 @@ export class McpServerManager {
       registerElicitationHandler(client, {
         ...this.elicitationConfig,
         serverName,
-        onUrlAccepted: elicitationId => this.rememberUrlElicitation(serverName, elicitationId),
+        onUrlAccepted: (elicitationId) => this.rememberUrlElicitation(serverName, elicitationId),
       });
 
       if (this.elicitationConfig.allowUrl) {
-        client.setNotificationHandler(ElicitationCompleteNotificationSchema, notification => {
+        client.setNotificationHandler(ElicitationCompleteNotificationSchema, (notification) => {
           if (this.runtimeSignal?.aborted) {
             return;
           }
@@ -616,7 +611,7 @@ export class McpServerManager {
 
           this.elicitationConfig?.ui.notify(
             `MCP browser interaction for ${serverName} completed. You can retry the tool now.`,
-            "info",
+            'info'
           );
         });
       }
@@ -629,7 +624,7 @@ export class McpServerManager {
     serverName: string,
     client: Client,
     error: Error | null,
-    tools: McpTool[] | null,
+    tools: McpTool[] | null
   ): void {
     if (error) {
       logger.debug(`MCP: tools/list_changed refresh failed for ${serverName}: ${error.message}`);
@@ -643,19 +638,19 @@ export class McpServerManager {
 
     const connection = this.connections.get(serverName);
 
-    if (!connection || connection.client !== client || connection.status !== "connected") {
+    if (!connection || connection.client !== client || connection.status !== 'connected') {
       return;
     }
 
     connection.tools = tools;
-    this.metadataListChangedListener?.(serverName, "tools-list-changed");
+    this.metadataListChangedListener?.(serverName, 'tools-list-changed');
   }
 
   private handlePromptsListChanged(
     serverName: string,
     client: Client,
     error: Error | null,
-    prompts: McpPrompt[] | null,
+    prompts: McpPrompt[] | null
   ): void {
     if (error) {
       logger.debug(`MCP: prompts/list_changed refresh failed for ${serverName}: ${error.message}`);
@@ -669,20 +664,20 @@ export class McpServerManager {
 
     const connection = this.connections.get(serverName);
 
-    if (!connection || connection.client !== client || connection.status !== "connected") {
+    if (!connection || connection.client !== client || connection.status !== 'connected') {
       return;
     }
 
     connection.prompts = prompts;
     connection.promptDiscoveryFailed = false;
-    this.metadataListChangedListener?.(serverName, "prompts-list-changed");
+    this.metadataListChangedListener?.(serverName, 'prompts-list-changed');
   }
 
   private handleResourcesListChanged(
     serverName: string,
     client: Client,
     error: Error | null,
-    resources: McpResource[] | null,
+    resources: McpResource[] | null
   ): void {
     if (error) {
       logger.debug(`MCP: resources/list_changed refresh failed for ${serverName}: ${error.message}`);
@@ -696,35 +691,38 @@ export class McpServerManager {
 
     const connection = this.connections.get(serverName);
 
-    if (!connection || connection.client !== client || connection.status !== "connected") {
+    if (!connection || connection.client !== client || connection.status !== 'connected') {
       return;
     }
 
     connection.resources = resources;
-    this.metadataListChangedListener?.(serverName, "resources-list-changed");
+    this.metadataListChangedListener?.(serverName, 'resources-list-changed');
   }
 
   async handleUrlElicitationRequired(
     serverName: string,
-    error: UrlElicitationRequiredError,
-  ): Promise<"accept" | "decline" | "cancel"> {
+    error: UrlElicitationRequiredError
+  ): Promise<'accept' | 'decline' | 'cancel'> {
     if (this.runtimeSignal?.aborted || !this.elicitationConfig?.allowUrl) {
-      return "cancel";
+      return 'cancel';
     }
 
     for (const params of error.elicitations) {
-      const result = await handleUrlElicitation({
-        ...this.elicitationConfig,
-        serverName,
-        onUrlAccepted: elicitationId => this.rememberUrlElicitation(serverName, elicitationId),
-      }, params);
+      const result = await handleUrlElicitation(
+        {
+          ...this.elicitationConfig,
+          serverName,
+          onUrlAccepted: (elicitationId) => this.rememberUrlElicitation(serverName, elicitationId),
+        },
+        params
+      );
 
-      if (result.action !== "accept") {
+      if (result.action !== 'accept') {
         return result.action;
       }
     }
 
-    return "accept";
+    return 'accept';
   }
 
   private rememberUrlElicitation(serverName: string, elicitationId: string): void {
@@ -747,32 +745,35 @@ export class McpServerManager {
     serverName: string,
     signal?: AbortSignal,
     requestSignal?: AbortSignal,
-    traceObserver?: McpTraceObserver,
+    traceObserver?: McpTraceObserver
   ): Promise<Transport> {
     throwIfAborted(signal);
     const serverUrl = resolveServerUrl(definition)!;
     const url = new URL(serverUrl);
 
     // Resolve secret commands only for this connection attempt, without mutating config.
-    const hasCommandHeader = Object.values(definition.headers ?? {})
-      .some(value => value.startsWith("!") && !value.startsWith("!!"));
-    const headers = await resolveCommandSecretsRecord(
-      definition.headers,
-      key => `MCP server "${serverName}" HTTP header "${key}"`,
-    ) ?? {};
+    const hasCommandHeader = Object.values(definition.headers ?? {}).some(
+      (value) => value.startsWith('!') && !value.startsWith('!!')
+    );
+    const headers =
+      (await resolveCommandSecretsRecord(
+        definition.headers,
+        (key) => `MCP server "${serverName}" HTTP header "${key}"`
+      )) ?? {};
 
     // For bearer auth, add the token to headers BEFORE creating requestInit
-    const commandBearer = definition.bearerToken?.startsWith("!") && !definition.bearerToken.startsWith("!!")
-      ? definition.bearerToken
-      : undefined;
+    const commandBearer =
+      definition.bearerToken?.startsWith('!') && !definition.bearerToken.startsWith('!!')
+        ? definition.bearerToken
+        : undefined;
 
-    if (definition.auth === "bearer") {
+    if (definition.auth === 'bearer') {
       const token = commandBearer
         ? await resolveCommandSecret(commandBearer, `MCP server "${serverName}" HTTP bearer token`)
         : resolveBearerToken(definition);
 
       if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`;
       }
     }
 
@@ -780,44 +781,47 @@ export class McpServerManager {
       try {
         new Headers(headers);
       } catch {
-        throw new Error(`Failed to resolve MCP server "${serverName}" HTTP command secret: command returned an invalid header value`);
+        throw new Error(
+          `Failed to resolve MCP server "${serverName}" HTTP command secret: command returned an invalid header value`
+        );
       }
     }
 
     // Create request init with headers (Authorization now included for bearer auth)
     const requestInit = Object.keys(headers).length > 0 ? { headers } : undefined;
-    const createAuthProvider = (): McpOAuthProvider => new McpOAuthProvider(
-      serverName,
-      serverUrl,
-      extractOAuthConfig(definition),
-      {
-        onRedirect: async (_authUrl) => {
-          // URL is captured by startAuth, no need to log
+    const createAuthProvider = (): McpOAuthProvider =>
+      new McpOAuthProvider(
+        serverName,
+        serverUrl,
+        extractOAuthConfig(definition),
+        {
+          onRedirect: async (_authUrl) => {
+            // URL is captured by startAuth, no need to log
+          },
         },
-      },
-      this.authStorageOptions,
-      this.oauthRuntime?.signal,
-    );
+        this.authStorageOptions,
+        this.oauthRuntime?.signal
+      );
 
     // Explicit OAuth must check the secure credential store before connecting.
     let authState: HttpAuthProviderState = supportsOAuth(definition)
       ? definition.auth === undefined
-        ? { status: "implicit-deferred" }
-        : { status: "explicit", provider: createAuthProvider() }
-      : { status: "disabled" };
+        ? { status: 'implicit-deferred' }
+        : { status: 'explicit', provider: createAuthProvider() }
+      : { status: 'disabled' };
 
     // Try StreamableHTTP first (modern MCP servers). For implicit OAuth, defer
     // creating the provider until the server proves that authentication is needed.
     for (;;) {
-      const authProvider = "provider" in authState ? authState.provider : undefined;
+      const authProvider = 'provider' in authState ? authState.provider : undefined;
       const streamableTransport = new StreamableHTTPClientTransport(url, {
         requestInit,
         authProvider,
       });
       const probeTransport = traceObserver
-        ? wrapTransportWithMcpTrace(streamableTransport, serverName, "streamable-http", traceObserver)
+        ? wrapTransportWithMcpTrace(streamableTransport, serverName, 'streamable-http', traceObserver)
         : streamableTransport;
-      const testClient = new Client({ name: "pi-mcp-probe", version: "2.1.2" });
+      const testClient = new Client({ name: 'pi-mcp-probe', version: '2.1.2' });
       let probeCleanupAttempted = false;
 
       try {
@@ -825,23 +829,23 @@ export class McpServerManager {
           testClient,
           probeTransport,
           this.buildRequestOptions(definition, requestSignal),
-          signal,
+          signal
         );
         probeCleanupAttempted = true;
 
         try {
           await testClient.close();
         } catch (cleanupError) {
-          throw new AggregateError([cleanupError], "MCP HTTP probe cleanup failed");
+          throw new AggregateError([cleanupError], 'MCP HTTP probe cleanup failed');
         }
 
         // StreamableHTTP works - create fresh transport for actual use
         return new StreamableHTTPClientTransport(url, { requestInit, authProvider });
       } catch (error) {
-        if (error instanceof AggregateError && (
-          error.message === "MCP connection abort cleanup failed" ||
-          error.message === "MCP HTTP probe cleanup failed"
-        )) {
+        if (
+          error instanceof AggregateError &&
+          (error.message === 'MCP connection abort cleanup failed' || error.message === 'MCP HTTP probe cleanup failed')
+        ) {
           throw error;
         }
 
@@ -854,7 +858,7 @@ export class McpServerManager {
           try {
             await (abortCleanupPromises.get(probeTransport) ?? testClient.close());
           } catch (cleanupError) {
-            throw new AggregateError([error, cleanupError], "MCP HTTP probe cleanup failed");
+            throw new AggregateError([error, cleanupError], 'MCP HTTP probe cleanup failed');
           }
         }
 
@@ -866,8 +870,8 @@ export class McpServerManager {
 
         // An implicit URL-only server gets a provider only after a real auth
         // challenge. This keeps unauthenticated servers independent of storage.
-        if (authState.status === "implicit-deferred" && isUnauthorizedHttpError(error)) {
-          authState = { status: "implicit-challenged", provider: createAuthProvider() };
+        if (authState.status === 'implicit-deferred' && isUnauthorizedHttpError(error)) {
+          authState = { status: 'implicit-challenged', provider: createAuthProvider() };
           continue;
         }
 
@@ -898,7 +902,7 @@ export class McpServerManager {
 
   private async fetchAllPrompts(
     client: Client,
-    requestOptions?: RequestOptions,
+    requestOptions?: RequestOptions
   ): Promise<{ prompts: McpPrompt[]; failed: boolean }> {
     const capabilities = client.getServerCapabilities?.();
 
@@ -961,7 +965,7 @@ export class McpServerManager {
   }
 
   private attachAdapterNotificationHandlers(serverName: string, client: Client): void {
-    client.setNotificationHandler(serverStreamResultPatchNotificationSchema, notification => {
+    client.setNotificationHandler(serverStreamResultPatchNotificationSchema, (notification) => {
       const listener = this.uiStreamListeners.get(notification.params.streamToken);
 
       if (!listener) {
@@ -984,11 +988,11 @@ export class McpServerManager {
     name: string,
     promptName: string,
     args?: Record<string, string>,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<GetPromptResult> {
     const connection = this.connections.get(name);
 
-    if (!connection || connection.status !== "connected") {
+    if (!connection || connection.status !== 'connected') {
       throw new Error(`Server "${name}" is not connected`);
     }
 
@@ -998,7 +1002,7 @@ export class McpServerManager {
 
       return await connection.client.getPrompt(
         { name: promptName, ...(args ? { arguments: args } : {}) },
-        this.getRequestOptions(name, signal),
+        this.getRequestOptions(name, signal)
       );
     } finally {
       this.decrementInFlight(name);
@@ -1013,7 +1017,7 @@ export class McpServerManager {
 
     const connection = this.connections.get(name);
 
-    if (!connection || connection.status !== "connected") {
+    if (!connection || connection.status !== 'connected') {
       throw new Error(`Server "${name}" is not connected`);
     }
 
@@ -1060,7 +1064,7 @@ export class McpServerManager {
 
     // Delete before awaiting SDK cleanup so a replacement cannot be removed by
     // an old close operation finishing later.
-    connection.status = "closed";
+    connection.status = 'closed';
     this.connections.delete(name);
     this.acceptedUrlElicitations.delete(name);
     const closing = this.disposeConnection(connection).finally(() => {
@@ -1080,10 +1084,10 @@ export class McpServerManager {
       Promise.resolve().then(() => connection.client.close()),
       this.traceWriter?.flush() ?? Promise.resolve(),
     ]);
-    const failures = results.flatMap(result => result.status === "rejected" ? [result.reason] : []);
+    const failures = results.flatMap((result) => (result.status === 'rejected' ? [result.reason] : []));
 
     if (failures.length > 0) {
-      throw new AggregateError(failures, "MCP connection cleanup failed");
+      throw new AggregateError(failures, 'MCP connection cleanup failed');
     }
   }
 
@@ -1099,15 +1103,15 @@ export class McpServerManager {
     const pendingConnects = [...this.connectPromises.values()];
     const currentNames = [...this.connections.keys()];
     const pendingResults = await Promise.allSettled(pendingConnects);
-    const results = await Promise.allSettled(currentNames.map(name => this.close(name)));
+    const results = await Promise.allSettled(currentNames.map((name) => this.close(name)));
 
     // A connect that resolved during the first close snapshot is still fenced;
     // close any handle inserted while the first snapshot was being taken.
     const lateNames = [...this.connections.keys()];
-    const lateResults = await Promise.allSettled(lateNames.map(name => this.close(name)));
+    const lateResults = await Promise.allSettled(lateNames.map((name) => this.close(name)));
     const failures = [...pendingResults, ...results, ...lateResults]
-      .flatMap(result => result.status === "rejected" ? [result.reason] : [])
-      .filter(error => this.containsCleanupFailure(error));
+      .flatMap((result) => (result.status === 'rejected' ? [result.reason] : []))
+      .filter((error) => this.containsCleanupFailure(error));
 
     this.uiStreamListeners.clear();
     this.acceptedUrlElicitations.clear();
@@ -1116,7 +1120,7 @@ export class McpServerManager {
     await this.traceWriter?.flush();
 
     if (failures.length > 0) {
-      throw new AggregateError(failures, "MCP manager cleanup failed");
+      throw new AggregateError(failures, 'MCP manager cleanup failed');
     }
   }
 
@@ -1184,7 +1188,7 @@ export class McpServerManager {
   isIdle(name: string, timeoutMs: number): boolean {
     const connection = this.connections.get(name);
 
-    if (!connection || connection.status !== "connected") {
+    if (!connection || connection.status !== 'connected') {
       return false;
     }
 
@@ -1192,7 +1196,7 @@ export class McpServerManager {
       return false;
     }
 
-    return (Date.now() - connection.lastUsedAt) > timeoutMs;
+    return Date.now() - connection.lastUsedAt > timeoutMs;
   }
 }
 
@@ -1200,7 +1204,10 @@ export class McpServerManager {
  * Resolve environment variables with interpolation. Async because env
  * values may carry `!command` markers that must not block the loop.
  */
-async function resolveEnv(env: Record<string, string> | undefined, serverName: string): Promise<Record<string, string>> {
+async function resolveEnv(
+  env: Record<string, string> | undefined,
+  serverName: string
+): Promise<Record<string, string>> {
   const resolved: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(process.env)) {
@@ -1209,16 +1216,11 @@ async function resolveEnv(env: Record<string, string> | undefined, serverName: s
     }
   }
 
-  const overrides = await resolveCommandSecretsRecord(
-    env,
-    key => `MCP server "${serverName}" stdio env "${key}"`,
-  );
+  const overrides = await resolveCommandSecretsRecord(env, (key) => `MCP server "${serverName}" stdio env "${key}"`);
 
   return overrides ? { ...resolved, ...overrides } : resolved;
 }
 
 function normalizeRequestTimeoutMs(timeoutMs: number | undefined): number | undefined {
-  return typeof timeoutMs === "number" && Number.isFinite(timeoutMs) && timeoutMs > 0
-    ? timeoutMs
-    : undefined;
+  return typeof timeoutMs === 'number' && Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined;
 }

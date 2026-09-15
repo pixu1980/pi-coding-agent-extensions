@@ -50,12 +50,14 @@ const sessions = new Map<string, StoredSession>();
 export function sessionSlotId(sessionId: string | undefined): string {
   const trimmed = sessionId?.trim();
 
-  return trimmed && trimmed.length > 0 ? trimmed : "default";
+  return trimmed && trimmed.length > 0 ? trimmed : 'default';
 }
 
 /** True when the stored agent can serve this request without being rebuilt. */
 export function isSessionReusable(session: StoredSession | undefined, key: AgentSessionKey): boolean {
-  return session !== undefined && session.key.sessionId === key.sessionId && session.key.selectionId === key.selectionId;
+  return (
+    session !== undefined && session.key.sessionId === key.sessionId && session.key.selectionId === key.selectionId
+  );
 }
 
 /** Look up the live agent for a pi session, if any. */
@@ -88,7 +90,7 @@ export async function disposeAgentHandle(handle: CursorAgentHandle): Promise<voi
   try {
     const disposer = handle[Symbol.asyncDispose];
 
-    if (typeof disposer === "function") {
+    if (typeof disposer === 'function') {
       await disposer.call(handle);
     } else {
       handle.close();

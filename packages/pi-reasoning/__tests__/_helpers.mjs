@@ -7,8 +7,8 @@
  * caught no matter which surface produced the string.
  */
 
-import assert from "node:assert/strict";
-import { SINGLE_SPACE_LEVELS } from "../lib/_levels.ts";
+import assert from 'node:assert/strict';
+import { SINGLE_SPACE_LEVELS } from '../lib/_levels.ts';
 
 /** A leading emoji, single code point or ZWJ sequence. */
 const LEADING_EMOJI = /^(?:\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)/u;
@@ -27,11 +27,7 @@ export function spacesAfterEmoji(label) {
 
 /** Assert the canonical `emoji + exactly two spaces + text` shape (non-level strings). */
 export function assertCanonicalLabel(label) {
-  assert.equal(
-    spacesAfterEmoji(label),
-    2,
-    `expected two spaces after the emoji in ${JSON.stringify(label)}`,
-  );
+  assert.equal(spacesAfterEmoji(label), 2, `expected two spaces after the emoji in ${JSON.stringify(label)}`);
 }
 
 /**
@@ -45,7 +41,7 @@ export function assertLevelLabel(label, level) {
   assert.equal(
     spacesAfterEmoji(label),
     expected,
-    `expected ${expected} space(s) after the emoji in ${JSON.stringify(label)}`,
+    `expected ${expected} space(s) after the emoji in ${JSON.stringify(label)}`
   );
   assert.ok(label.endsWith(level), `expected label to end with ${level}: ${JSON.stringify(label)}`);
 }

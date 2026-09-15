@@ -25,7 +25,7 @@
  */
 
 /** Must match `PATH_PICKER_PROVIDER_CHANNEL` in @pixu1980/pi-path-picker. */
-export const PATH_PICKER_PROVIDER_CHANNEL = "pi-path-picker:provider";
+export const PATH_PICKER_PROVIDER_CHANNEL = 'pi-path-picker:provider';
 
 /** Minimal slice of pi we need: only the inter-extension event bus. */
 export interface PathProviderBus {
@@ -44,11 +44,8 @@ export interface AutocompleteHost {
  * Returns `undefined` when the package is absent or answers nothing, which the
  * caller treats as "no completion" rather than an error.
  */
-export function resolvePathAutocompleteProvider(
-  bus: PathProviderBus | undefined,
-  cwd: string,
-): unknown | undefined {
-  if (!bus?.events || typeof bus.events.emit !== "function") {
+export function resolvePathAutocompleteProvider(bus: PathProviderBus | undefined, cwd: string): unknown | undefined {
+  if (!bus?.events || typeof bus.events.emit !== 'function') {
     return undefined;
   }
 
@@ -76,9 +73,9 @@ export function resolvePathAutocompleteProvider(
 export function attachPathAutocomplete(
   editor: AutocompleteHost | undefined,
   bus: PathProviderBus | undefined,
-  cwd: string,
+  cwd: string
 ): boolean {
-  if (!editor || typeof editor.setAutocompleteProvider !== "function") {
+  if (!editor || typeof editor.setAutocompleteProvider !== 'function') {
     return false;
   }
 

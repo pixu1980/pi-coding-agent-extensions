@@ -14,10 +14,10 @@
  *   <model>@<context>:fast        both
  */
 
-import type { Api, Model } from "@earendil-works/pi-ai";
-import type { CachedModelRecord } from "./_cache.ts";
-import { loadCachedCatalog, saveCachedCatalog, getModelCachePath, getModelCacheTtlMs } from "./_cache.ts";
-import { scrubError } from "./_scrub.ts";
+import type { Api, Model } from '@earendil-works/pi-ai';
+import type { CachedModelRecord } from './_cache.ts';
+import { loadCachedCatalog, saveCachedCatalog, getModelCachePath, getModelCacheTtlMs } from './_cache.ts';
+import { scrubError } from './_scrub.ts';
 import {
   CURSOR_FALLBACK_CONTEXT_WINDOW,
   CURSOR_FALLBACK_MAX_TOKENS,
@@ -25,7 +25,7 @@ import {
   CURSOR_MODEL_INPUT,
   CURSOR_OFFLINE_ENV,
   CURSOR_ZERO_COST,
-} from "./_types.ts";
+} from './_types.ts';
 
 // ── Structural SDK subset ─────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@ export interface CursorModelItem {
 }
 
 export type ThinkingLevelMap = Partial<
-  Record<"off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max", string | null>
+  Record<'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max', string | null>
 >;
 
 export interface CursorModelMetadata {
@@ -92,7 +92,7 @@ function getParameter(item: CursorModelItem, id: string): CursorModelParameterDe
 function hasBooleanValues(parameter: CursorModelParameterDefinition | undefined): boolean {
   const values = new Set((parameter?.values ?? []).map((entry) => entry.value.toLowerCase()));
 
-  return values.has("false") && values.has("true");
+  return values.has('false') && values.has('true');
 }
 
 function getParameterValue(parameter: CursorModelParameterDefinition | undefined, lowerValue: string): string | null {
@@ -101,7 +101,7 @@ function getParameterValue(parameter: CursorModelParameterDefinition | undefined
 
 function getPreferredParameterValue(
   parameter: CursorModelParameterDefinition | undefined,
-  lowerValues: string[],
+  lowerValues: string[]
 ): string | null {
   for (const candidate of lowerValues) {
     const found = getParameterValue(parameter, candidate);
@@ -125,43 +125,43 @@ function cloneParams(params: { id: string; value: string }[]): { id: string; val
  * Returns `undefined` when the model exposes no reasoning control at all.
  */
 export function deriveThinkingLevelMap(item: CursorModelItem): ThinkingLevelMap | undefined {
-  const reasoning = getParameter(item, "reasoning");
-  const effort = getParameter(item, "effort");
-  const thinking = getParameter(item, "thinking");
+  const reasoning = getParameter(item, 'reasoning');
+  const effort = getParameter(item, 'effort');
+  const thinking = getParameter(item, 'thinking');
   const valueParameter = effort ?? reasoning ?? thinking;
 
   if (!valueParameter) {
     return undefined;
   }
 
-  if (valueParameter.id === "thinking" && hasBooleanValues(valueParameter)) {
+  if (valueParameter.id === 'thinking' && hasBooleanValues(valueParameter)) {
     return {
-      off: getParameterValue(valueParameter, "false"),
+      off: getParameterValue(valueParameter, 'false'),
       minimal: null,
       low: null,
       medium: null,
-      high: getParameterValue(valueParameter, "true"),
+      high: getParameterValue(valueParameter, 'true'),
       xhigh: null,
       max: null,
     };
   }
 
-  const comparable = (level: Exclude<keyof ThinkingLevelMap, "off">): string | null =>
-    level === "xhigh"
-      ? getPreferredParameterValue(valueParameter, ["xhigh", "extra-high"])
+  const comparable = (level: Exclude<keyof ThinkingLevelMap, 'off'>): string | null =>
+    level === 'xhigh'
+      ? getPreferredParameterValue(valueParameter, ['xhigh', 'extra-high'])
       : getParameterValue(valueParameter, level);
 
   return {
     off:
-			getParameterValue(reasoning, "none") ??
-			getParameterValue(reasoning, "off") ??
-			getParameterValue(thinking, "false"),
-    minimal: comparable("minimal"),
-    low: comparable("low"),
-    medium: comparable("medium"),
-    high: comparable("high"),
-    xhigh: comparable("xhigh"),
-    max: comparable("max"),
+      getParameterValue(reasoning, 'none') ??
+      getParameterValue(reasoning, 'off') ??
+      getParameterValue(thinking, 'false'),
+    minimal: comparable('minimal'),
+    low: comparable('low'),
+    medium: comparable('medium'),
+    high: comparable('high'),
+    xhigh: comparable('xhigh'),
+    max: comparable('max'),
   };
 }
 
@@ -192,7 +192,7 @@ export function parseContextWindow(value: string): number | undefined {
     return undefined;
   }
 
-  return Math.round(amount * (match[2]?.toLowerCase() === "m" ? 1_000_000 : 1_000));
+  return Math.round(amount * (match[2]?.toLowerCase() === 'm' ? 1_000_000 : 1_000));
 }
 
 // ── Model identities ──────────────────────────────────────────────────────
@@ -220,22 +220,18 @@ function encodeModelId(modelId: string, context: string | undefined, fastOverrid
   return withContext;
 }
 
-function labelForModel(
-  item: CursorModelItem,
-  context: string | undefined,
-  fastOverride: boolean | undefined,
-): string {
+function labelForModel(item: CursorModelItem, context: string | undefined, fastOverride: boolean | undefined): string {
   const qualifiers: string[] = [];
 
   if (fastOverride === true) {
-    qualifiers.push("fast");
+    qualifiers.push('fast');
   }
 
   if (fastOverride === false) {
-    qualifiers.push("slow");
+    qualifiers.push('slow');
   }
 
-  const base = qualifiers.length > 0 ? `${item.displayName} (${qualifiers.join(", ")})` : item.displayName;
+  const base = qualifiers.length > 0 ? `${item.displayName} (${qualifiers.join(', ')})` : item.displayName;
 
   return context ? `${base} @ ${context}` : base;
 }
@@ -258,10 +254,10 @@ export function buildModelIdentities(items: CursorModelItem[]): CursorModelIdent
       continue;
     }
 
-    const contextValues = (getParameter(item, "context")?.values ?? []).map((entry) => entry.value);
+    const contextValues = (getParameter(item, 'context')?.values ?? []).map((entry) => entry.value);
     const contexts: (string | undefined)[] = contextValues.length > 0 ? contextValues : [undefined];
     const fastOverrides: (boolean | undefined)[] =
-      getParameter(item, "fast") !== undefined ? [undefined, true, false] : [undefined];
+      getParameter(item, 'fast') !== undefined ? [undefined, true, false] : [undefined];
 
     for (const context of contexts) {
       for (const fastOverride of fastOverrides) {
@@ -331,14 +327,12 @@ export function registerCatalog(items: CursorModelItem[]): CursorModelMetadata[]
   for (const identity of buildModelIdentities(items)) {
     const thinkingLevelMap = deriveThinkingLevelMap(identity.item);
     const defaultParams = getDefaultParams(identity.item);
-    const contextParams = identity.context
-      ? upsertParam(defaultParams, "context", identity.context)
-      : defaultParams;
+    const contextParams = identity.context ? upsertParam(defaultParams, 'context', identity.context) : defaultParams;
     const params =
       identity.fastOverride === undefined
         ? contextParams
-        : upsertParam(contextParams, "fast", identity.fastOverride ? "true" : "false");
-    const fastValue = params.find((param) => param.id === "fast")?.value.toLowerCase();
+        : upsertParam(contextParams, 'fast', identity.fastOverride ? 'true' : 'false');
+    const fastValue = params.find((param) => param.id === 'fast')?.value.toLowerCase();
 
     metadataByPiModelId.set(identity.piModelId, {
       piModelId: identity.piModelId,
@@ -350,15 +344,15 @@ export function registerCatalog(items: CursorModelItem[]): CursorModelMetadata[]
       contextWindow: contextWindowFor(identity.context),
       supportsReasoning: thinkingLevelMap !== undefined,
       ...(thinkingLevelMap ? { thinkingLevelMap } : {}),
-      supportsFast: getParameter(identity.item, "fast") !== undefined,
-      defaultFast: fastValue === "true",
+      supportsFast: getParameter(identity.item, 'fast') !== undefined,
+      defaultFast: fastValue === 'true',
       ...(identity.fastOverride === undefined ? {} : { fastOverride: identity.fastOverride }),
       parameterIds: {
-        context: getParameter(identity.item, "context") !== undefined,
-        reasoning: getParameter(identity.item, "reasoning") !== undefined,
-        effort: getParameter(identity.item, "effort") !== undefined,
-        thinking: getParameter(identity.item, "thinking") !== undefined,
-        fast: getParameter(identity.item, "fast") !== undefined,
+        context: getParameter(identity.item, 'context') !== undefined,
+        reasoning: getParameter(identity.item, 'reasoning') !== undefined,
+        effort: getParameter(identity.item, 'effort') !== undefined,
+        thinking: getParameter(identity.item, 'thinking') !== undefined,
+        fast: getParameter(identity.item, 'fast') !== undefined,
       },
     });
   }
@@ -369,7 +363,7 @@ export function registerCatalog(items: CursorModelItem[]): CursorModelMetadata[]
 /** Build the pi-ai `Model` record for one registered Cursor model. */
 export function toPiModel(
   metadata: CursorModelMetadata,
-  options: { providerId: string; api: string; baseUrl: string },
+  options: { providerId: string; api: string; baseUrl: string }
 ): Model<Api> {
   return {
     id: metadata.piModelId,
@@ -391,7 +385,11 @@ export function toPiModels(options: { providerId: string; api: string; baseUrl: 
   return listModelMetadata().map((metadata) => toPiModel(metadata, options));
 }
 
-function upsertParam(params: { id: string; value: string }[], id: string, value: string): { id: string; value: string }[] {
+function upsertParam(
+  params: { id: string; value: string }[],
+  id: string,
+  value: string
+): { id: string; value: string }[] {
   const next = params.map((param) => (param.id === id ? { id, value } : param));
 
   if (!next.some((param) => param.id === id)) {
@@ -482,7 +480,7 @@ const publishedByEnv = new WeakMap<object, string>();
  * @returns `true` when the override was written.
  */
 export function applyLocalModelCatalogEnv(
-  options: { env?: Record<string, string | undefined>; items?: CursorModelItem[] } = {},
+  options: { env?: Record<string, string | undefined>; items?: CursorModelItem[] } = {}
 ): boolean {
   const env = options.env ?? process.env;
   const json = buildLocalCatalogJson(options.items);
@@ -505,7 +503,7 @@ export function applyLocalModelCatalogEnv(
 
 // ── Selection building ────────────────────────────────────────────────────
 
-export type PiThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+export type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
 /**
  * Apply a pi thinking level onto the parameter list, mirroring how the Cursor
@@ -515,7 +513,7 @@ export type PiThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "x
 function applyThinkingLevel(
   metadata: CursorModelMetadata,
   params: { id: string; value: string }[],
-  level: PiThinkingLevel,
+  level: PiThinkingLevel
 ): { id: string; value: string }[] {
   const mapped = metadata.thinkingLevelMap?.[level];
 
@@ -525,30 +523,30 @@ function applyThinkingLevel(
 
   const { reasoning, effort, thinking } = metadata.parameterIds;
 
-  if (level === "off") {
+  if (level === 'off') {
     if (reasoning) {
-      return upsertParam(params, "reasoning", mapped);
+      return upsertParam(params, 'reasoning', mapped);
     }
 
     if (thinking) {
-      return upsertParam(params, "thinking", mapped);
+      return upsertParam(params, 'thinking', mapped);
     }
 
     return params;
   }
 
   if (effort) {
-    const withThinking = thinking ? upsertParam(params, "thinking", "true") : params;
+    const withThinking = thinking ? upsertParam(params, 'thinking', 'true') : params;
 
-    return upsertParam(withThinking, "effort", mapped);
+    return upsertParam(withThinking, 'effort', mapped);
   }
 
   if (reasoning) {
-    return upsertParam(params, "reasoning", mapped);
+    return upsertParam(params, 'reasoning', mapped);
   }
 
   if (thinking) {
-    return upsertParam(params, "thinking", mapped);
+    return upsertParam(params, 'thinking', mapped);
   }
 
   return params;
@@ -563,8 +561,8 @@ function applyThinkingLevel(
  */
 export function buildModelSelection(
   piModelId: string,
-  thinkingLevel: PiThinkingLevel = "off",
-  fastEnabled?: boolean,
+  thinkingLevel: PiThinkingLevel = 'off',
+  fastEnabled?: boolean
 ): { id: string; params?: { id: string; value: string }[] } {
   const metadata = getModelMetadata(piModelId);
 
@@ -575,7 +573,7 @@ export function buildModelSelection(
   let params = applyThinkingLevel(metadata, cloneParams(metadata.defaultParams), thinkingLevel);
 
   if (metadata.supportsFast && fastEnabled !== undefined) {
-    params = upsertParam(params, "fast", fastEnabled ? "true" : "false");
+    params = upsertParam(params, 'fast', fastEnabled ? 'true' : 'false');
   }
 
   return params.length > 0 ? { id: metadata.selectionModelId, params } : { id: metadata.selectionModelId };
@@ -593,27 +591,27 @@ export function buildModelSelection(
  */
 export const FALLBACK_CURSOR_MODELS: CursorModelItem[] = [
   {
-    id: "default",
-    displayName: "Auto",
+    id: 'default',
+    displayName: 'Auto',
     description: "Cursor's automatic model router. Available on every Cursor plan, including Free.",
   },
   {
-    id: "grok-4.6",
-    displayName: "Grok 4.6",
+    id: 'grok-4.6',
+    displayName: 'Grok 4.6',
     parameters: [
       {
-        id: "effort",
-        values: [{ value: "low" }, { value: "medium" }, { value: "high" }],
+        id: 'effort',
+        values: [{ value: 'low' }, { value: 'medium' }, { value: 'high' }],
       },
     ],
   },
   {
-    id: "composer-2",
-    displayName: "Composer 2",
+    id: 'composer-2',
+    displayName: 'Composer 2',
     parameters: [
       {
-        id: "context",
-        values: [{ value: "128k" }, { value: "200k" }],
+        id: 'context',
+        values: [{ value: '128k' }, { value: '200k' }],
       },
     ],
   },
@@ -627,9 +625,9 @@ export interface DiscoverCatalogOptions {
   /** Skip the cache and always hit the API. */
   forceRefresh?: boolean;
   /**
-	 * Skip the live fetch entirely. Defaults to pi's offline flag, because the
-	 * Cursor SDK does not honor `--offline` on its own.
-	 */
+   * Skip the live fetch entirely. Defaults to pi's offline flag, because the
+   * Cursor SDK does not honor `--offline` on its own.
+   */
   offline?: boolean;
   /** Environment used for the offline default. Overridable for tests. */
   env?: Record<string, string | undefined>;
@@ -647,19 +645,19 @@ export interface DiscoverCatalogOptions {
 export function isOfflineMode(env: Record<string, string | undefined> = process.env): boolean {
   const raw = env[CURSOR_OFFLINE_ENV]?.trim().toLowerCase();
 
-  return raw === "1" || raw === "true" || raw === "yes";
+  return raw === '1' || raw === 'true' || raw === 'yes';
 }
 
 export interface DiscoverCatalogResult {
   metadata: CursorModelMetadata[];
-  source: "live" | "cache" | "fallback";
+  source: 'live' | 'cache' | 'fallback';
   /** Scrubbed, human-readable reason when the source is not `live`. */
   note?: string;
   /**
-	 * `true` when the note explains a Cursor plan limitation rather than a
-	 * fault: a Free plan cannot read the Cloud Agent catalog, and the local one
-	 * still runs. Startup stays silent and only `/cursor-models` reports it.
-	 */
+   * `true` when the note explains a Cursor plan limitation rather than a
+   * fault: a Free plan cannot read the Cloud Agent catalog, and the local one
+   * still runs. Startup stays silent and only `/cursor-models` reports it.
+   */
   quiet?: boolean;
 }
 
@@ -672,7 +670,7 @@ function cacheKeyForCacheOverride(options: { cachePath?: string; ttlMs?: number;
 }
 
 async function defaultLoadSdk() {
-  return import("@cursor/sdk");
+  return import('@cursor/sdk');
 }
 
 /**
@@ -698,9 +696,7 @@ function discoveryFlightKey(options: DiscoverCatalogOptions, offline: boolean): 
  * Resolve the model catalog: live API when a key is available, otherwise the
  * local cache, otherwise the static fallback. Never throws.
  */
-export async function discoverCursorCatalog(
-  options: DiscoverCatalogOptions = {},
-): Promise<DiscoverCatalogResult> {
+export async function discoverCursorCatalog(options: DiscoverCatalogOptions = {}): Promise<DiscoverCatalogResult> {
   const offline = options.offline ?? isOfflineMode(options.env ?? process.env);
   const key = discoveryFlightKey(options, offline);
   const pending = pendingDiscoveries.get(key);
@@ -730,7 +726,7 @@ export async function discoverCursorCatalog(
  * @returns The field value, or `undefined` when the error has no such field.
  */
 function errorField(error: unknown, field: string): unknown {
-  if (typeof error !== "object" || error === null) {
+  if (typeof error !== 'object' || error === null) {
     return undefined;
   }
 
@@ -746,7 +742,7 @@ function errorField(error: unknown, field: string): unknown {
  * @returns Whether the failure is a `plan_required` refusal.
  */
 export function isPlanBlockedError(error: unknown): boolean {
-  return errorField(error, "code") === "plan_required" || errorField(error, "status") === 403;
+  return errorField(error, 'code') === 'plan_required' || errorField(error, 'status') === 403;
 }
 
 /**
@@ -763,22 +759,22 @@ export function isPlanBlockedError(error: unknown): boolean {
  * @returns Single-line note for stderr and `/cursor-models`.
  */
 export function describeDiscoveryFailure(error: unknown, apiKey?: string): string {
-  const name = error instanceof Error && error.name ? error.name : "error";
+  const name = error instanceof Error && error.name ? error.name : 'error';
   const message = scrubError(error, apiKey);
-  const code = errorField(error, "code");
-  const status = errorField(error, "status");
+  const code = errorField(error, 'code');
+  const status = errorField(error, 'status');
   const suffix = [
-    typeof code === "string" && code ? `code=${code}` : undefined,
-    typeof status === "number" ? `status=${status}` : undefined,
+    typeof code === 'string' && code ? `code=${code}` : undefined,
+    typeof status === 'number' ? `status=${status}` : undefined,
   ]
     .filter((part): part is string => part !== undefined)
-    .join(", ");
-  const detail = `${name}: ${message}${suffix ? ` (${suffix})` : ""}`;
+    .join(', ');
+  const detail = `${name}: ${message}${suffix ? ` (${suffix})` : ''}`;
 
   if (isPlanBlockedError(error)) {
     return (
       `Cursor model discovery failed (${detail}). The Cloud Agent model catalog needs a paid Cursor plan. ` +
-			"pi-cursor keeps its local catalog, including Auto (model `default`), so local agents still run."
+      'pi-cursor keeps its local catalog, including Auto (model `default`), so local agents still run.'
     );
   }
 
@@ -793,7 +789,7 @@ async function runDiscovery(options: DiscoverCatalogOptions, offline: boolean): 
       return undefined;
     }
 
-    return { metadata: registerCatalog(cached.models as CursorModelItem[]), source: "cache" };
+    return { metadata: registerCatalog(cached.models as CursorModelItem[]), source: 'cache' };
   };
 
   if (!options.forceRefresh) {
@@ -813,10 +809,10 @@ async function runDiscovery(options: DiscoverCatalogOptions, offline: boolean): 
 
     return {
       metadata: registerCatalog(FALLBACK_CURSOR_MODELS),
-      source: "fallback",
+      source: 'fallback',
       note: offline
-        ? "Offline mode: using the placeholder catalog and making no network request. Run pi without --offline to refresh."
-        : "No Cursor API key configured; showing a placeholder catalog. Run /login cursor or set CURSOR_API_KEY.",
+        ? 'Offline mode: using the placeholder catalog and making no network request. Run pi without --offline to refresh.'
+        : 'No Cursor API key configured; showing a placeholder catalog. Run /login cursor or set CURSOR_API_KEY.',
     };
   }
 
@@ -830,7 +826,7 @@ async function runDiscovery(options: DiscoverCatalogOptions, offline: boolean): 
         ...(options.now === undefined ? {} : { now: options.now }),
       });
 
-      return { metadata: registerCatalog(items), source: "live" };
+      return { metadata: registerCatalog(items), source: 'live' };
     }
 
     const staleCache = fromCache();
@@ -841,8 +837,8 @@ async function runDiscovery(options: DiscoverCatalogOptions, offline: boolean): 
 
     return {
       metadata: registerCatalog(FALLBACK_CURSOR_MODELS),
-      source: "fallback",
-      note: "Cursor returned an empty model catalog; using the placeholder catalog.",
+      source: 'fallback',
+      note: 'Cursor returned an empty model catalog; using the placeholder catalog.',
     };
   } catch (error) {
     const staleCache = fromCache();
@@ -853,7 +849,7 @@ async function runDiscovery(options: DiscoverCatalogOptions, offline: boolean): 
 
     return {
       metadata: registerCatalog(FALLBACK_CURSOR_MODELS),
-      source: "fallback",
+      source: 'fallback',
       note: describeDiscoveryFailure(error, options.apiKey),
       ...(isPlanBlockedError(error) ? { quiet: true } : {}),
     };

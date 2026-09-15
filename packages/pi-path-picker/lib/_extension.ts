@@ -11,10 +11,10 @@
  * inside a quote region plus Tab - is identical everywhere a path is typed.
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import type { AutocompleteProvider } from "@earendil-works/pi-tui";
-import { answerProviderRequest, NULL_AUTOCOMPLETE_PROVIDER, PATH_PICKER_PROVIDER_CHANNEL } from "./_contract.ts";
-import { createPathAutocompleteProvider } from "./_provider.ts";
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import type { AutocompleteProvider } from '@earendil-works/pi-tui';
+import { answerProviderRequest, NULL_AUTOCOMPLETE_PROVIDER, PATH_PICKER_PROVIDER_CHANNEL } from './_contract.ts';
+import { createPathAutocompleteProvider } from './_provider.ts';
 
 export default function pathPickerExtension(pi: ExtensionAPI) {
   // Registered in the factory, not on session_start: a consumer may ask as soon
@@ -23,9 +23,7 @@ export default function pathPickerExtension(pi: ExtensionAPI) {
     answerProviderRequest(data, (cwd) => createPathAutocompleteProvider(NULL_AUTOCOMPLETE_PROVIDER, cwd));
   });
 
-  pi.on("session_start", async (_event, ctx) => {
-    ctx.ui.addAutocompleteProvider(
-      (current: AutocompleteProvider) => createPathAutocompleteProvider(current, ctx.cwd),
-    );
+  pi.on('session_start', async (_event, ctx) => {
+    ctx.ui.addAutocompleteProvider((current: AutocompleteProvider) => createPathAutocompleteProvider(current, ctx.cwd));
   });
 }

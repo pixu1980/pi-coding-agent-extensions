@@ -3,13 +3,13 @@
  * Readability (article extraction) + Turndown (HTML -> Markdown), with
  * linkedom providing a DOM in Node without a browser.
  */
-import { Readability } from "@mozilla/readability";
-import { parseHTML } from "linkedom";
-import TurndownService from "turndown";
+import { Readability } from '@mozilla/readability';
+import { parseHTML } from 'linkedom';
+import TurndownService from 'turndown';
 
 const turndown = new TurndownService({
-  headingStyle: "atx",
-  codeBlockStyle: "fenced",
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
 });
 
 export interface HtmlToMarkdownResult {
@@ -21,12 +21,12 @@ export interface HtmlToMarkdownResult {
 
 export function htmlToMarkdown(html: string, raw: boolean): HtmlToMarkdownResult {
   const { document } = parseHTML(html);
-  const documentTitle = document.title?.trim() ?? "";
+  const documentTitle = document.title?.trim() ?? '';
 
   if (raw) {
     // Keep everything: tables, code blocks, nav - whole <body>.
     const body = document.body;
-    const markdown = body ? turndown.turndown(body.innerHTML) : "";
+    const markdown = body ? turndown.turndown(body.innerHTML) : '';
 
     return { title: documentTitle, markdown, lowQuality: true };
   }
@@ -34,11 +34,11 @@ export function htmlToMarkdown(html: string, raw: boolean): HtmlToMarkdownResult
   const reader = new Readability(document as Document);
   const article = reader.parse();
 
-  if (!article || typeof article.content !== "string" || article.content.length === 0) {
+  if (!article || typeof article.content !== 'string' || article.content.length === 0) {
     // No article found (SPA shell, bare text, exotic markup) - fall back to
     // the whole body so we never return nothing, but flag the low quality.
     const body = document.body;
-    const fallback = body ? turndown.turndown(body.innerHTML) : "";
+    const fallback = body ? turndown.turndown(body.innerHTML) : '';
 
     return { title: documentTitle, markdown: fallback, lowQuality: true };
   }

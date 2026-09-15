@@ -13,10 +13,10 @@
  *     so a stray export cannot redirect the key to a third party.
  */
 
-import { createProvider } from "@earendil-works/pi-ai";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { describeApiKeySource, normalizeApiKey, readEnvApiKey, resolveCursorApiKey } from "./_api-key.ts";
-import { checkBackendOverride, describeEgressSurface, formatEgressSurface } from "./_egress.ts";
+import { createProvider } from '@earendil-works/pi-ai';
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import { describeApiKeySource, normalizeApiKey, readEnvApiKey, resolveCursorApiKey } from './_api-key.ts';
+import { checkBackendOverride, describeEgressSurface, formatEgressSurface } from './_egress.ts';
 import {
   applyLocalModelCatalogEnv,
   discoverCursorCatalog,
@@ -24,20 +24,20 @@ import {
   registerCatalog,
   toPiModel,
   type CursorModelMetadata,
-} from "./_models.ts";
-import { maskApiKey } from "./_scrub.ts";
-import { releaseAllAgentSessions } from "./_session.ts";
-import { streamCursor } from "./_stream.ts";
+} from './_models.ts';
+import { maskApiKey } from './_scrub.ts';
+import { releaseAllAgentSessions } from './_session.ts';
+import { streamCursor } from './_stream.ts';
 import {
   CURSOR_API_ID,
   CURSOR_API_KEY_PLACEHOLDER,
   CURSOR_EGRESS_LOG_ENV,
   CURSOR_PROVIDER_ID,
   CURSOR_PROVIDER_NAME,
-} from "./_types.ts";
+} from './_types.ts';
 
 /** Display/authority URL for the provider. A Cursor-owned host, like the rest. */
-const CURSOR_BASE_URL = "https://api.cursor.com";
+const CURSOR_BASE_URL = 'https://api.cursor.com';
 
 /**
  * Build the pi provider around a resolved Cursor catalog.
@@ -47,7 +47,7 @@ const CURSOR_BASE_URL = "https://api.cursor.com";
  */
 function buildProvider(metadata: CursorModelMetadata[]) {
   const models = metadata.map((entry) =>
-    toPiModel(entry, { providerId: CURSOR_PROVIDER_ID, api: CURSOR_API_ID, baseUrl: CURSOR_BASE_URL }),
+    toPiModel(entry, { providerId: CURSOR_PROVIDER_ID, api: CURSOR_API_ID, baseUrl: CURSOR_BASE_URL })
   );
 
   return createProvider({
@@ -56,20 +56,20 @@ function buildProvider(metadata: CursorModelMetadata[]) {
     baseUrl: CURSOR_BASE_URL,
     auth: {
       apiKey: {
-        name: "Cursor API key",
+        name: 'Cursor API key',
         async login(interaction) {
           const raw = await interaction.prompt({
-            type: "secret",
+            type: 'secret',
             message: "Cursor API key (stored locally in pi's auth.json, never sent anywhere but Cursor)",
           });
 
           const key = normalizeApiKey(raw);
 
           if (!key) {
-            throw new Error("No API key entered.");
+            throw new Error('No API key entered.');
           }
 
-          return { type: "api_key", key };
+          return { type: 'api_key', key };
         },
         async resolve({ credential }) {
           // Fail closed: a redirected backend must never receive the key.
@@ -84,14 +84,14 @@ function buildProvider(metadata: CursorModelMetadata[]) {
           if (key) {
             return {
               auth: { apiKey: key },
-              source: normalizeApiKey(credential?.key) ? "stored API key" : "CURSOR_API_KEY",
+              source: normalizeApiKey(credential?.key) ? 'stored API key' : 'CURSOR_API_KEY',
             };
           }
 
           // Nothing configured yet. Hand pi the non-secret placeholder so the
           // Cursor models stay visible in the picker before `/login`; the stream
           // path rejects the placeholder before any request is issued.
-          return { auth: { apiKey: CURSOR_API_KEY_PLACEHOLDER }, source: "no Cursor API key configured yet" };
+          return { auth: { apiKey: CURSOR_API_KEY_PLACEHOLDER }, source: 'no Cursor API key configured yet' };
         },
       },
     },
@@ -101,7 +101,7 @@ function buildProvider(metadata: CursorModelMetadata[]) {
       streamSimple: (model, context, options) => streamCursor(model, context, options),
     },
     fetchModels: async (context) => {
-      const key = normalizeApiKey(context.credential?.type === "api_key" ? context.credential.key : undefined);
+      const key = normalizeApiKey(context.credential?.type === 'api_key' ? context.credential.key : undefined);
       // No forceRefresh: the 6h disk cache plus the in-memory memo serve
       // repeated calls. Explicit refresh lives in /cursor-models.
       const result = await discoverCursorCatalog({
@@ -109,7 +109,7 @@ function buildProvider(metadata: CursorModelMetadata[]) {
       });
 
       return result.metadata.map((entry) =>
-        toPiModel(entry, { providerId: CURSOR_PROVIDER_ID, api: CURSOR_API_ID, baseUrl: CURSOR_BASE_URL }),
+        toPiModel(entry, { providerId: CURSOR_PROVIDER_ID, api: CURSOR_API_ID, baseUrl: CURSOR_BASE_URL })
       );
     },
   });
@@ -139,14 +139,14 @@ export default async function (pi: ExtensionAPI): Promise<void> {
   // publish the catalog we just resolved and keep the validation in-process.
   applyLocalModelCatalogEnv();
 
-  pi.registerCommand("cursor-models", {
-    description: "Refresh the live Cursor model catalog without restarting pi",
+  pi.registerCommand('cursor-models', {
+    description: 'Refresh the live Cursor model catalog without restarting pi',
     handler: async (_args, ctx) => {
       const blocking = checkBackendOverride();
 
       if (!blocking.ok) {
         if (ctx.hasUI) {
-          ctx.ui.notify(blocking.reason ?? "Cursor backend override blocked.", "error");
+          ctx.ui.notify(blocking.reason ?? 'Cursor backend override blocked.', 'error');
         }
 
         return;
@@ -155,8 +155,8 @@ export default async function (pi: ExtensionAPI): Promise<void> {
       if (isOfflineMode()) {
         if (ctx.hasUI) {
           ctx.ui.notify(
-            "pi is running offline; refreshing the Cursor catalog would send your API key. Restart without --offline.",
-            "warning",
+            'pi is running offline; refreshing the Cursor catalog would send your API key. Restart without --offline.',
+            'warning'
           );
         }
 
@@ -173,29 +173,29 @@ export default async function (pi: ExtensionAPI): Promise<void> {
       }
 
       const count = refreshed.metadata.length;
-      const label = `${count} model${count === 1 ? "" : "s"}`;
+      const label = `${count} model${count === 1 ? '' : 's'}`;
 
-      if (refreshed.source === "live") {
-        ctx.ui.notify(`Cursor model catalog refreshed with ${label}.`, "info");
+      if (refreshed.source === 'live') {
+        ctx.ui.notify(`Cursor model catalog refreshed with ${label}.`, 'info');
       } else {
-        ctx.ui.notify(`Cursor catalog ${refreshed.source}: ${refreshed.note ?? "no live catalog"}`, "warning");
+        ctx.ui.notify(`Cursor catalog ${refreshed.source}: ${refreshed.note ?? 'no live catalog'}`, 'warning');
       }
     },
   });
 
-  pi.registerCommand("cursor-egress", {
+  pi.registerCommand('cursor-egress', {
     description: "Show pi-cursor's audited outbound surface",
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) {
         return;
       }
 
-      ctx.ui.notify(formatEgressSurface(describeEgressSurface()), "info");
+      ctx.ui.notify(formatEgressSurface(describeEgressSurface()), 'info');
     },
   });
 
-  pi.registerCommand("cursor-key", {
-    description: "Show which Cursor API key source is active (never prints the key)",
+  pi.registerCommand('cursor-key', {
+    description: 'Show which Cursor API key source is active (never prints the key)',
     handler: async (_args, ctx) => {
       if (!ctx.hasUI) {
         return;
@@ -207,17 +207,17 @@ export default async function (pi: ExtensionAPI): Promise<void> {
       ctx.ui.notify(
         resolved
           ? `Cursor API key source: ${source} (${maskApiKey(resolved)})`
-          : "No Cursor API key configured. Run /login cursor or set CURSOR_API_KEY.",
-        resolved ? "info" : "warning",
+          : 'No Cursor API key configured. Run /login cursor or set CURSOR_API_KEY.',
+        resolved ? 'info' : 'warning'
       );
     },
   });
 
-  pi.on("session_shutdown", async () => {
+  pi.on('session_shutdown', async () => {
     await releaseAllAgentSessions();
   });
 
-  if (process.env[CURSOR_EGRESS_LOG_ENV] === "1") {
+  if (process.env[CURSOR_EGRESS_LOG_ENV] === '1') {
     process.stderr.write(`${formatEgressSurface(describeEgressSurface())}\n`);
   }
 
@@ -226,7 +226,7 @@ export default async function (pi: ExtensionAPI): Promise<void> {
   if (!override.ok) {
     process.stderr.write(
       `pi-cursor: ${override.reason}\n` +
-				"pi-cursor: Cursor models are registered but every request will fail until this is resolved.\n",
+        'pi-cursor: Cursor models are registered but every request will fail until this is resolved.\n'
     );
   }
 

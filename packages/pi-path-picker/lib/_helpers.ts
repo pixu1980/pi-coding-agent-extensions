@@ -4,20 +4,20 @@
  * Private module: imported by the extension entry only, never by consumers.
  */
 
-import { readdirSync, statSync } from "node:fs";
-import { resolve, join, sep, isAbsolute } from "node:path";
-import { homedir } from "node:os";
+import { readdirSync, statSync } from 'node:fs';
+import { resolve, join, sep, isAbsolute } from 'node:path';
+import { homedir } from 'node:os';
 
 // ── Sensitive directories ─────────────────────────────────────────
 
 const SENSITIVE_DIRECTORIES = new Set([
-  join(homedir(), ".ssh"),
-  join(homedir(), ".aws"),
-  join(homedir(), ".config", "gh"),
-  join(homedir(), ".gnupg"),
-  join(homedir(), ".password-store"),
-  join(homedir(), ".kube"),
-  "/etc/ssh",
+  join(homedir(), '.ssh'),
+  join(homedir(), '.aws'),
+  join(homedir(), '.config', 'gh'),
+  join(homedir(), '.gnupg'),
+  join(homedir(), '.password-store'),
+  join(homedir(), '.kube'),
+  '/etc/ssh',
 ]);
 
 export function isSensitiveDir(dirPath: string): boolean {
@@ -38,7 +38,7 @@ export function isSensitiveDir(dirPath: string): boolean {
  * Expand `~` at the start of a path to the home directory.
  */
 export function expandTilde(path: string): string {
-  if (path.startsWith("~" + sep) || path === "~") {
+  if (path.startsWith('~' + sep) || path === '~') {
     return join(homedir(), path.slice(1));
   }
 
@@ -61,13 +61,13 @@ export function resolvePath(path: string, cwd: string): string {
 // ── Delimiters and quote-region detection ─────────────────────────
 
 /** Delimitatori supportati dal path autocomplete. */
-const STRING_DELIMITERS = ['"', "'", "`"] as const;
+const STRING_DELIMITERS = ['"', "'", '`'] as const;
 
 /** A character is escaped only when preceded by an odd number of consecutive backslashes. */
 function isEscapedAt(text: string, index: number): boolean {
   let backslashes = 0;
 
-  for (let i = index - 1; i >= 0 && text[i] === "\\"; i--) {
+  for (let i = index - 1; i >= 0 && text[i] === '\\'; i--) {
     backslashes++;
   }
 
@@ -97,7 +97,7 @@ const INVALID_NAME = /[\u0000-\u001F\u007F]/;
 export function listPathItems(
   dirPath: string,
   prefix: string,
-  options?: { includeHidden?: boolean },
+  options?: { includeHidden?: boolean }
 ): Array<{ name: string; isDir: boolean; fullPath: string }> {
   // Refuse to list contents of sensitive directories
   if (isSensitiveDir(dirPath)) {
@@ -121,7 +121,7 @@ export function listPathItems(
       continue;
     } // skip control-char names (Icon\r)
 
-    if (entry.startsWith(".") && !includeHidden && !prefix.startsWith(".")) {
+    if (entry.startsWith('.') && !includeHidden && !prefix.startsWith('.')) {
       continue;
     } // skip hidden unless query starts with .
 
@@ -133,8 +133,10 @@ export function listPathItems(
     let isDir = false;
 
     try {
-      isDir = statSync(fullPath).isDirectory(); 
-    } catch { /* skip unreadable */ }
+      isDir = statSync(fullPath).isDirectory();
+    } catch {
+      /* skip unreadable */
+    }
 
     items.push({ name: entry, isDir, fullPath });
   }
@@ -265,7 +267,7 @@ export function extractPathToken(text: string): { path: string; startIndex: numb
 
     const path = match[group];
 
-    if (path === undefined || path === "") {
+    if (path === undefined || path === '') {
       continue;
     }
 
@@ -291,5 +293,5 @@ export function joinPath(dir: string, name: string): string {
     return name;
   }
 
-  return dir.endsWith("/") ? `${dir}${name}` : `${dir}/${name}`;
+  return dir.endsWith('/') ? `${dir}${name}` : `${dir}/${name}`;
 }

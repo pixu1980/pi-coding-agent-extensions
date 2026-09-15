@@ -4,6 +4,6 @@
  * Exposes the extension entry only; parsing/components/overlays stay private.
  */
 
-import extension from "./_extension.ts";
+import extension from './_extension.ts';
 
 export default extension;

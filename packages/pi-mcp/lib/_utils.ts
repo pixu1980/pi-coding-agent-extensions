@@ -1,23 +1,23 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { exec } from "node:child_process";
-import { homedir, platform } from "node:os";
-import { join } from "node:path";
-import type { McpConfig, ServerEntry } from "./_types.ts";
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import { exec } from 'node:child_process';
+import { homedir, platform } from 'node:os';
+import { join } from 'node:path';
+import type { McpConfig, ServerEntry } from './_types.ts';
 
 async function execOpen(pi: ExtensionAPI, target: string, browser?: string, signal?: AbortSignal) {
   const os = platform();
 
-  if (os === "darwin") {
-    return browser ? pi.exec("open", ["-a", browser, target], { signal }) : pi.exec("open", [target], { signal });
+  if (os === 'darwin') {
+    return browser ? pi.exec('open', ['-a', browser, target], { signal }) : pi.exec('open', [target], { signal });
   }
 
-  if (os === "win32") {
+  if (os === 'win32') {
     return browser
-      ? pi.exec("cmd", ["/c", "start", "", browser, target], { signal })
-      : pi.exec("cmd", ["/c", "start", "", target], { signal });
+      ? pi.exec('cmd', ['/c', 'start', '', browser, target], { signal })
+      : pi.exec('cmd', ['/c', 'start', '', target], { signal });
   }
 
-  return browser ? pi.exec(browser, [target], { signal }) : pi.exec("xdg-open", [target], { signal });
+  return browser ? pi.exec(browser, [target], { signal }) : pi.exec('xdg-open', [target], { signal });
 }
 
 export async function openUrl(pi: ExtensionAPI, url: string, browser?: string, signal?: AbortSignal): Promise<void> {
@@ -36,11 +36,7 @@ export async function openPath(pi: ExtensionAPI, targetPath: string): Promise<vo
   }
 }
 
-export async function parallelLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T) => Promise<R>
-): Promise<R[]> {
+export async function parallelLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
   let index = 0;
 
@@ -60,7 +56,7 @@ export async function parallelLimit<T, R>(
 }
 
 export function getConfigPathFromArgv(): string | undefined {
-  const idx = process.argv.indexOf("--mcp-config");
+  const idx = process.argv.indexOf('--mcp-config');
 
   if (idx >= 0 && idx + 1 < process.argv.length) {
     return process.argv[idx + 1];
@@ -71,9 +67,9 @@ export function getConfigPathFromArgv(): string | undefined {
 
 export function interpolateEnvVars(value: string): string {
   return value
-    .replaceAll(/\$\{(\w+)\}/g, (_, name) => process.env[name] ?? "")
-    .replaceAll(/\$env:(\w+)/g, (_, name) => process.env[name] ?? "")
-    .replaceAll(/\{env:(\w+)\}/g, (_, name) => process.env[name] ?? "");
+    .replaceAll(/\$\{(\w+)\}/g, (_, name) => process.env[name] ?? '')
+    .replaceAll(/\$env:(\w+)/g, (_, name) => process.env[name] ?? '')
+    .replaceAll(/\{env:(\w+)\}/g, (_, name) => process.env[name] ?? '');
 }
 
 function getMissingEnvVars(value: string): string[] {
@@ -112,14 +108,14 @@ export function createRenderCoalescer(requestRender: () => void): () => void {
 }
 
 export function toStringRecord(value: unknown): Record<string, string> | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined;
   }
 
   const result: Record<string, string> = {};
 
   for (const [key, entry] of Object.entries(value)) {
-    if (typeof entry === "string") {
+    if (typeof entry === 'string') {
       result[key] = entry;
     }
   }
@@ -128,11 +124,11 @@ export function toStringRecord(value: unknown): Record<string, string> | undefin
 }
 
 function interpolateSecretExpression(value: string): string {
-  if (value.startsWith("!!")) {
+  if (value.startsWith('!!')) {
     return interpolateEnvVars(value.slice(1));
   }
 
-  return value.startsWith("!") ? value : interpolateEnvVars(value);
+  return value.startsWith('!') ? value : interpolateEnvVars(value);
 }
 
 export function interpolateEnvRecord(values: Record<string, string> | undefined): Record<string, string> | undefined {
@@ -140,10 +136,7 @@ export function interpolateEnvRecord(values: Record<string, string> | undefined)
     return undefined;
   }
 
-  return Object.fromEntries(Object.entries(values).map(([key, value]) => [
-    key,
-    interpolateSecretExpression(value),
-  ]));
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, interpolateSecretExpression(value)]));
 }
 
 const COMMAND_SECRET_TIMEOUT_MS = 10_000;
@@ -176,7 +169,7 @@ function execCommandSecret(command: string): Promise<string> {
     exec(
       command,
       {
-        encoding: "utf8",
+        encoding: 'utf8',
         timeout: COMMAND_SECRET_TIMEOUT_MS,
         maxBuffer: COMMAND_SECRET_MAX_OUTPUT_BYTES,
         windowsHide: true,
@@ -188,14 +181,15 @@ function execCommandSecret(command: string): Promise<string> {
 
         if (error) {
           const code = (error as NodeJS.ErrnoException).code;
-          const killedByTimeout = error.killed && (error.signal === "SIGTERM" || error.signal === "SIGKILL");
-          const reason = killedByTimeout || code === "ETIMEDOUT"
-            ? "command timed out after 10 seconds"
-            : code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" || code === "ENOBUFS"
-              ? "command output exceeded 1 MiB"
-              : typeof code === "number"
-                ? `command exited with code ${code}`
-                : "command failed to start";
+          const killedByTimeout = error.killed && (error.signal === 'SIGTERM' || error.signal === 'SIGKILL');
+          const reason =
+            killedByTimeout || code === 'ETIMEDOUT'
+              ? 'command timed out after 10 seconds'
+              : code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER' || code === 'ENOBUFS'
+                ? 'command output exceeded 1 MiB'
+                : typeof code === 'number'
+                  ? `command exited with code ${code}`
+                  : 'command failed to start';
 
           reject(new Error(reason));
 
@@ -203,7 +197,7 @@ function execCommandSecret(command: string): Promise<string> {
         }
 
         resolve(String(stdout));
-      },
+      }
     );
   });
 }
@@ -218,11 +212,11 @@ export async function resolveCommandSecret(value: string | undefined, context: s
     return undefined;
   }
 
-  if (value.startsWith("!!")) {
+  if (value.startsWith('!!')) {
     return interpolateEnvVars(value.slice(1));
   }
 
-  if (!value.startsWith("!")) {
+  if (!value.startsWith('!')) {
     return interpolateEnvVars(value);
   }
 
@@ -231,7 +225,7 @@ export async function resolveCommandSecret(value: string | undefined, context: s
     const resolved = stdout.trim();
 
     if (!resolved) {
-      throw new Error("command returned empty output");
+      throw new Error('command returned empty output');
     }
 
     return resolved;
@@ -250,7 +244,7 @@ export async function resolveCommandSecret(value: string | undefined, context: s
  */
 export async function resolveCommandSecretsRecord(
   values: Record<string, string> | undefined,
-  context: (key: string) => string,
+  context: (key: string) => string
 ): Promise<Record<string, string> | undefined> {
   if (!values) {
     return undefined;
@@ -274,19 +268,21 @@ export async function resolveCommandSecretsRecord(
   return resolved;
 }
 
-export function resolveServerUrl(definition: Pick<ServerEntry, "url">): string | undefined {
+export function resolveServerUrl(definition: Pick<ServerEntry, 'url'>): string | undefined {
   if (definition.url == null) {
     return undefined;
   }
 
-  if (typeof definition.url !== "string") {
-    throw new Error("MCP server URL must be a string");
+  if (typeof definition.url !== 'string') {
+    throw new Error('MCP server URL must be a string');
   }
 
   const missing = getMissingEnvVars(definition.url);
 
   if (missing.length > 0) {
-    throw new Error(`Missing environment variable${missing.length === 1 ? "" : "s"} in MCP server URL: ${missing.join(", ")}`);
+    throw new Error(
+      `Missing environment variable${missing.length === 1 ? '' : 's'} in MCP server URL: ${missing.join(', ')}`
+    );
   }
 
   const resolved = interpolateEnvVars(definition.url);
@@ -307,18 +303,20 @@ export function resolveConfigPath(value: string | undefined): string | undefined
 
   const resolved = interpolateEnvVars(value);
 
-  if (resolved === "~") {
+  if (resolved === '~') {
     return homedir();
   }
 
-  if (resolved.startsWith("~/") || resolved.startsWith("~\\")) {
+  if (resolved.startsWith('~/') || resolved.startsWith('~\\')) {
     return join(homedir(), resolved.slice(2));
   }
 
   return resolved;
 }
 
-export function resolveBearerToken(definition: Pick<ServerEntry, "bearerToken" | "bearerTokenEnv">): string | undefined {
+export function resolveBearerToken(
+  definition: Pick<ServerEntry, 'bearerToken' | 'bearerTokenEnv'>
+): string | undefined {
   if (definition.bearerToken !== undefined) {
     return interpolateSecretExpression(definition.bearerToken);
   }
@@ -328,11 +326,11 @@ export function resolveBearerToken(definition: Pick<ServerEntry, "bearerToken" |
 
 /** Remove OSC control strings, including payloads that have no terminator. */
 export function stripOscSequences(text: string): string {
-  let result = "";
+  let result = '';
   let index = 0;
 
   while (index < text.length) {
-    const isEscOsc = text.charCodeAt(index) === 0x1b && text[index + 1] === "]";
+    const isEscOsc = text.charCodeAt(index) === 0x1b && text[index + 1] === ']';
     const isC1Osc = text.charCodeAt(index) === 0x9d;
 
     if (!isEscOsc && !isC1Osc) {
@@ -349,7 +347,7 @@ export function stripOscSequences(text: string): string {
         break;
       }
 
-      if (code === 0x1b && text[index] === "\\") {
+      if (code === 0x1b && text[index] === '\\') {
         index++;
         break;
       }
@@ -361,9 +359,9 @@ export function stripOscSequences(text: string): string {
 
 export function sanitizeTerminalText(text: string): string {
   return stripOscSequences(text)
-    .replaceAll(/(?:\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-Z\\-_])/g, "")
-    .replaceAll(/[\u0000-\u001f\u007f-\u009f]+/g, " ")
-    .replaceAll(/\s+/g, " ")
+    .replaceAll(/(?:\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-Z\\-_])/g, '')
+    .replaceAll(/[\u0000-\u001f\u007f-\u009f]+/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
@@ -375,7 +373,7 @@ export function formatTerminalError(error: unknown): string {
       return;
     }
 
-    if ((typeof value === "object" && value !== null) || typeof value === "function") {
+    if ((typeof value === 'object' && value !== null) || typeof value === 'function') {
       seen.add(value);
     }
 
@@ -414,7 +412,7 @@ export function formatTerminalError(error: unknown): string {
 
   collect(error);
 
-  return sanitizeTerminalText([...new Set(messages)].join(": "));
+  return sanitizeTerminalText([...new Set(messages)].join(': '));
 }
 
 export function truncateAtWord(text: string, target: number): string {
@@ -423,55 +421,58 @@ export function truncateAtWord(text: string, target: number): string {
   }
 
   const truncated = text.slice(0, target);
-  const lastSpace = truncated.lastIndexOf(" ");
+  const lastSpace = truncated.lastIndexOf(' ');
 
   if (lastSpace > target * 0.6) {
-    return truncated.slice(0, lastSpace) + "...";
+    return truncated.slice(0, lastSpace) + '...';
   }
 
-  return truncated + "...";
+  return truncated + '...';
 }
 
 export function normalizeDirectToolInputSchema(schema: unknown): Record<string, unknown> {
-  const inputSchema = schema && typeof schema === "object" && !Array.isArray(schema)
-    ? schema as Record<string, unknown>
-    : { type: "object", properties: {} };
+  const inputSchema =
+    schema && typeof schema === 'object' && !Array.isArray(schema)
+      ? (schema as Record<string, unknown>)
+      : { type: 'object', properties: {} };
   const { $schema, additionalProperties, ...normalized } = inputSchema;
 
   return normalized;
 }
 
 export function formatAuthRequiredMessage(
-  config: Pick<McpConfig, "settings">,
+  config: Pick<McpConfig, 'settings'>,
   serverName: string,
-  defaultMessage: string,
+  defaultMessage: string
 ): string {
   const template = config.settings?.authRequiredMessage;
 
-  return template ? template.replaceAll("${server}", serverName) : defaultMessage;
+  return template ? template.replaceAll('${server}', serverName) : defaultMessage;
 }
 
-export function formatMcpStatus(config: Pick<McpConfig, "settings">, message: string): string | undefined {
-  if (config.settings?.mcpFooterStatus === "off") {
+export function formatMcpStatus(config: Pick<McpConfig, 'settings'>, message: string): string | undefined {
+  if (config.settings?.mcpFooterStatus === 'off') {
     return undefined;
   }
 
-  return `${config.settings?.showStatusIcon === false ? "MCP: " : "🔌 MCP: "}${message}`;
+  return `${config.settings?.showStatusIcon === false ? 'MCP: ' : '🔌 MCP: '}${message}`;
 }
 
 /**
  * Extract the adapter-owned UI stream mode from tool metadata.
  */
-export function extractToolUiStreamMode(toolMeta: Record<string, unknown> | undefined): "eager" | "stream-first" | undefined {
+export function extractToolUiStreamMode(
+  toolMeta: Record<string, unknown> | undefined
+): 'eager' | 'stream-first' | undefined {
   const uiMeta = toolMeta?.ui;
 
-  if (!uiMeta || typeof uiMeta !== "object") {
+  if (!uiMeta || typeof uiMeta !== 'object') {
     return undefined;
   }
 
-  const streamMode = (uiMeta as Record<string, unknown>)["pi-mcp-adapter.streamMode"];
+  const streamMode = (uiMeta as Record<string, unknown>)['pi-mcp-adapter.streamMode'];
 
-  if (streamMode === "eager" || streamMode === "stream-first") {
+  if (streamMode === 'eager' || streamMode === 'stream-first') {
     return streamMode;
   }
 

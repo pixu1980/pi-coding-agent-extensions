@@ -2,13 +2,13 @@
  * pi-sessions - session file discovery and parsing (private module)
  */
 
-import { createReadStream, readFileSync, statSync } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
-import { join } from "node:path";
-import { homedir } from "node:os";
-import { createInterface } from "node:readline";
-import { SESSION_DIR_NAME, MAX_NAME_LENGTH, MAX_SESSIONS, MAX_SESSION_SCAN_LINES, CACHE_TTL_MS } from "./_constants.ts";
-import type { SessionSummary, TextContentBlock } from "./_types.ts";
+import { createReadStream, readFileSync, statSync } from 'node:fs';
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
+import { createInterface } from 'node:readline';
+import { SESSION_DIR_NAME, MAX_NAME_LENGTH, MAX_SESSIONS, MAX_SESSION_SCAN_LINES, CACHE_TTL_MS } from './_constants.ts';
+import type { SessionSummary, TextContentBlock } from './_types.ts';
 
 // ── Session Cache ───────────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ export type SessionListProgress = (loaded: number, total: number) => void;
 export async function getSessions(onProgress?: SessionListProgress): Promise<SessionSummary[]> {
   const now = Date.now();
 
-  if (cachedSessions && (now - cacheTimestamp) < CACHE_TTL_MS) {
+  if (cachedSessions && now - cacheTimestamp < CACHE_TTL_MS) {
     onProgress?.(cachedSessions.length, cachedSessions.length);
 
     return cachedSessions;
@@ -89,19 +89,19 @@ export async function getSessions(onProgress?: SessionListProgress): Promise<Ses
  * Get the pi.dev sessions directory.
  */
 export function getSessionsDir(): string {
-  const agentDir = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
+  const agentDir = process.env.PI_CODING_AGENT_DIR || join(homedir(), '.pi', 'agent');
 
   return join(agentDir, SESSION_DIR_NAME);
 }
 
 function isTextBlock(value: unknown): value is TextContentBlock {
   return (
-    typeof value === "object" &&
+    typeof value === 'object' &&
     value !== null &&
-    "type" in value &&
-    (value as Record<string, unknown>).type === "text" &&
-    "text" in value &&
-    typeof (value as Record<string, unknown>).text === "string"
+    'type' in value &&
+    (value as Record<string, unknown>).type === 'text' &&
+    'text' in value &&
+    typeof (value as Record<string, unknown>).text === 'string'
   );
 }
 
@@ -110,12 +110,12 @@ function isTextBlock(value: unknown): value is TextContentBlock {
  */
 export function autoNameSession(content: unknown): string {
   if (!content) {
-    return "Empty session";
+    return 'Empty session';
   }
 
-  let text = "";
+  let text = '';
 
-  if (typeof content === "string") {
+  if (typeof content === 'string') {
     text = content;
   } else if (Array.isArray(content)) {
     for (const block of content) {
@@ -127,15 +127,13 @@ export function autoNameSession(content: unknown): string {
   }
 
   // Clean up: trim, remove excessive whitespace, truncate
-  text = text.replaceAll(/\s+/g, " ").trim();
+  text = text.replaceAll(/\s+/g, ' ').trim();
 
   if (!text) {
-    return "Empty session";
+    return 'Empty session';
   }
 
-  const truncated = text.length > MAX_NAME_LENGTH
-    ? text.slice(0, MAX_NAME_LENGTH - 3) + "..."
-    : text;
+  const truncated = text.length > MAX_NAME_LENGTH ? text.slice(0, MAX_NAME_LENGTH - 3) + '...' : text;
 
   return truncated;
 }
@@ -153,41 +151,39 @@ interface SessionScan {
 
 function createSessionScan(): SessionScan {
   return {
-    generatedName: "Unknown session",
-    date: "",
+    generatedName: 'Unknown session',
+    date: '',
     messageCount: 0,
   };
 }
 
 function scanSessionEntry(scan: SessionScan, entry: Record<string, any>): void {
-  if (entry.type === "session") {
-    if (typeof entry.cwd === "string") {
+  if (entry.type === 'session') {
+    if (typeof entry.cwd === 'string') {
       scan.cwd = entry.cwd;
     }
 
-    if (typeof entry.timestamp === "string") {
+    if (typeof entry.timestamp === 'string') {
       scan.date = entry.timestamp;
     }
 
     return;
   }
 
-  if (entry.type === "session_info") {
-    scan.explicitName = typeof entry.name === "string" && entry.name.trim()
-      ? entry.name.trim()
-      : undefined;
+  if (entry.type === 'session_info') {
+    scan.explicitName = typeof entry.name === 'string' && entry.name.trim() ? entry.name.trim() : undefined;
 
     return;
   }
 
-  if (entry.type !== "message" || !entry.message) {
+  if (entry.type !== 'message' || !entry.message) {
     return;
   }
 
   const message = entry.message as Record<string, any>;
 
-  if (message.role === "user") {
-    if (scan.generatedName === "Unknown session") {
+  if (message.role === 'user') {
+    if (scan.generatedName === 'Unknown session') {
       scan.generatedName = autoNameSession(message.content);
     }
 
@@ -197,12 +193,12 @@ function scanSessionEntry(scan: SessionScan, entry: Record<string, any>): void {
     return;
   }
 
-  if (message.role === "assistant") {
-    if (typeof message.model === "string") {
+  if (message.role === 'assistant') {
+    if (typeof message.model === 'string') {
       scan.model = message.model;
     }
 
-    if (typeof message.provider === "string") {
+    if (typeof message.provider === 'string') {
       scan.provider = message.provider;
     }
 
@@ -218,7 +214,7 @@ function scanSessionLine(scan: SessionScan, line: string): void {
   try {
     const entry = JSON.parse(line);
 
-    if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
       scanSessionEntry(scan, entry as Record<string, any>);
     }
   } catch {
@@ -226,12 +222,7 @@ function scanSessionLine(scan: SessionScan, line: string): void {
   }
 }
 
-function finishSessionSummary(
-  filePath: string,
-  scan: SessionScan,
-  mtimeMs: number,
-  mtime: Date,
-): SessionSummary {
+function finishSessionSummary(filePath: string, scan: SessionScan, mtimeMs: number, mtime: Date): SessionSummary {
   return {
     file: filePath,
     name: scan.explicitName || scan.generatedName,
@@ -250,11 +241,11 @@ function finishSessionSummary(
  */
 export function parseSessionFile(filePath: string): SessionSummary | null {
   try {
-    const content = readFileSync(filePath, "utf8");
+    const content = readFileSync(filePath, 'utf8');
     const stats = statSync(filePath);
     const scan = createSessionScan();
 
-    for (const line of content.split("\n")) {
+    for (const line of content.split('\n')) {
       scanSessionLine(scan, line);
     }
 
@@ -279,7 +270,13 @@ interface SessionsStats {
   linesScanned: number;
 }
 
-const sessionsStats: SessionsStats = { dirReads: 0, fileStats: 0, candidatesReturned: 0, filesParsed: 0, linesScanned: 0 };
+const sessionsStats: SessionsStats = {
+  dirReads: 0,
+  fileStats: 0,
+  candidatesReturned: 0,
+  filesParsed: 0,
+  linesScanned: 0,
+};
 
 export function getSessionsStats(): SessionsStats {
   return { ...sessionsStats };
@@ -288,7 +285,7 @@ export function getSessionsStats(): SessionsStats {
 async function mapWithConcurrency<T, R>(
   items: T[],
   limit: number,
-  worker: (item: T, index: number) => Promise<R>,
+  worker: (item: T, index: number) => Promise<R>
 ): Promise<R[]> {
   if (items.length === 0) {
     return [];
@@ -299,20 +296,17 @@ async function mapWithConcurrency<T, R>(
   // item count (MAX_SESSIONS candidates) so the queue itself is bounded.
   const results = new Array<R>(items.length);
   let nextIndex = 0;
-  const workers = Array.from(
-    { length: Math.min(limit, items.length) },
-    async () => {
-      while (true) {
-        const index = nextIndex++;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (true) {
+      const index = nextIndex++;
 
-        if (index >= items.length) {
-          return;
-        }
-
-        results[index] = await worker(items[index]!, index);
+      if (index >= items.length) {
+        return;
       }
-    },
-  );
+
+      results[index] = await worker(items[index]!, index);
+    }
+  });
 
   await Promise.all(workers);
 
@@ -324,7 +318,7 @@ async function parseSessionFileAsync(filePath: string): Promise<SessionSummary |
 
   try {
     const stats = await stat(filePath);
-    const input = createReadStream(filePath, { encoding: "utf8" });
+    const input = createReadStream(filePath, { encoding: 'utf8' });
     const lines = createInterface({ input, crlfDelay: Infinity });
     const scan = createSessionScan();
     let scanned = 0;
@@ -356,10 +350,7 @@ async function parseSessionFileAsync(filePath: string): Promise<SessionSummary |
 // sorted array (descending by mtime). Insert cost is O(k) with k capped at
 // 500, so discovery memory stays O(MAX_SESSIONS) no matter how many session
 // files accumulate.
-function insertCandidate(
-  top: Array<{ path: string; mtime: number }>,
-  entry: { path: string; mtime: number },
-): void {
+function insertCandidate(top: Array<{ path: string; mtime: number }>, entry: { path: string; mtime: number }): void {
   let lo = 0;
   let hi = top.length;
 
@@ -385,36 +376,38 @@ async function findSessionCandidates(): Promise<string[]> {
 
   try {
     sessionsStats.dirReads++;
-    const projects = (await readdir(sessionsDir, { withFileTypes: true }))
-      .filter((entry) => entry.isDirectory());
+    const projects = (await readdir(sessionsDir, { withFileTypes: true })).filter((entry) => entry.isDirectory());
     const top: Array<{ path: string; mtime: number }> = [];
 
-    await Promise.all(projects.map(async (project) => {
-      const projectPath = join(sessionsDir, project.name);
+    await Promise.all(
+      projects.map(async (project) => {
+        const projectPath = join(sessionsDir, project.name);
 
-      try {
-        sessionsStats.dirReads++;
-        const files = (await readdir(projectPath, { withFileTypes: true }))
-          .filter((entry) => entry.name.endsWith(".jsonl"));
+        try {
+          sessionsStats.dirReads++;
+          const files = (await readdir(projectPath, { withFileTypes: true })).filter((entry) =>
+            entry.name.endsWith('.jsonl')
+          );
 
-        await mapWithConcurrency(files, MAX_CONCURRENT_SESSION_READS, async (entry) => {
-          const filePath = join(projectPath, entry.name);
+          await mapWithConcurrency(files, MAX_CONCURRENT_SESSION_READS, async (entry) => {
+            const filePath = join(projectPath, entry.name);
 
-          try {
-            sessionsStats.fileStats++;
-            const info = await stat(filePath);
+            try {
+              sessionsStats.fileStats++;
+              const info = await stat(filePath);
 
-            if (info.isFile()) {
-              insertCandidate(top, { path: filePath, mtime: info.mtimeMs });
+              if (info.isFile()) {
+                insertCandidate(top, { path: filePath, mtime: info.mtimeMs });
+              }
+            } catch {
+              // unreadable file -> skip
             }
-          } catch {
-            // unreadable file -> skip
-          }
-        });
-      } catch {
-        // unreadable project dir -> skip
-      }
-    }));
+          });
+        } catch {
+          // unreadable project dir -> skip
+        }
+      })
+    );
 
     sessionsStats.candidatesReturned = top.length;
 
@@ -448,13 +441,12 @@ async function listSessionsAsync(onProgress?: SessionListProgress): Promise<Sess
 export function formatDate(isoStr: string): string {
   try {
     // Normalize: if no timezone offset/Z, treat as UTC
-    const normalized = /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith("Z") && !isoStr.endsWith("+00:00")
-      ? isoStr + "Z"
-      : isoStr;
+    const normalized =
+      /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith('Z') && !isoStr.endsWith('+00:00') ? isoStr + 'Z' : isoStr;
     const d = new Date(normalized);
 
     if (isNaN(d.getTime())) {
-      return "";
+      return '';
     }
 
     const now = new Date();
@@ -462,15 +454,15 @@ export function formatDate(isoStr: string): string {
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffDays === 0) {
-      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays === 1) {
-      return "Yesterday";
+      return 'Yesterday';
     } else if (diffDays < 7) {
       return `${diffDays}d ago`;
     } else {
-      return d.toLocaleDateString([], { month: "short", day: "numeric" });
+      return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
   } catch {
-    return "";
+    return '';
   }
 }

@@ -1,7 +1,7 @@
-import { createConnection, type Socket } from "node:net";
-import { ReadBuffer, serializeMessage } from "@modelcontextprotocol/sdk/shared/stdio.js";
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import { createConnection, type Socket } from 'node:net';
+import { ReadBuffer, serializeMessage } from '@modelcontextprotocol/sdk/shared/stdio.js';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 /** MCP JSONL transport for an explicitly configured Unix-domain socket. */
 export class UnixSocketClientTransport implements Transport {
@@ -16,7 +16,7 @@ export class UnixSocketClientTransport implements Transport {
 
   async start(): Promise<void> {
     if (this.socket) {
-      throw new Error("UnixSocketClientTransport already started");
+      throw new Error('UnixSocketClientTransport already started');
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -25,13 +25,13 @@ export class UnixSocketClientTransport implements Transport {
       this.socket = socket;
       let connected = false;
 
-      socket.once("connect", () => {
+      socket.once('connect', () => {
         connected = true;
         resolve();
       });
-      socket.on("data", chunk => {
+      socket.on('data', (chunk) => {
         try {
-          this.readBuffer.append(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+          this.readBuffer.append(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
 
           while (true) {
             const message = this.readBuffer.readMessage();
@@ -49,14 +49,14 @@ export class UnixSocketClientTransport implements Transport {
           void this.close();
         }
       });
-      socket.on("error", error => {
+      socket.on('error', (error) => {
         if (!connected) {
           reject(error);
         }
 
         this.onerror?.(error);
       });
-      socket.on("close", () => {
+      socket.on('close', () => {
         if (this.socket === socket) {
           this.socket = undefined;
         }
@@ -77,11 +77,11 @@ export class UnixSocketClientTransport implements Transport {
       return;
     }
 
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
       const timeout = setTimeout(() => socket.destroy(), 2_000);
 
       timeout.unref();
-      socket.once("close", () => {
+      socket.once('close', () => {
         clearTimeout(timeout);
         resolve();
       });
@@ -93,11 +93,11 @@ export class UnixSocketClientTransport implements Transport {
     const socket = this.socket;
 
     if (!socket || socket.destroyed) {
-      throw new Error("Unix socket is not connected");
+      throw new Error('Unix socket is not connected');
     }
 
     await new Promise<void>((resolve, reject) => {
-      socket.write(serializeMessage(message), error => {
+      socket.write(serializeMessage(message), (error) => {
         if (error) {
           reject(error);
         } else {

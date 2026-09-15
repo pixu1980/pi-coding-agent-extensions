@@ -7,19 +7,19 @@
  */
 
 /** pi provider id. The stored credential lives under this key in auth.json. */
-export const CURSOR_PROVIDER_ID = "cursor";
+export const CURSOR_PROVIDER_ID = 'cursor';
 
 /** Display name shown by `/login` and `/model`. */
-export const CURSOR_PROVIDER_NAME = "Cursor";
+export const CURSOR_PROVIDER_NAME = 'Cursor';
 
 /**
  * API flavor tag. `Api` in pi-ai is an open union (`KnownApi | (string & {})`),
  * so a custom tag is legal and routes every model to our `streamSimple`.
  */
-export const CURSOR_API_ID = "cursor-sdk";
+export const CURSOR_API_ID = 'cursor-sdk';
 
 /** Environment variable holding the API key, used as a fallback source. */
-export const CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
+export const CURSOR_API_KEY_ENV = 'CURSOR_API_KEY';
 
 /**
  * Non-secret sentinel handed to pi's provider registry.
@@ -30,13 +30,13 @@ export const CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
  * request in the stream path and never leaves the machine except as the
  * `Authorization` header sent to Cursor itself.
  */
-export const CURSOR_API_KEY_PLACEHOLDER = "pi-cursor-api-key-placeholder";
+export const CURSOR_API_KEY_PLACEHOLDER = 'pi-cursor-api-key-placeholder';
 
 /**
  * Hosts the extension (and the Cursor SDK it drives) may talk to.
  * Both are Cursor-owned. Anything else is a bug or an attack.
  */
-export const CURSOR_EGRESS_ALLOWLIST = ["api.cursor.com", "api2.cursor.sh"] as const;
+export const CURSOR_EGRESS_ALLOWLIST = ['api.cursor.com', 'api2.cursor.sh'] as const;
 
 /**
  * Backend URL override read by the Cursor SDK.
@@ -45,16 +45,16 @@ export const CURSOR_EGRESS_ALLOWLIST = ["api.cursor.com", "api2.cursor.sh"] as c
  * run when it points somewhere we do not trust, so a stray shell export cannot
  * silently redirect a user's API key to a third party.
  */
-export const CURSOR_BACKEND_URL_ENV = "CURSOR_BACKEND_URL";
+export const CURSOR_BACKEND_URL_ENV = 'CURSOR_BACKEND_URL';
 
 /** Opt-in escape hatch for the override guard (self-hosted Cursor stacks). */
-export const CURSOR_ALLOW_BACKEND_OVERRIDE_ENV = "PI_CURSOR_ALLOW_BACKEND_OVERRIDE";
+export const CURSOR_ALLOW_BACKEND_OVERRIDE_ENV = 'PI_CURSOR_ALLOW_BACKEND_OVERRIDE';
 
 /** Env var that prints the audited egress surface at startup. */
-export const CURSOR_EGRESS_LOG_ENV = "PI_CURSOR_LOG_EGRESS";
+export const CURSOR_EGRESS_LOG_ENV = 'PI_CURSOR_LOG_EGRESS';
 
 /** Model catalog cache filename under pi's agent dir. */
-export const CURSOR_MODEL_CACHE_FILE = "pi-cursor-models.json";
+export const CURSOR_MODEL_CACHE_FILE = 'pi-cursor-models.json';
 
 /**
  * Env var `@cursor/sdk` reads to validate a local agent's model selection
@@ -65,7 +65,7 @@ export const CURSOR_MODEL_CACHE_FILE = "pi-cursor-models.json";
  * local run is blocked before it starts. pi-cursor publishes the catalog it
  * discovered (or its local fallback) here at startup.
  */
-export const CURSOR_LOCAL_CATALOG_ENV = "CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON";
+export const CURSOR_LOCAL_CATALOG_ENV = 'CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON';
 
 /**
  * Set by pi when `--offline` (or `PI_OFFLINE=1`) is used.
@@ -74,7 +74,7 @@ export const CURSOR_LOCAL_CATALOG_ENV = "CURSOR_SDK_LOCAL_MODEL_CATALOG_JSON";
  * its requests directly. Startup model discovery must therefore check this
  * flag itself, or an offline run still sends the user's API key to Cursor.
  */
-export const CURSOR_OFFLINE_ENV = "PI_OFFLINE";
+export const CURSOR_OFFLINE_ENV = 'PI_OFFLINE';
 
 /** Catalog cache schema version; bump to invalidate on shape changes. */
 export const CURSOR_MODEL_CACHE_VERSION = 1;
@@ -92,7 +92,7 @@ export const CURSOR_FALLBACK_MAX_TOKENS = 16_384;
 export const CURSOR_ZERO_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } as const;
 
 /** Input modalities advertised for every Cursor model. */
-export const CURSOR_MODEL_INPUT: ("text" | "image")[] = ["text", "image"];
+export const CURSOR_MODEL_INPUT: ('text' | 'image')[] = ['text', 'image'];
 
 /** Cap on the display-only activity trace emitted as thinking content. */
 export const CURSOR_ACTIVITY_TRACE_MAX_CHARS = 20_000;

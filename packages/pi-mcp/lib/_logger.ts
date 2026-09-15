@@ -3,7 +3,7 @@
  * Provides structured, contextual logs with levels.
  */
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface LogContext {
   server?: string;
@@ -31,14 +31,14 @@ const LEVEL_PRIORITY: Record<LogLevel, number> = {
 };
 
 const LEVEL_PREFIX: Record<LogLevel, string> = {
-  debug: "[MCP-UI:DEBUG]",
-  info: "[MCP-UI]",
-  warn: "[MCP-UI:WARN]",
-  error: "[MCP-UI:ERROR]",
+  debug: '[MCP-UI:DEBUG]',
+  info: '[MCP-UI]',
+  warn: '[MCP-UI:WARN]',
+  error: '[MCP-UI:ERROR]',
 };
 
 class Logger {
-  private minLevel: LogLevel = "info";
+  private minLevel: LogLevel = 'info';
   private handlers: LogHandler[] = [];
   private defaultContext: LogContext = {};
 
@@ -80,11 +80,11 @@ class Logger {
     const contextStr = formatContext(entry.context);
     const fullMessage = contextStr ? `${prefix} ${message} ${contextStr}` : `${prefix} ${message}`;
 
-    if (level === "error") {
-      console.error(fullMessage, error ?? "");
-    } else if (level === "warn") {
+    if (level === 'error') {
+      console.error(fullMessage, error ?? '');
+    } else if (level === 'warn') {
       console.warn(fullMessage);
-    } else if (level === "debug") {
+    } else if (level === 'debug') {
       console.debug(fullMessage);
     } else {
       console.log(fullMessage);
@@ -101,19 +101,19 @@ class Logger {
   }
 
   debug(message: string, context?: LogContext): void {
-    this.emit("debug", message, context);
+    this.emit('debug', message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    this.emit("info", message, context);
+    this.emit('info', message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    this.emit("warn", message, context);
+    this.emit('warn', message, context);
   }
 
   error(message: string, error?: Error, context?: LogContext): void {
-    this.emit("error", message, context, error);
+    this.emit('error', message, context, error);
   }
 
   /**
@@ -153,24 +153,24 @@ class ChildLogger {
 
 function formatContext(context?: LogContext): string {
   if (!context || Object.keys(context).length === 0) {
-    return "";
+    return '';
   }
 
   const parts: string[] = [];
 
   for (const [key, value] of Object.entries(context)) {
     if (value !== undefined && value !== null) {
-      parts.push(`${key}=${typeof value === "string" ? value : JSON.stringify(value)}`);
+      parts.push(`${key}=${typeof value === 'string' ? value : JSON.stringify(value)}`);
     }
   }
 
-  return parts.length > 0 ? `(${parts.join(", ")})` : "";
+  return parts.length > 0 ? `(${parts.join(', ')})` : '';
 }
 
 // Singleton instance
 export const logger = new Logger();
 
 // Enable debug mode via environment variable
-if (process.env.MCP_UI_DEBUG === "1" || process.env.MCP_UI_DEBUG === "true") {
-  logger.setLevel("debug");
+if (process.env.MCP_UI_DEBUG === '1' || process.env.MCP_UI_DEBUG === 'true') {
+  logger.setLevel('debug');
 }

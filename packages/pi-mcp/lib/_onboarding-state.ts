@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
-import { dirname } from "node:path";
-import { getAgentPath } from "./_agent-dir.ts";
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { getAgentPath } from './_agent-dir.ts';
 
 export interface McpOnboardingState {
   version: 1;
@@ -16,7 +16,7 @@ const DEFAULT_STATE: McpOnboardingState = {
 };
 
 export function getOnboardingStatePath(): string {
-  return getAgentPath("mcp-onboarding.json");
+  return getAgentPath('mcp-onboarding.json');
 }
 
 export function loadOnboardingState(): McpOnboardingState {
@@ -27,9 +27,9 @@ export function loadOnboardingState(): McpOnboardingState {
   }
 
   try {
-    const raw = JSON.parse(readFileSync(path, "utf-8")) as Partial<McpOnboardingState>;
+    const raw = JSON.parse(readFileSync(path, 'utf-8')) as Partial<McpOnboardingState>;
 
-    if (!raw || typeof raw !== "object") {
+    if (!raw || typeof raw !== 'object') {
       return { ...DEFAULT_STATE };
     }
 
@@ -37,7 +37,8 @@ export function loadOnboardingState(): McpOnboardingState {
       version: 1,
       sharedConfigHintShown: raw.sharedConfigHintShown === true,
       setupCompleted: raw.setupCompleted === true,
-      lastDiscoveryFingerprint: typeof raw.lastDiscoveryFingerprint === "string" ? raw.lastDiscoveryFingerprint : undefined,
+      lastDiscoveryFingerprint:
+        typeof raw.lastDiscoveryFingerprint === 'string' ? raw.lastDiscoveryFingerprint : undefined,
     };
   } catch {
     return { ...DEFAULT_STATE };
@@ -50,7 +51,7 @@ export function saveOnboardingState(state: McpOnboardingState): void {
   mkdirSync(dirname(path), { recursive: true });
   const tmpPath = `${path}.${process.pid}.tmp`;
 
-  writeFileSync(tmpPath, `${JSON.stringify(state, null, 2)}\n`, "utf-8");
+  writeFileSync(tmpPath, `${JSON.stringify(state, null, 2)}\n`, 'utf-8');
   renameSync(tmpPath, path);
 }
 

@@ -31,10 +31,10 @@ export function formatFetchResult(page: FormatPage, options: { maxChars: number 
   text += `> Source: ${page.url} · Fetched: ${new Date(page.fetchedAt).toISOString()} · ${totalChars} chars`;
 
   if (page.lowQuality) {
-    text += " - ⚠ low-quality extraction (page may be JS-rendered)";
+    text += ' - ⚠ low-quality extraction (page may be JS-rendered)';
   }
 
-  text += "\n\n---\n\n";
+  text += '\n\n---\n\n';
 
   if (truncated) {
     text += page.content.slice(0, options.maxChars);
@@ -47,7 +47,7 @@ export function formatFetchResult(page: FormatPage, options: { maxChars: number 
 }
 
 export function formatMultiFetchSummary(pages: FormatPage[], totalChars: number): string {
-  let text = "## Fetched URLs\n\n";
+  let text = '## Fetched URLs\n\n';
 
   for (const page of pages) {
     if (page.error) {

@@ -1,9 +1,9 @@
 // metadata-cache.ts - Persistent MCP metadata cache
-import { existsSync, readFileSync, statSync, writeFileSync, renameSync, mkdirSync } from "node:fs";
-import { dirname } from "node:path";
-import { getAgentPath } from "./_agent-dir.ts";
-import { createHash } from "node:crypto";
-import { getToolUiResourceUri } from "@modelcontextprotocol/ext-apps/app-bridge";
+import { existsSync, readFileSync, statSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { getAgentPath } from './_agent-dir.ts';
+import { createHash } from 'node:crypto';
+import { getToolUiResourceUri } from '@modelcontextprotocol/ext-apps/app-bridge';
 import type {
   CachedPrompt,
   CachedResource,
@@ -18,16 +18,23 @@ import type {
   ServerEntry,
   ToolMetadata,
   PromptMetadata,
-} from "./_types.ts";
-import { formatPromptCommandName, formatToolName, isServerDisabled, isToolAllowed, resolveToolPrefix, type ToolPrefix } from "./_types.ts";
-import { resourceNameToToolName } from "./_resource-tools.ts";
+} from './_types.ts';
+import {
+  formatPromptCommandName,
+  formatToolName,
+  isServerDisabled,
+  isToolAllowed,
+  resolveToolPrefix,
+  type ToolPrefix,
+} from './_types.ts';
+import { resourceNameToToolName } from './_resource-tools.ts';
 import {
   extractToolUiStreamMode,
   interpolateEnvRecord,
   resolveBearerToken,
   resolveConfigPath,
   resolveServerUrl,
-} from "./_utils.ts";
+} from './_utils.ts';
 
 const CACHE_VERSION = 1;
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -78,7 +85,7 @@ function decodeCache(raw: string): MetadataCache | null {
     return null;
   }
 
-  if (!parsed || typeof parsed !== "object") {
+  if (!parsed || typeof parsed !== 'object') {
     return null;
   }
 
@@ -88,17 +95,17 @@ function decodeCache(raw: string): MetadataCache | null {
     return null;
   }
 
-  if (!candidate.servers || typeof candidate.servers !== "object") {
+  if (!candidate.servers || typeof candidate.servers !== 'object') {
     return null;
   }
 
   return candidate;
 }
 
-export type { CachedPrompt, CachedResource, CachedTool, MetadataCache, ServerCacheEntry } from "./_types.ts";
+export type { CachedPrompt, CachedResource, CachedTool, MetadataCache, ServerCacheEntry } from './_types.ts';
 
 export function getMetadataCachePath(): string {
-  return getAgentPath("mcp-cache.json");
+  return getAgentPath('mcp-cache.json');
 }
 
 export function loadMetadataCache(): MetadataCache | null {
@@ -116,9 +123,12 @@ export function loadMetadataCache(): MetadataCache | null {
   }
 
   // Same identity as last real read -> serve from memory, zero file reads.
-  if (memoryCache && memoryCache.identity &&
-      memoryCache.identity.mtimeMs === identity.mtimeMs &&
-      memoryCache.identity.size === identity.size) {
+  if (
+    memoryCache &&
+    memoryCache.identity &&
+    memoryCache.identity.mtimeMs === identity.mtimeMs &&
+    memoryCache.identity.size === identity.size
+  ) {
     stats.memoryHits++;
 
     return memoryCache.data;
@@ -128,7 +138,7 @@ export function loadMetadataCache(): MetadataCache | null {
   let raw: string | null = null;
 
   try {
-    raw = readFileSync(cachePath, "utf-8");
+    raw = readFileSync(cachePath, 'utf-8');
   } catch {
     memoryCache = { identity, data: null };
 
@@ -154,7 +164,7 @@ export function saveMetadataCache(cache: MetadataCache): void {
 
   try {
     if (existsSync(cachePath)) {
-      const existing = JSON.parse(readFileSync(cachePath, "utf-8")) as MetadataCache;
+      const existing = JSON.parse(readFileSync(cachePath, 'utf-8')) as MetadataCache;
 
       if (existing && existing.version === CACHE_VERSION && existing.servers) {
         merged.servers = { ...existing.servers };
@@ -169,7 +179,7 @@ export function saveMetadataCache(cache: MetadataCache): void {
 
   const tmpPath = `${cachePath}.${process.pid}.tmp`;
 
-  writeFileSync(tmpPath, JSON.stringify(merged, null, 2), "utf-8");
+  writeFileSync(tmpPath, JSON.stringify(merged, null, 2), 'utf-8');
   renameSync(tmpPath, cachePath);
   // The file changed under us: drop the read-through copy so the next load
   // re-reads the merged content. Identity is not known until the next stat.
@@ -197,7 +207,7 @@ export function computeServerHash(definition: ServerEntry): string {
   };
   const normalized = stableStringify(identity);
 
-  return createHash("sha256").update(normalized).digest("hex");
+  return createHash('sha256').update(normalized).digest('hex');
 }
 
 export function isServerCacheValid(
@@ -217,7 +227,7 @@ export function isServerCacheValid(
     return false;
   }
 
-  if (!entry.cachedAt || typeof entry.cachedAt !== "number") {
+  if (!entry.cachedAt || typeof entry.cachedAt !== 'number') {
     return false;
   }
 
@@ -236,10 +246,10 @@ export function parseDirectToolSelectors(selectors: string[]): {
   const tools = new Map<string, Set<string>>();
 
   for (let selector of selectors) {
-    selector = selector.replace(/\/+$/, "");
+    selector = selector.replace(/\/+$/, '');
 
-    if (selector.includes("/")) {
-      const [server, tool] = selector.split("/", 2);
+    if (selector.includes('/')) {
+      const [server, tool] = selector.split('/', 2);
 
       if (server && tool) {
         const serverTools = tools.get(server) ?? new Set<string>();
@@ -260,7 +270,7 @@ export function parseDirectToolSelectors(selectors: string[]): {
 export function getMissingConfiguredDirectToolServers(
   config: McpConfig,
   cache: MetadataCache | null,
-  envOverride?: string[],
+  envOverride?: string[]
 ): string[] {
   const missing: string[] = [];
   const globalDirect = config.settings?.directTools;
@@ -295,7 +305,7 @@ export function reconstructToolMetadata(
   serverName: string,
   entry: ServerCacheEntry,
   prefix: ToolPrefix,
-  definition: Pick<ServerEntry, "exposeResources" | "includeTools" | "excludeTools" | "toolPrefix">
+  definition: Pick<ServerEntry, 'exposeResources' | 'includeTools' | 'excludeTools' | 'toolPrefix'>
 ): ToolMetadata[] {
   const metadata: ToolMetadata[] = [];
   const seenNames = new Set<string>();
@@ -321,7 +331,7 @@ export function reconstructToolMetadata(
     metadata.push({
       name,
       originalName: tool.name,
-      description: tool.description ?? "",
+      description: tool.description ?? '',
       inputSchema: tool.inputSchema,
       uiResourceUri: tool.uiResourceUri,
       uiStreamMode: tool.uiStreamMode,
@@ -362,8 +372,8 @@ export function reconstructToolMetadata(
 
 export function serializeTools(tools: McpTool[]): CachedTool[] {
   return tools
-    .filter(t => t?.name)
-    .map(t => ({
+    .filter((t) => t?.name)
+    .map((t) => ({
       name: t.name,
       description: t.description,
       inputSchema: t.inputSchema,
@@ -374,8 +384,8 @@ export function serializeTools(tools: McpTool[]): CachedTool[] {
 
 export function serializeResources(resources: McpResource[]): CachedResource[] {
   return resources
-    .filter(r => r?.name && r?.uri)
-    .map(r => ({
+    .filter((r) => r?.name && r?.uri)
+    .map((r) => ({
       uri: r.uri,
       name: r.name,
       description: r.description,
@@ -384,17 +394,19 @@ export function serializeResources(resources: McpResource[]): CachedResource[] {
 
 export function serializePrompts(prompts: McpPrompt[]): CachedPrompt[] {
   return (prompts ?? [])
-    .filter(prompt => prompt?.name)
-    .map(prompt => ({
+    .filter((prompt) => prompt?.name)
+    .map((prompt) => ({
       name: prompt.name,
       title: prompt.title,
       description: prompt.description,
       arguments: Array.isArray(prompt.arguments)
-        ? prompt.arguments.filter(argument => argument?.name).map(argument => ({
-          name: argument.name,
-          description: argument.description,
-          required: argument.required,
-        }))
+        ? prompt.arguments
+            .filter((argument) => argument?.name)
+            .map((argument) => ({
+              name: argument.name,
+              description: argument.description,
+              required: argument.required,
+            }))
         : undefined,
     }));
 }
@@ -403,45 +415,49 @@ export function reconstructPromptMetadata(
   serverName: string,
   prompts: ReadonlyArray<McpPrompt | CachedPrompt>,
   prefix: ToolPrefix,
-  definition?: Pick<ServerEntry, "toolPrefix">,
+  definition?: Pick<ServerEntry, 'toolPrefix'>
 ): PromptMetadata[] {
   const effectivePrefix = resolveToolPrefix(definition, prefix);
 
-  return (prompts ?? []).filter(prompt => prompt?.name).map(prompt => {
-    const args: McpPromptArgument[] = Array.isArray(prompt.arguments)
-      ? prompt.arguments.filter(argument => argument?.name).map(argument => ({
-        name: argument.name,
-        description: argument.description,
-        required: argument.required,
-      }))
-      : [];
+  return (prompts ?? [])
+    .filter((prompt) => prompt?.name)
+    .map((prompt) => {
+      const args: McpPromptArgument[] = Array.isArray(prompt.arguments)
+        ? prompt.arguments
+            .filter((argument) => argument?.name)
+            .map((argument) => ({
+              name: argument.name,
+              description: argument.description,
+              required: argument.required,
+            }))
+        : [];
 
-    return {
-      serverName,
-      originalName: prompt.name,
-      commandName: formatPromptCommandName(prompt.name, serverName, effectivePrefix),
-      title: prompt.title,
-      description: prompt.description ?? "",
-      arguments: args,
-    };
-  });
+      return {
+        serverName,
+        originalName: prompt.name,
+        commandName: formatPromptCommandName(prompt.name, serverName, effectivePrefix),
+        title: prompt.title,
+        description: prompt.description ?? '',
+        arguments: args,
+      };
+    });
 }
 
 function stableStringify(value: unknown): string {
-  if (value === null || value === undefined || typeof value !== "object") {
+  if (value === null || value === undefined || typeof value !== 'object') {
     const serialized = JSON.stringify(value);
 
-    return serialized === undefined ? "undefined" : serialized;
+    return serialized === undefined ? 'undefined' : serialized;
   }
 
   if (Array.isArray(value)) {
-    return `[${value.map(v => stableStringify(v)).join(",")}]`;
+    return `[${value.map((v) => stableStringify(v)).join(',')}]`;
   }
 
   const obj = value as Record<string, unknown>;
   const keys = Object.keys(obj).sort();
 
-  return `{${keys.map(k => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(",")}}`;
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`).join(',')}}`;
 }
 
 function tryGetToolUiResourceUri(tool: McpTool): string | undefined {

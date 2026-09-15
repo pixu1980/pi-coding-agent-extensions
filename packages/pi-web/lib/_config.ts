@@ -16,9 +16,9 @@
  * by default, add entries (CIDR or literal IPs) to permit local development
  * servers.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { homedir } from "node:os";
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 export interface PiWebConfig {
   userAgent: string;
@@ -30,7 +30,7 @@ export interface PiWebConfig {
 }
 
 const DEFAULTS: PiWebConfig = {
-  userAgent: "pi-web/0.1.0 (+https://github.com/pixu1980/pi-coding-agent-extensions)",
+  userAgent: 'pi-web/0.1.0 (+https://github.com/pixu1980/pi-coding-agent-extensions)',
   timeoutMs: 30_000,
   maxResponseBytes: 2 * 1024 * 1024,
   maxChars: 12_000,
@@ -42,31 +42,31 @@ export function loadConfig(): PiWebConfig {
   const config: PiWebConfig = { ...DEFAULTS, allowRanges: [...DEFAULTS.allowRanges] };
 
   try {
-    const raw = readFileSync(join(homedir(), ".pi", "pi-web.json"), "utf8");
+    const raw = readFileSync(join(homedir(), '.pi', 'pi-web.json'), 'utf8');
     const parsed = JSON.parse(raw) as Record<string, unknown>;
 
-    if (typeof parsed.userAgent === "string") {
+    if (typeof parsed.userAgent === 'string') {
       config.userAgent = parsed.userAgent;
     }
 
-    if (typeof parsed.timeoutMs === "number") {
+    if (typeof parsed.timeoutMs === 'number') {
       config.timeoutMs = parsed.timeoutMs;
     }
 
-    if (typeof parsed.maxResponseBytes === "number") {
+    if (typeof parsed.maxResponseBytes === 'number') {
       config.maxResponseBytes = parsed.maxResponseBytes;
     }
 
-    if (typeof parsed.maxChars === "number") {
+    if (typeof parsed.maxChars === 'number') {
       config.maxChars = parsed.maxChars;
     }
 
-    if (typeof parsed.concurrency === "number") {
+    if (typeof parsed.concurrency === 'number') {
       config.concurrency = parsed.concurrency;
     }
 
     if (Array.isArray(parsed.allowRanges)) {
-      config.allowRanges = parsed.allowRanges.filter((entry): entry is string => typeof entry === "string");
+      config.allowRanges = parsed.allowRanges.filter((entry): entry is string => typeof entry === 'string');
     }
   } catch {
     // no config file (or unreadable) -> defaults

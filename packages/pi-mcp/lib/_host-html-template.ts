@@ -1,7 +1,7 @@
-import type { UiHostContext, UiResourceContent, UiResourceCsp } from "./_types.ts";
+import type { UiHostContext, UiResourceContent, UiResourceCsp } from './_types.ts';
 
 // Use locally bundled AppBridge to avoid CDN Zod bundling issues
-const DEFAULT_APP_BRIDGE_MODULE_URL = "/app-bridge.bundle.js";
+const DEFAULT_APP_BRIDGE_MODULE_URL = '/app-bridge.bundle.js';
 
 export interface HostHtmlTemplateInput {
   sessionToken: string;
@@ -394,25 +394,21 @@ export function buildCspMetaContent(csp: UiResourceCsp | undefined): string | un
 
   return [
     "default-src 'none'",
-    toDirective("script-src", ["'self'", "'unsafe-inline'"], resourceDomains),
-    toDirective("style-src", ["'self'", "'unsafe-inline'"], resourceDomains),
-    toDirective("font-src", ["'self'"], resourceDomains),
-    toDirective("img-src", ["'self'", "data:"], resourceDomains),
-    toDirective("media-src", ["'self'", "data:"], resourceDomains),
-    toDirective("connect-src", ["'self'"], connectDomains),
-    frameDomains.length > 0
-      ? `frame-src ${frameDomains.join(" ")}`
-      : "frame-src 'none'",
-    toDirective("worker-src", ["'self'", "blob:"], resourceDomains),
+    toDirective('script-src', ["'self'", "'unsafe-inline'"], resourceDomains),
+    toDirective('style-src', ["'self'", "'unsafe-inline'"], resourceDomains),
+    toDirective('font-src', ["'self'"], resourceDomains),
+    toDirective('img-src', ["'self'", 'data:'], resourceDomains),
+    toDirective('media-src', ["'self'", 'data:'], resourceDomains),
+    toDirective('connect-src', ["'self'"], connectDomains),
+    frameDomains.length > 0 ? `frame-src ${frameDomains.join(' ')}` : "frame-src 'none'",
+    toDirective('worker-src', ["'self'", 'blob:'], resourceDomains),
     "object-src 'none'",
-    baseUriDomains.length > 0
-      ? `base-uri ${baseUriDomains.join(" ")}`
-      : "base-uri 'self'",
-  ].join("; ");
+    baseUriDomains.length > 0 ? `base-uri ${baseUriDomains.join(' ')}` : "base-uri 'self'",
+  ].join('; ');
 }
 
 function toDirective(name: string, trustedSources: string[], domains: string[]): string {
-  return `${name} ${[...new Set([...trustedSources, ...domains])].join(" ")}`;
+  return `${name} ${[...new Set([...trustedSources, ...domains])].join(' ')}`;
 }
 
 function sanitizeCspDomains(domains: unknown): string[] {
@@ -420,39 +416,39 @@ function sanitizeCspDomains(domains: unknown): string[] {
     return [];
   }
 
-  return [...new Set(domains.filter(
-    (domain): domain is string =>
-      typeof domain === "string" &&
-      domain.length > 0 &&
-      // HTTP headers must be printable ASCII; rejecting all other code points also
-      // excludes every C0/C1 control character before Node serializes the policy.
-      /^[\x21-\x7E]+$/.test(domain) &&
-      !/[;'"]/.test(domain),
-  ))];
+  return [
+    ...new Set(
+      domains.filter(
+        (domain): domain is string =>
+          typeof domain === 'string' &&
+          domain.length > 0 &&
+          // HTTP headers must be printable ASCII; rejecting all other code points also
+          // excludes every C0/C1 control character before Node serializes the policy.
+          /^[\x21-\x7E]+$/.test(domain) &&
+          !/[;'"]/.test(domain)
+      )
+    ),
+  ];
 }
 
 function safeInlineJSON(value: unknown): string {
   return JSON.stringify(value)
-    .replaceAll('<', "\\u003c")
-    .replaceAll('>', "\\u003e")
-    .replaceAll('&', "\\u0026")
-    .replaceAll('\u2028', "\\u2028")
-    .replaceAll('\u2029', "\\u2029");
+    .replaceAll('<', '\\u003c')
+    .replaceAll('>', '\\u003e')
+    .replaceAll('&', '\\u0026')
+    .replaceAll('\u2028', '\\u2028')
+    .replaceAll('\u2029', '\\u2029');
 }
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll('&', "&amp;")
-    .replaceAll('<', "&lt;")
-    .replaceAll('>', "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll('\'', "&#39;");
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function escapeHtmlAttribute(value: string): string {
-  return value
-    .replaceAll('&', "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll('<', "&lt;")
-    .replaceAll('>', "&gt;");
+  return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }

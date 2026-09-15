@@ -24,8 +24,16 @@
  * with the next answer.
  */
 
-import type { ThemeColor, ToolDefinition } from "@earendil-works/pi-coding-agent";
-import { Editor, type EditorTheme, Key, matchesKey, Text, visibleWidth, wrapTextWithAnsi } from "@earendil-works/pi-tui";
+import type { ThemeColor, ToolDefinition } from '@earendil-works/pi-coding-agent';
+import {
+  Editor,
+  type EditorTheme,
+  Key,
+  matchesKey,
+  Text,
+  visibleWidth,
+  wrapTextWithAnsi,
+} from '@earendil-works/pi-tui';
 
 import {
   InterviewParams,
@@ -38,10 +46,10 @@ import {
   type NormalizedQuestion,
   type NormalizedWave,
   type SelectAnswer,
-} from "./_types.ts";
-import { chatInterviewLabel, chatInterviewNextSuffix } from "./_lang.ts";
-import { parseDigitKey, selectionFromCustom, selectionFromIndex, toggleIndex, withNote } from "./_logic.ts";
-import { attachPathAutocomplete, mustRebuildForAutocomplete, type PathProviderBus } from "./_path-provider.ts";
+} from './_types.ts';
+import { chatInterviewLabel, chatInterviewNextSuffix } from './_lang.ts';
+import { parseDigitKey, selectionFromCustom, selectionFromIndex, toggleIndex, withNote } from './_logic.ts';
+import { attachPathAutocomplete, mustRebuildForAutocomplete, type PathProviderBus } from './_path-provider.ts';
 
 interface QuestionSession {
   q: NormalizedQuestion;
@@ -68,7 +76,7 @@ function buildSession(q: NormalizedQuestion): QuestionSession {
     answer: null,
     multi: new Set(),
     customEntry: null,
-    noteText: "",
+    noteText: '',
   };
 }
 
@@ -107,26 +115,29 @@ function buildChunks(waves: NormalizedWave[]): WaveChunk[] {
  */
 export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof InterviewParams, InterviewDetails> {
   return {
-    name: "interview",
-    label: "Interview",
+    name: 'interview',
+    label: 'Interview',
     description:
-			"Ask the user a structured set of questions (interview). The caller controls the structure via `waves`: each wave is a labeled group of questions with any length (hierarchical/structural criteria decide the grouping), executed one wave at a time - respected in full, never split. Each question supports options, custom answers and notes; a review tab shows all answers before submission. Use for interviews, requirements gathering, or multi-wave studies.",
+      'Ask the user a structured set of questions (interview). The caller controls the structure via `waves`: each wave is a labeled group of questions with any length (hierarchical/structural criteria decide the grouping), executed one wave at a time - respected in full, never split. Each question supports options, custom answers and notes; a review tab shows all answers before submission. Use for interviews, requirements gathering, or multi-wave studies.',
     parameters: InterviewParams,
 
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
       const { title, waves } = normalizeInterview(params);
       const chunks = buildChunks(waves);
 
-      if (ctx.mode !== "tui") {
+      if (ctx.mode !== 'tui') {
         return {
-          content: [{ type: "text", text: "Error: UI not available (running in non-interactive mode)" }],
+          content: [{ type: 'text', text: 'Error: UI not available (running in non-interactive mode)' }],
           details: { title, waves, answers: [], canceled: true } as InterviewDetails,
         };
       }
 
-      if (chunks.length === 0 || chunks.every((c) => c.questions.length === 0 || c.questions.every((q) => q.options.length === 0))) {
+      if (
+        chunks.length === 0 ||
+        chunks.every((c) => c.questions.length === 0 || c.questions.every((q) => q.options.length === 0))
+      ) {
         return {
-          content: [{ type: "text", text: "Error: No questions provided" }],
+          content: [{ type: 'text', text: 'Error: No questions provided' }],
           details: { title, waves, answers: [], canceled: true } as InterviewDetails,
         };
       }
@@ -153,13 +164,13 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
           let cachedLines: string[] | undefined;
 
           const editorTheme: EditorTheme = {
-            borderColor: (s) => theme.fg("accent", s),
+            borderColor: (s) => theme.fg('accent', s),
             selectList: {
-              selectedPrefix: (t) => theme.fg("accent", t),
-              selectedText: (t) => theme.fg("accent", t),
-              description: (t) => theme.fg("muted", t),
-              scrollInfo: (t) => theme.fg("dim", t),
-              noMatch: (t) => theme.fg("warning", t),
+              selectedPrefix: (t) => theme.fg('accent', t),
+              selectedText: (t) => theme.fg('accent', t),
+              description: (t) => theme.fg('muted', t),
+              scrollInfo: (t) => theme.fg('dim', t),
+              noMatch: (t) => theme.fg('warning', t),
             },
           };
           const editor = new Editor(tui, editorTheme);
@@ -265,13 +276,13 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
               }
             }
 
-            s.noteText = answers[0]?.note ?? "";
+            s.noteText = answers[0]?.note ?? '';
           }
 
           /**
-					 * Record the answers and move to the next tab - on the last
-					 * question this lands on the review tab (digit and Enter flow).
-					 */
+           * Record the answers and move to the next tab - on the last
+           * question this lands on the review tab (digit and Enter flow).
+           */
           function recordAndAdvance(s: QuestionSession, answers: SelectAnswer[]) {
             applyAnswers(s, answers);
             advance();
@@ -288,31 +299,31 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
               } // empty → stay in editor
 
               editMode = false;
-              editor.setText("");
+              editor.setText('');
               recordAndAdvance(s, [withNote(custom, s.noteText)]);
             } else if (noteMode && s) {
               s.noteText = value.trim();
               noteMode = false;
-              editor.setText("");
+              editor.setText('');
               refresh();
             }
           };
 
           function openNoteEditor() {
             noteMode = true;
-            editor.setText("");
+            editor.setText('');
             refresh();
           }
 
           /**
-					 * Move the highlight. "Type something." enters write mode when
-					 * highlighted and leaves it (clearing the field) when it loses
-					 * the highlight.
-					 */
+           * Move the highlight. "Type something." enters write mode when
+           * highlighted and leaves it (clearing the field) when it loses
+           * the highlight.
+           */
           function moveCursor(s: QuestionSession, index: number) {
             s.optionIndex = index;
             editMode = s.opts[index]?.isOther === true;
-            editor.setText("");
+            editor.setText('');
             refresh();
           }
 
@@ -340,7 +351,7 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
             if (noteMode) {
               if (matchesKey(data, Key.escape)) {
                 noteMode = false;
-                editor.setText("");
+                editor.setText('');
                 refresh();
               } else {
                 editor.handleInput(data);
@@ -356,7 +367,7 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
             if (editMode && s) {
               if (matchesKey(data, Key.escape)) {
                 editMode = false;
-                editor.setText("");
+                editor.setText('');
                 moveCursor(s, Math.max(0, s.optionIndex - 1));
 
                 return;
@@ -368,7 +379,7 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
                   : Math.min(s.opts.length - 1, s.optionIndex + 1);
 
                 editMode = false;
-                editor.setText("");
+                editor.setText('');
                 moveCursor(s, next);
 
                 return;
@@ -388,7 +399,7 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
               return;
             }
 
-            if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
+            if (matchesKey(data, Key.shift('tab')) || matchesKey(data, Key.left)) {
               currentTab = (currentTab - 1 + totalTabs) % totalTabs;
               refresh();
 
@@ -437,7 +448,7 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
               return;
             }
 
-            if (matchesKey(data, "n") && s.q.allowNote) {
+            if (matchesKey(data, 'n') && s.q.allowNote) {
               openNoteEditor();
 
               return;
@@ -495,14 +506,14 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
               }
 
               const wrapped = wrapTextWithAnsi(text, renderWidth - prefixWidth);
-              const continuationPrefix = " ".repeat(prefixWidth);
+              const continuationPrefix = ' '.repeat(prefixWidth);
 
               for (let i = 0; i < wrapped.length; i++) {
                 lines.push(`${i === 0 ? prefix : continuationPrefix}${wrapped[i]}`);
               }
             }
 
-            lines.push(theme.fg("accent", "─".repeat(renderWidth)));
+            lines.push(theme.fg('accent', '─'.repeat(renderWidth)));
 
             // Header: title + wave + interview progress + tab bar
             const headerBits: string[] = [];
@@ -512,73 +523,76 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
             }
 
             if (chunk.waveLabel) {
-              headerBits.push(theme.fg("accent", theme.bold(chunk.waveLabel)));
+              headerBits.push(theme.fg('accent', theme.bold(chunk.waveLabel)));
             }
 
             if (chunk.total > 1) {
-              headerBits.push(theme.fg("muted", `${chatInterviewLabel()} ${chunk.position}/${chunk.total}`));
+              headerBits.push(theme.fg('muted', `${chatInterviewLabel()} ${chunk.position}/${chunk.total}`));
             }
 
             if (headerBits.length > 0) {
-              addWrappedWithPrefix(" ", headerBits.join(" - "));
-              lines.push("");
+              addWrappedWithPrefix(' ', headerBits.join(' - '));
+              lines.push('');
             }
 
-            const tabs: string[] = ["← "];
+            const tabs: string[] = ['← '];
 
             for (let i = 0; i < flat.length; i++) {
               const isActive = i === currentTab;
               const answered = isAnswered(sessions.get(flat[i].id)!);
-              const box = answered ? "■" : "□";
-              const color = answered ? "success" : "muted";
+              const box = answered ? '■' : '□';
+              const color = answered ? 'success' : 'muted';
               const text = ` ${box} ${flat[i].label} `;
-              const styled = isActive ? theme.bg("selectedBg", theme.fg("text", text)) : theme.fg(color, text);
+              const styled = isActive ? theme.bg('selectedBg', theme.fg('text', text)) : theme.fg(color, text);
 
               tabs.push(`${styled} `);
             }
 
             const canSubmit = recorded().length === flat.length;
             const isSubmitTab = currentTab === order.length;
-            const submitText = " ✓ Submit ";
+            const submitText = ' ✓ Submit ';
             const submitStyled = isSubmitTab
-              ? theme.bg("selectedBg", theme.fg("text", submitText))
-              : theme.fg(canSubmit ? "success" : "dim", submitText);
+              ? theme.bg('selectedBg', theme.fg('text', submitText))
+              : theme.fg(canSubmit ? 'success' : 'dim', submitText);
 
             tabs.push(`${submitStyled} →`);
-            addWrappedWithPrefix(" ", tabs.join(""));
-            lines.push("");
+            addWrappedWithPrefix(' ', tabs.join(''));
+            lines.push('');
 
             // Review tab
             if (currentTab === order.length) {
-              addWrappedWithPrefix(" ", theme.fg("accent", theme.bold("Ready to submit")));
-              lines.push("");
+              addWrappedWithPrefix(' ', theme.fg('accent', theme.bold('Ready to submit')));
+              lines.push('');
               const rec = recorded();
 
               if (rec.length === 0) {
-                addWrappedWithPrefix(" ", theme.fg("muted", "No answers yet."));
+                addWrappedWithPrefix(' ', theme.fg('muted', 'No answers yet.'));
               }
 
               for (const r of rec) {
                 addWrappedWithPrefix(
-                  " ",
-                  theme.fg("muted", `${r.questionLabel}: `) + theme.fg("text", summarizeAnswers(r.answers)),
+                  ' ',
+                  theme.fg('muted', `${r.questionLabel}: `) + theme.fg('text', summarizeAnswers(r.answers))
                 );
               }
 
-              lines.push("");
+              lines.push('');
 
               if (canSubmit) {
-                const nextLabel = chunk.position < chunk.total ? ` ${chatInterviewNextSuffix()}` : "";
+                const nextLabel = chunk.position < chunk.total ? ` ${chatInterviewNextSuffix()}` : '';
 
-                addWrappedWithPrefix(" ", theme.fg("success", `Press Enter to submit${nextLabel}`));
+                addWrappedWithPrefix(' ', theme.fg('success', `Press Enter to submit${nextLabel}`));
               } else {
-                const missing = flat.filter((q) => !isAnswered(sessions.get(q.id)!)).map((q) => q.label).join(", ");
+                const missing = flat
+                  .filter((q) => !isAnswered(sessions.get(q.id)!))
+                  .map((q) => q.label)
+                  .join(', ');
 
-                addWrappedWithPrefix(" ", theme.fg("warning", `Unanswered: ${missing}`));
+                addWrappedWithPrefix(' ', theme.fg('warning', `Unanswered: ${missing}`));
               }
 
-              addWrappedWithPrefix(" ", theme.fg("dim", "Tab to go back and edit • Esc to previous question"));
-              lines.push(theme.fg("accent", "─".repeat(renderWidth)));
+              addWrappedWithPrefix(' ', theme.fg('dim', 'Tab to go back and edit • Esc to previous question'));
+              lines.push(theme.fg('accent', '─'.repeat(renderWidth)));
               cachedLines = lines;
 
               return lines;
@@ -587,8 +601,8 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
             // Question tab
             const s = currentSession()!;
 
-            addWrappedWithPrefix(" ", theme.fg("text", s.q.prompt));
-            lines.push("");
+            addWrappedWithPrefix(' ', theme.fg('text', s.q.prompt));
+            lines.push('');
 
             function renderOptions() {
               for (let i = 0; i < s.opts.length; i++) {
@@ -602,28 +616,28 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
 
                 if (s.q.multiSelect) {
                   const checked = s.multi.has(i);
-                  const mark = checked ? "[x] " : "[ ] ";
+                  const mark = checked ? '[x] ' : '[ ] ';
 
-                  prefix = navigated ? theme.fg("accent", `> ${mark}`) : theme.fg("dim", `  ${mark}`);
-                  color = checked ? "success" : navigated ? "accent" : "text";
+                  prefix = navigated ? theme.fg('accent', `> ${mark}`) : theme.fg('dim', `  ${mark}`);
+                  color = checked ? 'success' : navigated ? 'accent' : 'text';
                 } else {
                   const recordedAnswer = s.answer && !s.answer.wasCustom && s.answer.index === i + 1;
 
                   if (recordedAnswer) {
-                    prefix = theme.fg("accent", "> ✓ ");
-                    color = "success";
+                    prefix = theme.fg('accent', '> ✓ ');
+                    color = 'success';
                   } else {
-                    prefix = navigated ? theme.fg("accent", "> ") : "  ";
-                    color = navigated || editorOpen ? "accent" : "text";
+                    prefix = navigated ? theme.fg('accent', '> ') : '  ';
+                    color = navigated || editorOpen ? 'accent' : 'text';
                   }
                 }
 
-                const label = `${i + 1}. ${opt.label}${editorOpen ? " ✎" : ""}`;
+                const label = `${i + 1}. ${opt.label}${editorOpen ? ' ✎' : ''}`;
 
                 addWrappedWithPrefix(prefix, theme.fg(color, label));
 
                 if (opt.description) {
-                  addWrappedWithPrefix("     ", theme.fg("muted", opt.description));
+                  addWrappedWithPrefix('     ', theme.fg('muted', opt.description));
                 }
               }
             }
@@ -632,52 +646,61 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
 
             // Recorded custom answer
             if (s.answer?.wasCustom) {
-              lines.push("");
-              addWrappedWithPrefix(" ", theme.fg("success", "✎ ") + theme.fg("text", s.answer.label));
+              lines.push('');
+              addWrappedWithPrefix(' ', theme.fg('success', '✎ ') + theme.fg('text', s.answer.label));
             }
 
             if (s.q.multiSelect && s.customEntry) {
-              lines.push("");
-              addWrappedWithPrefix(" ", theme.fg("success", "✎ ") + theme.fg("text", s.customEntry.label));
+              lines.push('');
+              addWrappedWithPrefix(' ', theme.fg('success', '✎ ') + theme.fg('text', s.customEntry.label));
             }
 
             if (s.noteText) {
-              lines.push("");
-              addWrappedWithPrefix(" ", theme.fg("muted", `note: ${s.noteText} (attached to your answer)`));
+              lines.push('');
+              addWrappedWithPrefix(' ', theme.fg('muted', `note: ${s.noteText} (attached to your answer)`));
             }
 
             if (editMode) {
-              lines.push("");
-              addWrappedWithPrefix(" ", theme.fg("muted", "Your answer:"));
+              lines.push('');
+              addWrappedWithPrefix(' ', theme.fg('muted', 'Your answer:'));
 
               for (const line of editor.render(Math.max(1, renderWidth - 2))) {
                 lines.push(` ${line}`);
               }
 
-              lines.push("");
-              addWrappedWithPrefix(" ", theme.fg("dim", "Enter to submit • Esc to go back"));
+              lines.push('');
+              addWrappedWithPrefix(' ', theme.fg('dim', 'Enter to submit • Esc to go back'));
             } else if (noteMode) {
-              lines.push("");
-              addWrappedWithPrefix(" ", theme.fg("muted", "Note (optional, attached to your answer):"));
+              lines.push('');
+              addWrappedWithPrefix(' ', theme.fg('muted', 'Note (optional, attached to your answer):'));
 
               for (const line of editor.render(Math.max(1, renderWidth - 2))) {
                 lines.push(` ${line}`);
               }
 
-              lines.push("");
-              addWrappedWithPrefix(" ", theme.fg("dim", "Enter to arm note • Esc to skip"));
+              lines.push('');
+              addWrappedWithPrefix(' ', theme.fg('dim', 'Enter to arm note • Esc to skip'));
             } else {
-              lines.push("");
+              lines.push('');
               const progress = `${currentTab + 1}/${flat.length}`;
 
               if (s.q.multiSelect) {
-                addWrappedWithPrefix(" ", theme.fg("dim", `${progress} • ←→ tabs • ↑↓/1-9 move • Space toggle • Enter next • n note • Esc back`));
+                addWrappedWithPrefix(
+                  ' ',
+                  theme.fg('dim', `${progress} • ←→ tabs • ↑↓/1-9 move • Space toggle • Enter next • n note • Esc back`)
+                );
               } else {
-                addWrappedWithPrefix(" ", theme.fg("dim", `${progress} • ←→ tabs • ↑↓ move • 1-9 answer • Enter next${s.q.allowNote ? " • n note" : ""} • Esc back`));
+                addWrappedWithPrefix(
+                  ' ',
+                  theme.fg(
+                    'dim',
+                    `${progress} • ←→ tabs • ↑↓ move • 1-9 answer • Enter next${s.q.allowNote ? ' • n note' : ''} • Esc back`
+                  )
+                );
               }
             }
 
-            lines.push(theme.fg("accent", "─".repeat(renderWidth)));
+            lines.push(theme.fg('accent', '─'.repeat(renderWidth)));
 
             cachedLines = lines;
 
@@ -710,7 +733,7 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
 
       if (canceled || allAnswers.length === 0) {
         return {
-          content: [{ type: "text", text: "User canceled the interview" }],
+          content: [{ type: 'text', text: 'User canceled the interview' }],
           details,
         };
       }
@@ -721,22 +744,23 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
 
           return r.waveLabel ? `${r.waveLabel} · ${line}` : line;
         })
-        .join("\n");
+        .join('\n');
 
-      return { content: [{ type: "text", text: content }], details };
+      return { content: [{ type: 'text', text: content }], details };
     },
 
     renderCall(args, theme, _context) {
       const waves = Array.isArray(args.waves) ? args.waves : [];
       const questions = Array.isArray(args.questions) ? args.questions : [];
-      const count = waves.reduce((n, w) => n + (Array.isArray(w.questions) ? w.questions.length : 0), 0) || questions.length;
+      const count =
+        waves.reduce((n, w) => n + (Array.isArray(w.questions) ? w.questions.length : 0), 0) || questions.length;
       const waveCount = waves.length;
-      let text = theme.fg("toolTitle", theme.bold("interview "));
+      let text = theme.fg('toolTitle', theme.bold('interview '));
 
-      text += theme.fg("muted", `${count} question${count !== 1 ? "s" : ""}`);
+      text += theme.fg('muted', `${count} question${count !== 1 ? 's' : ''}`);
 
       if (waveCount > 1) {
-        text += theme.fg("dim", ` in ${waveCount} waves`);
+        text += theme.fg('dim', ` in ${waveCount} waves`);
       }
 
       return new Text(text, 0, 0);
@@ -746,20 +770,20 @@ export function createInterviewTool(pi?: PathProviderBus): ToolDefinition<typeof
       const details = result.details as InterviewDetails | undefined;
 
       if (!details) {
-        return new Text("", 0, 0);
+        return new Text('', 0, 0);
       }
 
       if (details.canceled) {
-        return new Text(theme.fg("warning", "Canceled"), 0, 0);
+        return new Text(theme.fg('warning', 'Canceled'), 0, 0);
       }
 
       const lines = details.answers.map((a) => {
         const label = a.waveLabel ? `${a.waveLabel} · ${a.questionLabel}` : a.questionLabel;
 
-        return `${theme.fg("success", "✓ ")}${theme.fg("accent", label)}: ${summarizeAnswers(a.answers)}`;
+        return `${theme.fg('success', '✓ ')}${theme.fg('accent', label)}: ${summarizeAnswers(a.answers)}`;
       });
 
-      return new Text(lines.join("\n"), 0, 0);
+      return new Text(lines.join('\n'), 0, 0);
     },
   };
 }

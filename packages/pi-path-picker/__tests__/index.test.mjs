@@ -5,5 +5,5 @@
  * discovers all tests from a single file.
  */
 
-import "./_contract.test.mjs";
-import "./_provider.test.mjs";
+import './_contract.test.mjs';
+import './_provider.test.mjs';

@@ -4,8 +4,8 @@
  * The allowlist (CIDR or literal IPs) re-opens specific ranges, e.g.
  * `["127.0.0.1", "::1"]` for local development servers.
  */
-import { isIP } from "node:net";
-import { lookup } from "node:dns/promises";
+import { isIP } from 'node:net';
+import { lookup } from 'node:dns/promises';
 
 interface IpRange {
   family: 4 | 6;
@@ -16,31 +16,31 @@ interface IpRange {
 /** Always blocked unless explicitly allowlisted. */
 const DEFAULT_BLOCKED: string[] = [
   // IPv4 - private, loopback, link-local, CGNAT, documentation, multicast, reserved
-  "0.0.0.0/8",
-  "10.0.0.0/8",
-  "100.64.0.0/10",
-  "127.0.0.0/8",
-  "169.254.0.0/16",
-  "172.16.0.0/12",
-  "192.0.0.0/24",
-  "192.0.2.0/24",
-  "192.168.0.0/16",
-  "198.18.0.0/15",
-  "198.51.100.0/24",
-  "203.0.113.0/24",
-  "224.0.0.0/4",
-  "240.0.0.0/4",
+  '0.0.0.0/8',
+  '10.0.0.0/8',
+  '100.64.0.0/10',
+  '127.0.0.0/8',
+  '169.254.0.0/16',
+  '172.16.0.0/12',
+  '192.0.0.0/24',
+  '192.0.2.0/24',
+  '192.168.0.0/16',
+  '198.18.0.0/15',
+  '198.51.100.0/24',
+  '203.0.113.0/24',
+  '224.0.0.0/4',
+  '240.0.0.0/4',
   // IPv6 - unspecified, loopback, ULA, link-local, multicast, v4-mapped
-  "::/128",
-  "::1/128",
-  "fc00::/7",
-  "fe80::/10",
-  "ff00::/8",
-  "::ffff:0:0/96",
+  '::/128',
+  '::1/128',
+  'fc00::/7',
+  'fe80::/10',
+  'ff00::/8',
+  '::ffff:0:0/96',
 ];
 
 function parseIpv4(ip: string): bigint | null {
-  const parts = ip.split(".");
+  const parts = ip.split('.');
 
   if (parts.length !== 4) {
     return null;
@@ -68,33 +68,33 @@ function parseIpv4(ip: string): bigint | null {
 function parseIpv6(ip: string): bigint | null {
   let addr = ip;
   let embeddedV4: bigint | null = null;
-  const lastColon = addr.lastIndexOf(":");
+  const lastColon = addr.lastIndexOf(':');
 
-  if (lastColon !== -1 && addr.slice(lastColon + 1).includes(".")) {
+  if (lastColon !== -1 && addr.slice(lastColon + 1).includes('.')) {
     embeddedV4 = parseIpv4(addr.slice(lastColon + 1));
 
     if (embeddedV4 === null) {
       return null;
     }
 
-    addr = addr.slice(0, lastColon + 1) + "0:0";
+    addr = addr.slice(0, lastColon + 1) + '0:0';
   }
 
-  const parts = addr.split("::");
+  const parts = addr.split('::');
 
   if (parts.length > 2) {
     return null;
   }
 
-  const head = parts[0] ? parts[0].split(":") : [];
-  const tail = parts[1] ? parts[1].split(":") : [];
+  const head = parts[0] ? parts[0].split(':') : [];
+  const tail = parts[1] ? parts[1].split(':') : [];
   const missing = 8 - head.length - tail.length;
 
   if (missing < 0) {
     return null;
   }
 
-  const groups = [...head, ...new Array(missing).fill("0"), ...tail];
+  const groups = [...head, ...new Array(missing).fill('0'), ...tail];
 
   if (groups.length !== 8) {
     return null;
@@ -120,7 +120,7 @@ function parseIpv6(ip: string): bigint | null {
 function parseRange(spec: string): IpRange | null {
   let ip = spec;
   let bits: number | null = null;
-  const slash = spec.indexOf("/");
+  const slash = spec.indexOf('/');
 
   if (slash !== -1) {
     ip = spec.slice(0, slash);
@@ -193,13 +193,11 @@ function ipInRange(ip: string, range: IpRange): boolean {
   const totalBits = range.family === 4 ? 32 : 128;
   const shift = BigInt(totalBits - range.bits);
 
-  return (parsed.value >> shift) === (range.network >> shift);
+  return parsed.value >> shift === range.network >> shift;
 }
 
 export function isBlockedAddress(ip: string, allowRanges: string[]): boolean {
-  const allow = allowRanges
-    .map((spec) => parseRange(spec))
-    .filter((r): r is IpRange => r !== null);
+  const allow = allowRanges.map((spec) => parseRange(spec)).filter((r): r is IpRange => r !== null);
 
   if (allow.some((range) => ipInRange(ip, range))) {
     return false;

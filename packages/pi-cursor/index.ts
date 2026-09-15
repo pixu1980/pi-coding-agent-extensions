@@ -7,6 +7,6 @@
  * relative named re-export here as a component re-export.
  */
 
-import extension from "./lib/index.ts";
+import extension from './lib/index.ts';
 
 export default extension;

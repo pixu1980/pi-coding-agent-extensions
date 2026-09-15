@@ -6,15 +6,10 @@
  * indicator and the /reasoning autocomplete provider.
  */
 
-import type { ExtensionAPI, RegisteredCommand } from "@earendil-works/pi-coding-agent";
-import type { AutocompleteProvider } from "@earendil-works/pi-tui";
-import {
-  DEFAULT_MODEL_MAP,
-  ALL_THINKING_LEVELS,
-  LEVEL_EMOJI,
-  STATUS_KEY,
-} from "./_constants.ts";
-import type { ThinkingLevel, ModelMapEntry, ReasoningModelCapabilities } from "./_constants.ts";
+import type { ExtensionAPI, RegisteredCommand } from '@earendil-works/pi-coding-agent';
+import type { AutocompleteProvider } from '@earendil-works/pi-tui';
+import { DEFAULT_MODEL_MAP, ALL_THINKING_LEVELS, LEVEL_EMOJI, STATUS_KEY } from './_constants.ts';
+import type { ThinkingLevel, ModelMapEntry, ReasoningModelCapabilities } from './_constants.ts';
 import {
   getAvailableLevels,
   buildReasoningMenuOptions,
@@ -22,8 +17,8 @@ import {
   formatReasoningLevelChange,
   formatEmojiText,
   formatLevelLabel,
-} from "./_levels.ts";
-import { createReasoningAutocompleteProvider } from "./_autocomplete.ts";
+} from './_levels.ts';
+import { createReasoningAutocompleteProvider } from './_autocomplete.ts';
 
 type ActiveModel = ReasoningModelCapabilities & { provider: string; id: string };
 
@@ -33,26 +28,26 @@ export default function (pi: ExtensionAPI): void {
   let currentModel: ActiveModel | undefined;
 
   // ── Notify on load ────────────────────────────────────────
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on('session_start', async (_event, ctx) => {
     const currentLevel = pi.getThinkingLevel();
     const model = ctx.model;
 
     currentModel = model;
-    const modelLabel = model ? `${model.provider}/${model.id}` : "no model";
+    const modelLabel = model ? `${model.provider}/${model.id}` : 'no model';
 
     ctx.ui.setStatus(STATUS_KEY, formatLevelLabel(currentLevel));
     ctx.ui.notify(
-      formatEmojiText("🧠", `pi-reasoning loaded - ${formatLevelLabel(currentLevel)} (${modelLabel})`),
-      "info",
+      formatEmojiText('🧠', `pi-reasoning loaded - ${formatLevelLabel(currentLevel)} (${modelLabel})`),
+      'info'
     );
   });
 
   // Register after every extension has handled session_start. This keeps
   // pi-reasoning as the outermost /reasoning autocomplete provider, so SPACE
   // and ENTER share buildReasoningMenuOptions regardless of package order.
-  pi.on("resources_discover", (_event, ctx) => {
-    ctx.ui.addAutocompleteProvider(
-      (current: AutocompleteProvider) => createReasoningAutocompleteProvider(current, () => currentModel),
+  pi.on('resources_discover', (_event, ctx) => {
+    ctx.ui.addAutocompleteProvider((current: AutocompleteProvider) =>
+      createReasoningAutocompleteProvider(current, () => currentModel)
     );
   });
 
@@ -78,38 +73,36 @@ export default function (pi: ExtensionAPI): void {
     const lower = modelId.toLowerCase();
     const hasWord = (word: string) => new RegExp(`\\b${word}\\b`).test(lower);
 
-    if (hasWord("nano")) {
-      return "off";
+    if (hasWord('nano')) {
+      return 'off';
     }
 
-    if (hasWord("mini") || hasWord("flash") || hasWord("haiku") || hasWord("small")) {
-      return "low";
+    if (hasWord('mini') || hasWord('flash') || hasWord('haiku') || hasWord('small')) {
+      return 'low';
     }
 
-    if (hasWord("large") || hasWord("pro") || hasWord("sonnet") || hasWord("opus")) {
-      return "high";
+    if (hasWord('large') || hasWord('pro') || hasWord('sonnet') || hasWord('opus')) {
+      return 'high';
     }
 
-    return "medium";
+    return 'medium';
   }
 
   // ── Model Select Event ──────────────────────────────────────
 
-  pi.on("model_select", async (event, ctx) => {
+  pi.on('model_select', async (event, ctx) => {
     const { model, source } = event;
 
     currentModel = model;
 
-    if (source === "restore") {
+    if (source === 'restore') {
       return;
     }
 
-    const modelLabel = model.id.length > 20
-      ? model.id.slice(0, 17) + "..."
-      : model.id;
+    const modelLabel = model.id.length > 20 ? model.id.slice(0, 17) + '...' : model.id;
 
     if (!model.reasoning) {
-      ctx.ui.setStatus(STATUS_KEY, formatEmojiText("⚪", modelLabel));
+      ctx.ui.setStatus(STATUS_KEY, formatEmojiText('⚪', modelLabel));
 
       return;
     }
@@ -120,20 +113,20 @@ export default function (pi: ExtensionAPI): void {
     const safeLevel = resolveThinkingLevel(level, getAvailableLevels(model));
 
     if (!safeLevel) {
-      ctx.ui.setStatus(STATUS_KEY, formatEmojiText("🧠", modelLabel));
+      ctx.ui.setStatus(STATUS_KEY, formatEmojiText('🧠', modelLabel));
 
       return;
     }
 
     pi.setThinkingLevel(safeLevel);
-    const emoji = LEVEL_EMOJI[safeLevel] ?? "🧠";
+    const emoji = LEVEL_EMOJI[safeLevel] ?? '🧠';
 
     ctx.ui.setStatus(STATUS_KEY, formatEmojiText(emoji, modelLabel));
   });
 
   // ── Thinking Level Select Event ─────────────────────────────
 
-  pi.on("thinking_level_select", async (event, ctx) => {
+  pi.on('thinking_level_select', async (event, ctx) => {
     ctx.ui.setStatus(STATUS_KEY, formatLevelLabel(event.level));
   });
 
@@ -149,20 +142,19 @@ export default function (pi: ExtensionAPI): void {
   //   /reasoning map                          - show active mappings
   //   /effort ...                             - identical to /reasoning
 
-  const reasoningCommand: Omit<RegisteredCommand, "name" | "sourceInfo"> = {
+  const reasoningCommand: Omit<RegisteredCommand, 'name' | 'sourceInfo'> = {
     description:
-      "Show or set the thinking/reasoning level for the current model. " +
-      "Alias: /effort. Use a level name as argument, or press ENTER for an interactive menu.",
+      'Show or set the thinking/reasoning level for the current model. ' +
+      'Alias: /effort. Use a level name as argument, or press ENTER for an interactive menu.',
     getArgumentCompletions: (prefix: string) => {
       const normalizedPrefix = prefix.trim().toLowerCase();
       const menuOptions = buildReasoningMenuOptions(currentModel);
       const typedOnlyCommands = [
-        { value: "map", label: "map  - Show active model→level mappings" },
-        { value: "reset", label: "reset  - Restore default model mappings" },
+        { value: 'map', label: 'map  - Show active model→level mappings' },
+        { value: 'reset', label: 'reset  - Restore default model mappings' },
       ];
       const options = normalizedPrefix
-        ? [...menuOptions, ...typedOnlyCommands].filter((option) =>
-          option.value.startsWith(normalizedPrefix))
+        ? [...menuOptions, ...typedOnlyCommands].filter((option) => option.value.startsWith(normalizedPrefix))
         : menuOptions;
 
       return options.length > 0 ? options : null;
@@ -173,11 +165,11 @@ export default function (pi: ExtensionAPI): void {
       // ── No args: interactive menu ──
       if (!trimmed) {
         const options = buildReasoningMenuOptions(ctx.model);
-        const modelLabel = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "no model";
+        const modelLabel = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : 'no model';
 
         const choice = await ctx.ui.select(
           `🧠  Reasoning level - ${modelLabel}`,
-          options.map((option) => option.label),
+          options.map((option) => option.label)
         );
 
         if (!choice) {
@@ -186,51 +178,47 @@ export default function (pi: ExtensionAPI): void {
 
         const selected = options.find((option) => option.label === choice)!;
 
-        if (selected.value === "auto") {
+        if (selected.value === 'auto') {
           handleAuto(ctx);
         } else {
           const chosen = selected.value as ThinkingLevel;
           const applied = resolveThinkingLevel(chosen, getAvailableLevels(ctx.model));
 
           if (!applied) {
-            ctx.ui.notify("No reasoning level is available for this model", "warning");
+            ctx.ui.notify('No reasoning level is available for this model', 'warning');
 
             return;
           }
 
           pi.setThinkingLevel(applied);
-          ctx.ui.notify(formatReasoningLevelChange(chosen, applied), "info");
+          ctx.ui.notify(formatReasoningLevelChange(chosen, applied), 'info');
         }
 
         return;
       }
 
       // ── Auto ──
-      if (trimmed === "auto" || trimmed === "automatic") {
+      if (trimmed === 'auto' || trimmed === 'automatic') {
         handleAuto(ctx);
 
         return;
       }
 
       // ── Reset ──
-      if (trimmed === "reset") {
+      if (trimmed === 'reset') {
         modelMap = [...DEFAULT_MODEL_MAP];
-        ctx.ui.notify("Model map reset to defaults", "info");
+        ctx.ui.notify('Model map reset to defaults', 'info');
 
         return;
       }
 
       // ── Map ──
-      if (trimmed === "map" || trimmed === "list") {
+      if (trimmed === 'map' || trimmed === 'list') {
         const lines = modelMap.map(
-          (e) =>
-            `  ${e.pattern.padEnd(24)} → ${e.level.padEnd(8)}${e.providers ? ` [${e.providers.join(", ")}]` : ""}`,
+          (e) => `  ${e.pattern.padEnd(24)} → ${e.level.padEnd(8)}${e.providers ? ` [${e.providers.join(', ')}]` : ''}`
         );
 
-        ctx.ui.notify(
-          `🗺️  Active mappings (${modelMap.length}):\n${lines.join("\n")}`,
-          "info",
-        );
+        ctx.ui.notify(`🗺️  Active mappings (${modelMap.length}):\n${lines.join('\n')}`, 'info');
 
         return;
       }
@@ -243,40 +231,40 @@ export default function (pi: ExtensionAPI): void {
         const applied = resolveThinkingLevel(requested, available);
 
         if (!applied) {
-          ctx.ui.notify("No reasoning level is available for this model", "warning");
+          ctx.ui.notify('No reasoning level is available for this model', 'warning');
 
           return;
         }
 
         pi.setThinkingLevel(applied);
-        ctx.ui.notify(formatReasoningLevelChange(requested, applied), "info");
+        ctx.ui.notify(formatReasoningLevelChange(requested, applied), 'info');
 
         return;
       }
 
-      ctx.ui.notify(
-        `Invalid level: "${trimmed}". Available: ${available.join(", ")}, auto, reset, map`,
-        "warning",
-      );
+      ctx.ui.notify(`Invalid level: "${trimmed}". Available: ${available.join(', ')}, auto, reset, map`, 'warning');
     },
   };
 
-  pi.registerCommand("reasoning", reasoningCommand);
-  pi.registerCommand("effort", reasoningCommand);
+  pi.registerCommand('reasoning', reasoningCommand);
+  pi.registerCommand('effort', reasoningCommand);
 
   // ── Shared auto handler ─────────────────────────────────────
 
-  function handleAuto(ctx: { model?: typeof currentModel; ui: { notify: (msg: string, type?: "error" | "info" | "warning") => void } }): void {
+  function handleAuto(ctx: {
+    model?: typeof currentModel;
+    ui: { notify: (msg: string, type?: 'error' | 'info' | 'warning') => void };
+  }): void {
     const model = ctx.model;
 
     if (!model) {
-      ctx.ui.notify("No model currently selected", "warning");
+      ctx.ui.notify('No model currently selected', 'warning');
 
       return;
     }
 
     if (!model?.reasoning) {
-      ctx.ui.notify(`Model ${model.id} does not support reasoning`, "info");
+      ctx.ui.notify(`Model ${model.id} does not support reasoning`, 'info');
 
       return;
     }
@@ -286,19 +274,14 @@ export default function (pi: ExtensionAPI): void {
     const safeLevel = resolveThinkingLevel(level, getAvailableLevels(model));
 
     if (!safeLevel) {
-      ctx.ui.notify("No reasoning level is available for this model", "warning");
+      ctx.ui.notify('No reasoning level is available for this model', 'warning');
 
       return;
     }
 
-    const note = safeLevel !== level
-      ? ` (rounded, your choice was ${formatLevelLabel(level)})`
-      : "";
+    const note = safeLevel !== level ? ` (rounded, your choice was ${formatLevelLabel(level)})` : '';
 
     pi.setThinkingLevel(safeLevel);
-    ctx.ui.notify(
-      `Auto-reasoning → ${formatLevelLabel(safeLevel)}${note} (${model.provider}/${model.id})`,
-      "info",
-    );
+    ctx.ui.notify(`Auto-reasoning → ${formatLevelLabel(safeLevel)}${note} (${model.provider}/${model.id})`, 'info');
   }
 }

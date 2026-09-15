@@ -24,12 +24,12 @@ import type {
   Model,
   SimpleStreamOptions,
   Usage,
-} from "@earendil-works/pi-ai";
-import { calculateCost, createAssistantMessageEventStream } from "@earendil-works/pi-ai";
-import { normalizeApiKey } from "./_api-key.ts";
-import { checkBackendOverride } from "./_egress.ts";
-import { buildModelSelection, getModelMetadata, type PiThinkingLevel } from "./_models.ts";
-import { scrubError, scrubSecrets } from "./_scrub.ts";
+} from '@earendil-works/pi-ai';
+import { calculateCost, createAssistantMessageEventStream } from '@earendil-works/pi-ai';
+import { normalizeApiKey } from './_api-key.ts';
+import { checkBackendOverride } from './_egress.ts';
+import { buildModelSelection, getModelMetadata, type PiThinkingLevel } from './_models.ts';
+import { scrubError, scrubSecrets } from './_scrub.ts';
 import {
   disposeAgentHandle,
   getAgentSession,
@@ -38,8 +38,8 @@ import {
   type CursorAgentHandle,
   type CursorRunHandle,
   type CursorSdkLike,
-} from "./_session.ts";
-import { CURSOR_ACTIVITY_TRACE_MAX_CHARS, CURSOR_API_ID, CURSOR_PROVIDER_ID } from "./_types.ts";
+} from './_session.ts';
+import { CURSOR_ACTIVITY_TRACE_MAX_CHARS, CURSOR_API_ID, CURSOR_PROVIDER_ID } from './_types.ts';
 
 // ── Usage ─────────────────────────────────────────────────────────────────
 
@@ -52,11 +52,11 @@ export interface CursorTokenUsage {
 }
 
 function nonNegative(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
 }
 
 function getUsageField(usage: unknown, key: keyof CursorTokenUsage): number | undefined {
-  if (typeof usage !== "object" || usage === null) {
+  if (typeof usage !== 'object' || usage === null) {
     return undefined;
   }
 
@@ -65,11 +65,11 @@ function getUsageField(usage: unknown, key: keyof CursorTokenUsage): number | un
 
 /** Fold a Cursor usage payload into pi's `Usage`, marking it unverified cost. */
 export function toPiUsage(usage: unknown, existing: Usage): Usage {
-  const input = getUsageField(usage, "inputTokens") ?? existing.input;
-  const output = getUsageField(usage, "outputTokens") ?? existing.output;
-  const cacheRead = getUsageField(usage, "cacheReadTokens") ?? existing.cacheRead;
-  const cacheWrite = getUsageField(usage, "cacheWriteTokens") ?? existing.cacheWrite;
-  const reasoning = getUsageField(usage, "reasoningTokens");
+  const input = getUsageField(usage, 'inputTokens') ?? existing.input;
+  const output = getUsageField(usage, 'outputTokens') ?? existing.output;
+  const cacheRead = getUsageField(usage, 'cacheReadTokens') ?? existing.cacheRead;
+  const cacheWrite = getUsageField(usage, 'cacheWriteTokens') ?? existing.cacheWrite;
+  const reasoning = getUsageField(usage, 'reasoningTokens');
 
   return {
     input,
@@ -100,7 +100,7 @@ export class CursorContentEmitter {
   constructor(
     private readonly stream: AssistantMessageEventStream,
     private readonly partial: AssistantMessage,
-    private readonly activityMaxChars = CURSOR_ACTIVITY_TRACE_MAX_CHARS,
+    private readonly activityMaxChars = CURSOR_ACTIVITY_TRACE_MAX_CHARS
   ) {}
 
   get activityLength(): number {
@@ -111,7 +111,7 @@ export class CursorContentEmitter {
     let total = 0;
 
     for (const block of this.partial.content) {
-      if (block.type === "text") {
+      if (block.type === 'text') {
         total += block.text.length;
       }
     }
@@ -129,11 +129,11 @@ export class CursorContentEmitter {
     this.textIndex = -1;
     const block = this.partial.content[index];
 
-    if (block?.type !== "text") {
+    if (block?.type !== 'text') {
       return;
     }
 
-    this.stream.push({ type: "text_end", contentIndex: index, content: block.text, partial: this.partial });
+    this.stream.push({ type: 'text_end', contentIndex: index, content: block.text, partial: this.partial });
   }
 
   closeThinking(): void {
@@ -146,11 +146,11 @@ export class CursorContentEmitter {
     this.thinkingIndex = -1;
     const block = this.partial.content[index];
 
-    if (block?.type !== "thinking") {
+    if (block?.type !== 'thinking') {
       return;
     }
 
-    this.stream.push({ type: "thinking_end", contentIndex: index, content: block.thinking, partial: this.partial });
+    this.stream.push({ type: 'thinking_end', contentIndex: index, content: block.thinking, partial: this.partial });
   }
 
   closeAll(): void {
@@ -167,18 +167,18 @@ export class CursorContentEmitter {
 
     if (this.textIndex < 0) {
       this.textIndex = this.partial.content.length;
-      this.partial.content.push({ type: "text", text: "" });
-      this.stream.push({ type: "text_start", contentIndex: this.textIndex, partial: this.partial });
+      this.partial.content.push({ type: 'text', text: '' });
+      this.stream.push({ type: 'text_start', contentIndex: this.textIndex, partial: this.partial });
     }
 
     const block = this.partial.content[this.textIndex];
 
-    if (block?.type !== "text") {
+    if (block?.type !== 'text') {
       return;
     }
 
     block.text += delta;
-    this.stream.push({ type: "text_delta", contentIndex: this.textIndex, delta, partial: this.partial });
+    this.stream.push({ type: 'text_delta', contentIndex: this.textIndex, delta, partial: this.partial });
   }
 
   appendThinking(delta: string): void {
@@ -190,18 +190,18 @@ export class CursorContentEmitter {
 
     if (this.thinkingIndex < 0) {
       this.thinkingIndex = this.partial.content.length;
-      this.partial.content.push({ type: "thinking", thinking: "" });
-      this.stream.push({ type: "thinking_start", contentIndex: this.thinkingIndex, partial: this.partial });
+      this.partial.content.push({ type: 'thinking', thinking: '' });
+      this.stream.push({ type: 'thinking_start', contentIndex: this.thinkingIndex, partial: this.partial });
     }
 
     const block = this.partial.content[this.thinkingIndex];
 
-    if (block?.type !== "thinking") {
+    if (block?.type !== 'thinking') {
       return;
     }
 
     block.thinking += delta;
-    this.stream.push({ type: "thinking_delta", contentIndex: this.thinkingIndex, delta, partial: this.partial });
+    this.stream.push({ type: 'thinking_delta', contentIndex: this.thinkingIndex, delta, partial: this.partial });
   }
 
   /** Bounded, display-only trace line (tool activity, shell output). */
@@ -210,18 +210,20 @@ export class CursorContentEmitter {
       return;
     }
 
-    const normalized = line.endsWith("\n") ? line : `${line}\n`;
+    const normalized = line.endsWith('\n') ? line : `${line}\n`;
     const remaining = this.activityMaxChars - this.activityChars;
 
     if (remaining <= 0) {
-      this.appendThinking("\n[Cursor activity trace truncated]\n");
+      this.appendThinking('\n[Cursor activity trace truncated]\n');
       this.activityTruncated = true;
 
       return;
     }
 
     const text =
-      normalized.length > remaining ? `${normalized.slice(0, remaining)}\n[Cursor activity trace truncated]\n` : normalized;
+      normalized.length > remaining
+        ? `${normalized.slice(0, remaining)}\n[Cursor activity trace truncated]\n`
+        : normalized;
 
     if (normalized.length > remaining) {
       this.activityTruncated = true;
@@ -242,7 +244,7 @@ export interface CursorDeltaSink {
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return undefined;
   }
 
@@ -250,11 +252,11 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 }
 
 function shortString(value: unknown, max = 200): string | undefined {
-  if (typeof value !== "string") {
+  if (typeof value !== 'string') {
     return undefined;
   }
 
-  const single = value.replaceAll(/\s+/g, " ").trim();
+  const single = value.replaceAll(/\s+/g, ' ').trim();
 
   if (!single) {
     return undefined;
@@ -276,14 +278,14 @@ export function describeCursorToolCall(toolCall: unknown): string | undefined {
     return undefined;
   }
 
-  const type = typeof call.type === "string" ? call.type : "tool";
+  const type = typeof call.type === 'string' ? call.type : 'tool';
   const args = asRecord(call.args) ?? {};
   const detail =
     shortString(args.command) ??
-		shortString(args.path) ??
-		shortString(args.pattern) ??
-		shortString(args.query) ??
-		shortString(args.glob);
+    shortString(args.path) ??
+    shortString(args.pattern) ??
+    shortString(args.query) ??
+    shortString(args.glob);
 
   return detail ? `${type}: ${detail}` : type;
 }
@@ -304,8 +306,8 @@ export function routeCursorDelta(update: unknown, sink: CursorDeltaSink): void {
   const type = record.type;
 
   switch (type) {
-    case "text-delta": {
-      const text = typeof record.text === "string" ? record.text : "";
+    case 'text-delta': {
+      const text = typeof record.text === 'string' ? record.text : '';
 
       if (text) {
         sink.text(text);
@@ -314,8 +316,8 @@ export function routeCursorDelta(update: unknown, sink: CursorDeltaSink): void {
       return;
     }
 
-    case "thinking-delta": {
-      const text = typeof record.text === "string" ? record.text : "";
+    case 'thinking-delta': {
+      const text = typeof record.text === 'string' ? record.text : '';
 
       if (text) {
         sink.thinking(text);
@@ -324,7 +326,7 @@ export function routeCursorDelta(update: unknown, sink: CursorDeltaSink): void {
       return;
     }
 
-    case "tool-call-started": {
+    case 'tool-call-started': {
       const label = describeCursorToolCall(record.toolCall);
 
       if (label) {
@@ -334,7 +336,7 @@ export function routeCursorDelta(update: unknown, sink: CursorDeltaSink): void {
       return;
     }
 
-    case "tool-call-completed": {
+    case 'tool-call-completed': {
       const label = describeCursorToolCall(record.toolCall);
 
       if (label) {
@@ -344,11 +346,11 @@ export function routeCursorDelta(update: unknown, sink: CursorDeltaSink): void {
       return;
     }
 
-    case "partial-tool-call": {
+    case 'partial-tool-call': {
       return;
     }
 
-    case "shell-output-delta": {
+    case 'shell-output-delta': {
       const event = asRecord(record.event);
       const data = shortString(event?.data ?? event?.text ?? event?.output, 400);
 
@@ -359,32 +361,31 @@ export function routeCursorDelta(update: unknown, sink: CursorDeltaSink): void {
       return;
     }
 
-    case "token-delta": {
+    case 'token-delta': {
       sink.usage({
-        inputTokens: getUsageField(record.tokens, "inputTokens"),
-        outputTokens: getUsageField(record.tokens, "outputTokens"),
-        cacheReadTokens: getUsageField(record.tokens, "cacheReadTokens"),
-        cacheWriteTokens: getUsageField(record.tokens, "cacheWriteTokens"),
-        reasoningTokens: getUsageField(record.tokens, "reasoningTokens"),
+        inputTokens: getUsageField(record.tokens, 'inputTokens'),
+        outputTokens: getUsageField(record.tokens, 'outputTokens'),
+        cacheReadTokens: getUsageField(record.tokens, 'cacheReadTokens'),
+        cacheWriteTokens: getUsageField(record.tokens, 'cacheWriteTokens'),
+        reasoningTokens: getUsageField(record.tokens, 'reasoningTokens'),
       });
 
       return;
     }
 
-    case "turn-ended": {
+    case 'turn-ended': {
       sink.usage({
-        inputTokens: getUsageField(record.usage, "inputTokens"),
-        outputTokens: getUsageField(record.usage, "outputTokens"),
-        cacheReadTokens: getUsageField(record.usage, "cacheReadTokens"),
-        cacheWriteTokens: getUsageField(record.usage, "cacheWriteTokens"),
-        reasoningTokens: getUsageField(record.usage, "reasoningTokens"),
+        inputTokens: getUsageField(record.usage, 'inputTokens'),
+        outputTokens: getUsageField(record.usage, 'outputTokens'),
+        cacheReadTokens: getUsageField(record.usage, 'cacheReadTokens'),
+        cacheWriteTokens: getUsageField(record.usage, 'cacheWriteTokens'),
+        reasoningTokens: getUsageField(record.usage, 'reasoningTokens'),
       });
 
       return;
     }
 
     default:
-
       return;
   }
 }
@@ -392,12 +393,12 @@ export function routeCursorDelta(update: unknown, sink: CursorDeltaSink): void {
 // ── Prompt rendering ──────────────────────────────────────────────────────
 
 function contentToText(content: unknown): string {
-  if (typeof content === "string") {
+  if (typeof content === 'string') {
     return content;
   }
 
   if (!Array.isArray(content)) {
-    return "";
+    return '';
   }
 
   const parts: string[] = [];
@@ -409,16 +410,16 @@ function contentToText(content: unknown): string {
       continue;
     }
 
-    if (record.type === "text" && typeof record.text === "string") {
+    if (record.type === 'text' && typeof record.text === 'string') {
       parts.push(record.text);
     }
 
-    if (record.type === "image") {
-      parts.push("[image omitted]");
+    if (record.type === 'image') {
+      parts.push('[image omitted]');
     }
   }
 
-  return parts.join("\n");
+  return parts.join('\n');
 }
 
 /**
@@ -433,7 +434,7 @@ export function renderCursorPrompt(context: Context, options: { bootstrap: boole
   const messages = context.messages ?? [];
   const latestUserIndex = (() => {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
-      if (messages[index]?.role === "user") {
+      if (messages[index]?.role === 'user') {
         return index;
       }
     }
@@ -441,7 +442,7 @@ export function renderCursorPrompt(context: Context, options: { bootstrap: boole
     return -1;
   })();
 
-  const latestUser = latestUserIndex >= 0 ? contentToText(messages[latestUserIndex]?.content) : "";
+  const latestUser = latestUserIndex >= 0 ? contentToText(messages[latestUserIndex]?.content) : '';
 
   if (!options.bootstrap) {
     return latestUser;
@@ -451,7 +452,7 @@ export function renderCursorPrompt(context: Context, options: { bootstrap: boole
   const systemPrompt = context.systemPrompt?.trim();
 
   if (systemPrompt) {
-    lines.push(systemPrompt, "");
+    lines.push(systemPrompt, '');
   }
 
   for (let index = 0; index < messages.length; index += 1) {
@@ -461,7 +462,7 @@ export function renderCursorPrompt(context: Context, options: { bootstrap: boole
       continue;
     }
 
-    if (message.role === "user" && index === latestUserIndex) {
+    if (message.role === 'user' && index === latestUserIndex) {
       continue;
     }
 
@@ -471,18 +472,18 @@ export function renderCursorPrompt(context: Context, options: { bootstrap: boole
       continue;
     }
 
-    lines.push(`${message.role === "user" ? "User" : "Assistant"}: ${text}`);
+    lines.push(`${message.role === 'user' ? 'User' : 'Assistant'}: ${text}`);
   }
 
   if (latestUser) {
     if (lines.length > 0) {
-      lines.push("");
+      lines.push('');
     }
 
     lines.push(latestUser);
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 // ── Turn planning ─────────────────────────────────────────────────────────
@@ -504,11 +505,7 @@ export interface PlanCursorTurnOptions {
 }
 
 /** Decide what to send for this turn. Pure: no SDK, no I/O. */
-export function planCursorTurn(
-  model: Model<Api>,
-  context: Context,
-  options: PlanCursorTurnOptions,
-): CursorTurnPlan {
+export function planCursorTurn(model: Model<Api>, context: Context, options: PlanCursorTurnOptions): CursorTurnPlan {
   const thinkingLevel = options.thinkingLevel ?? thinkingLevelFromModel(model);
 
   return {
@@ -520,20 +517,20 @@ export function planCursorTurn(
 }
 
 function thinkingLevelFromModel(model: Model<Api>): PiThinkingLevel {
-  return model.reasoning ? "medium" : "off";
+  return model.reasoning ? 'medium' : 'off';
 }
 
 /** Map a terminal Cursor run status onto pi's stop reason. */
-export function stopReasonForRunStatus(status: string | undefined): "stop" | "error" | "aborted" {
-  if (status === "finished") {
-    return "stop";
+export function stopReasonForRunStatus(status: string | undefined): 'stop' | 'error' | 'aborted' {
+  if (status === 'finished') {
+    return 'stop';
   }
 
-  if (status === "cancelled") {
-    return "aborted";
+  if (status === 'cancelled') {
+    return 'aborted';
   }
 
-  return "error";
+  return 'error';
 }
 
 // ── Stream entry point ────────────────────────────────────────────────────
@@ -545,7 +542,7 @@ export interface CursorStreamDependencies {
 }
 
 const defaultDependencies: CursorStreamDependencies = {
-  loadSdk: async () => (await import("@cursor/sdk")) as CursorSdkLike,
+  loadSdk: async () => (await import('@cursor/sdk')) as CursorSdkLike,
   now: () => Date.now(),
   cwd: () => process.cwd(),
 };
@@ -573,7 +570,7 @@ export function streamCursor(
   model: Model<Api>,
   context: Context,
   options?: SimpleStreamOptions,
-  dependencies: CursorStreamDependencies = defaultDependencies,
+  dependencies: CursorStreamDependencies = defaultDependencies
 ): AssistantMessageEventStream {
   const stream = createAssistantMessageEventStream();
   // The placeholder pi receives before `/login` is not a key; normalizing here
@@ -582,20 +579,20 @@ export function streamCursor(
 
   void (async () => {
     const output: AssistantMessage = {
-      role: "assistant",
+      role: 'assistant',
       content: [],
       api: model.api ?? CURSOR_API_ID,
       provider: model.provider ?? CURSOR_PROVIDER_ID,
       model: model.id,
       usage: emptyUsage(),
-      stopReason: "pending",
+      stopReason: 'pending',
       timestamp: dependencies.now(),
     };
     const emitter = new CursorContentEmitter(stream, output);
     let run: CursorRunHandle | undefined;
 
     try {
-      stream.push({ type: "start", partial: output });
+      stream.push({ type: 'start', partial: output });
 
       const overrideCheck = checkBackendOverride();
 
@@ -604,14 +601,12 @@ export function streamCursor(
       }
 
       if (!apiKey) {
-        throw new Error(
-          "No Cursor API key is configured. Run /login cursor in pi, or export CURSOR_API_KEY.",
-        );
+        throw new Error('No Cursor API key is configured. Run /login cursor in pi, or export CURSOR_API_KEY.');
       }
 
       const metadata = getModelMetadata(model.id);
       const liveAgent = getAgentSession({
-        sessionId: options?.sessionId ?? "default",
+        sessionId: options?.sessionId ?? 'default',
         selectionId: metadata?.selectionModelId ?? model.id,
       });
       const plan = planCursorTurn(model, context, {
@@ -620,9 +615,9 @@ export function streamCursor(
       });
 
       if (!plan.prompt.trim()) {
-        output.stopReason = "stop";
+        output.stopReason = 'stop';
         emitter.closeAll();
-        stream.push({ type: "done", reason: "stop", message: output });
+        stream.push({ type: 'done', reason: 'stop', message: output });
         stream.end();
 
         return;
@@ -631,18 +626,15 @@ export function streamCursor(
       const sdk = await dependencies.loadSdk();
       const agent =
         liveAgent ??
-				(await sdk.Agent.create({
-				  apiKey,
-				  model: plan.selection,
-				  local: { cwd: dependencies.cwd() },
-				  name: `pi:${plan.sessionSlot}`,
-				}));
+        (await sdk.Agent.create({
+          apiKey,
+          model: plan.selection,
+          local: { cwd: dependencies.cwd() },
+          name: `pi:${plan.sessionSlot}`,
+        }));
 
       if (!liveAgent) {
-        rememberAgentSession(
-          { sessionId: options?.sessionId ?? "default", selectionId: plan.selection.id },
-          agent,
-        );
+        rememberAgentSession({ sessionId: options?.sessionId ?? 'default', selectionId: plan.selection.id }, agent);
       }
 
       run = await agent.send(plan.prompt, {
@@ -663,38 +655,38 @@ export function streamCursor(
         void run?.cancel().catch(() => undefined);
       };
 
-      options?.signal?.addEventListener("abort", abort, { once: true });
+      options?.signal?.addEventListener('abort', abort, { once: true });
 
       const result = await run.wait();
 
-      options?.signal?.removeEventListener("abort", abort);
+      options?.signal?.removeEventListener('abort', abort);
 
       if (result.usage) {
         output.usage = toPiUsage(result.usage, output.usage);
       }
 
-      if (typeof result.result === "string" && result.result.trim() && emitter.textLength === 0) {
+      if (typeof result.result === 'string' && result.result.trim() && emitter.textLength === 0) {
         // Some runs deliver the answer only in the terminal result.
         emitter.appendText(scrubSecrets(result.result, apiKey));
       }
 
       emitter.closeAll();
 
-      const status = options?.signal?.aborted ? "cancelled" : result.status;
+      const status = options?.signal?.aborted ? 'cancelled' : result.status;
 
       output.stopReason = stopReasonForRunStatus(status);
 
-      if (output.stopReason === "error") {
-        output.errorMessage = scrubSecrets(result.error?.message ?? "Cursor run failed", apiKey);
+      if (output.stopReason === 'error') {
+        output.errorMessage = scrubSecrets(result.error?.message ?? 'Cursor run failed', apiKey);
       }
 
       // `calculateCost` mutates `usage.cost` in place and returns it.
       calculateCost(model, output.usage);
 
-      if (output.stopReason === "error" || output.stopReason === "aborted") {
-        stream.push({ type: "error", reason: output.stopReason, error: output });
+      if (output.stopReason === 'error' || output.stopReason === 'aborted') {
+        stream.push({ type: 'error', reason: output.stopReason, error: output });
       } else {
-        stream.push({ type: "done", reason: "stop", message: output });
+        stream.push({ type: 'done', reason: 'stop', message: output });
       }
 
       stream.end();
@@ -702,14 +694,14 @@ export function streamCursor(
       emitter.closeAll();
       const aborted = options?.signal?.aborted === true;
 
-      output.stopReason = aborted ? "aborted" : "error";
+      output.stopReason = aborted ? 'aborted' : 'error';
       output.errorMessage = scrubError(error, apiKey);
 
       if (aborted) {
         void run?.cancel().catch(() => undefined);
       }
 
-      stream.push({ type: "error", reason: output.stopReason, error: output });
+      stream.push({ type: 'error', reason: output.stopReason, error: output });
       stream.end();
     }
   })();

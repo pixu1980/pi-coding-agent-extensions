@@ -36,8 +36,10 @@ export default function (pi: ExtensionAPI): void {
 
     // If session has no display name, try to derive one from the first user message
     const currentName = pi.getSessionName();
+
     if (!currentName) {
       const entries = ctx.sessionManager.getEntries();
+
       for (const entry of entries) {
         if (
           entry.type === "message" &&
@@ -46,9 +48,11 @@ export default function (pi: ExtensionAPI): void {
           entry.message.role === "user"
         ) {
           const name = autoNameSession(entry.message.content);
+
           if (name && name !== "Empty session") {
             pi.setSessionName(name);
           }
+
           break;
         }
       }

@@ -14,6 +14,7 @@ export function groupSessionsByFolder(sessions: SessionSummary[]): FolderSummary
   for (const session of sessions) {
     const folder = session.cwd || "unknown";
     const existing = groups.get(folder);
+
     if (existing) {
       existing.push(session);
     } else {
@@ -22,9 +23,11 @@ export function groupSessionsByFolder(sessions: SessionSummary[]): FolderSummary
   }
 
   const folders: FolderSummary[] = [];
+
   for (const [folder, folderSessions] of groups) {
     const latestSession = folderSessions[0]!;
     const totalMessages = folderSessions.reduce((sum, s) => sum + s.messageCount, 0);
+
     folders.push({
       folder,
       sessions: folderSessions,

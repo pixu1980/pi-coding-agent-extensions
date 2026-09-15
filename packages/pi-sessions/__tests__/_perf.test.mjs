@@ -31,6 +31,7 @@ test("cached-path: a TTL-fresh call does zero discovery work", async () => {
   await getSessions();
 
   const before = getSessionsStats();
+
   await getSessions();
   await getSessions();
   const after = getSessionsStats();
@@ -47,6 +48,7 @@ test("clearSessionsCache: the explicit hook makes a new session visible immediat
     { type: "message", message: { role: "user", content: "a" } },
   ]);
   const first = await getSessions();
+
   assert.ok(first.some((s) => s.cwd === "/fresh-a"), "first session listed");
 
   writeSession("projFresh", "b.jsonl", [
@@ -56,15 +58,18 @@ test("clearSessionsCache: the explicit hook makes a new session visible immediat
   // Served from cache: no filesystem call means no mtime can reveal the new
   // file, which is exactly why the invalidation contract is explicit.
   const stale = await getSessions();
+
   assert.equal(stale.some((s) => s.cwd === "/fresh-b"), false, "cached serve does not scan");
 
   clearSessionsCache();
   const fresh = await getSessions();
+
   assert.ok(fresh.some((s) => s.cwd === "/fresh-b"), "explicit invalidation reveals the new session");
 });
 
 test("session listing: 1200 files selects at most MAX_SESSIONS candidates", async () => {
   freshAgentDir();
+
   for (let p = 0; p < 40; p++) {
     for (let f = 0; f < 30; f++) {
       writeSession(`proj${p}`, `${f}.jsonl`, [
@@ -73,9 +78,12 @@ test("session listing: 1200 files selects at most MAX_SESSIONS candidates", asyn
       ]);
     }
   }
+
   const sessions = await getSessions();
+
   assert.ok(sessions.length <= MAX_SESSIONS, `result must not exceed MAX_SESSIONS (got ${sessions.length})`);
   const stats = getSessionsStats();
+
   assert.ok(
     stats.candidatesReturned <= MAX_SESSIONS,
     `candidate selection must stay bounded (got ${stats.candidatesReturned})`,
@@ -93,17 +101,20 @@ test("session listing: a huge session file is scanned with a line cap", async ()
   const line = JSON.stringify({ type: "message", message: { role: "user", content: "m" } });
   const fd = await import("node:fs/promises");
   const handle = await fd.open(file, "a");
+
   await handle.write(`\n${Array.from({ length: 60_000 }, () => line).join("\n")}\n`);
   await handle.close();
 
   const sessions = await getSessions();
   const big = sessions.find((s) => s.cwd === "/huge");
+
   assert.ok(big, "huge session file must appear in the list");
   assert.ok(
     big.messageCount <= MAX_SESSION_SCAN_LINES,
     `scan must cap lines (messageCount=${big.messageCount}, cap=${MAX_SESSION_SCAN_LINES})`,
   );
   const stats = getSessionsStats();
+
   assert.ok(
     stats.linesScanned <= MAX_SESSION_SCAN_LINES * 2,
     `lines scanned must stay bounded (got ${stats.linesScanned})`,

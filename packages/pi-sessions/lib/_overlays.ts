@@ -23,6 +23,7 @@ const MODAL_OPTIONS = {
 export async function showSessionSidebar(ctx: ExtensionCommandContext): Promise<void> {
   if (ctx.mode !== "tui") {
     ctx.ui.notify("Session overlay requires TUI mode.", "error");
+
     return;
   }
 
@@ -35,6 +36,7 @@ export async function showSessionSidebar(ctx: ExtensionCommandContext): Promise<
         "📋 Sessions",
         "Loading sessions...",
       );
+
       void getSessions((loaded, total) => {
         modal.setProgress(loaded, total);
         tui.requestRender();
@@ -45,6 +47,7 @@ export async function showSessionSidebar(ctx: ExtensionCommandContext): Promise<
         modal.showError(error);
         tui.requestRender();
       });
+
       return modal;
     },
     MODAL_OPTIONS,
@@ -62,6 +65,7 @@ export async function showSessionSidebar(ctx: ExtensionCommandContext): Promise<
 export async function showFolderSidebar(ctx: ExtensionCommandContext): Promise<void> {
   if (ctx.mode !== "tui") {
     ctx.ui.notify("Folder overview requires TUI mode.", "error");
+
     return;
   }
 
@@ -105,7 +109,9 @@ export async function showFolderSidebar(ctx: ExtensionCommandContext): Promise<v
       MODAL_OPTIONS,
     );
 
-    if (!folderResult) break;
+    if (!folderResult) {
+      break;
+    }
 
     const sessionResult = await ctx.ui.custom<SessionSummary | undefined>(
       (tui, theme, _keybindings, done) => {
@@ -116,10 +122,12 @@ export async function showFolderSidebar(ctx: ExtensionCommandContext): Promise<v
           `📁 ${folderResult.folder.replace(homedir(), "~")}`,
           "Loading sessions...",
         );
+
         modal.showSessions(
           folderResult.sessions,
           `📁 ${folderResult.folder.replace(homedir(), "~")}`,
         );
+
         return modal;
       },
       MODAL_OPTIONS,
@@ -147,8 +155,8 @@ async function loadSession(
       },
     });
 
-    if (result && "cancelled" in result && result.cancelled) {
-      ctx.ui.notify("Session switch cancelled.", "warning");
+    if (result && "canceled" in result && result.canceled) {
+      ctx.ui.notify("Session switch canceled.", "warning");
     }
   } catch (error) {
     console.error(

@@ -21,18 +21,20 @@ const ITEM_ROWS = 4;
 
 function visibleItemCount(terminalRows: number): number {
   const availableRows = Math.max(ITEM_ROWS, terminalRows - SIDEBAR_OVERHEAD - 2);
+
   return Math.min(10, Math.max(1, Math.floor((availableRows + 1) / ITEM_ROWS)));
 }
 
 function modalRow(theme: Theme, content: string, innerWidth: number): string {
   const clipped = truncateToWidth(content, innerWidth, "", true);
+
   return theme.fg("border", "│")
     + clipped
     + " ".repeat(Math.max(0, innerWidth - visibleWidth(clipped)))
     + theme.fg("border", "│");
 }
 
-// ── Async catalogue modal ─────────────────────────────────────────
+// ── Async catalog modal ─────────────────────────────────────────
 
 type CatalogModalResult = SessionSummary | FolderSummary | undefined;
 type CatalogModalState = "loading" | "empty" | "error" | "ready" | "disposed";
@@ -59,21 +61,32 @@ export class SessionCatalogModalComponent implements Focusable {
 
   set focused(value: boolean) {
     this._focused = value;
-    if (this.child) this.child.focused = value;
+
+    if (this.child) {
+      this.child.focused = value;
+    }
   }
 
   setProgress(loaded: number, total: number): void {
-    if (this.state !== "loading") return;
+    if (this.state !== "loading") {
+      return;
+    }
+
     this.loaded = loaded;
     this.total = total;
   }
 
   showSessions(sessions: SessionSummary[], title = "📋 Sessions"): void {
-    if (this.state === "disposed") return;
-    if (sessions.length === 0) {
-      this.state = "empty";
+    if (this.state === "disposed") {
       return;
     }
+
+    if (sessions.length === 0) {
+      this.state = "empty";
+
+      return;
+    }
+
     this.child = new SessionSidebarComponent(
       this.theme,
       sessions,
@@ -86,11 +99,16 @@ export class SessionCatalogModalComponent implements Focusable {
   }
 
   showFolders(folders: FolderSummary[]): void {
-    if (this.state === "disposed") return;
-    if (folders.length === 0) {
-      this.state = "empty";
+    if (this.state === "disposed") {
       return;
     }
+
+    if (folders.length === 0) {
+      this.state = "empty";
+
+      return;
+    }
+
     this.child = new FolderSidebarComponent(
       this.theme,
       folders,
@@ -102,7 +120,10 @@ export class SessionCatalogModalComponent implements Focusable {
   }
 
   showError(error: unknown): void {
-    if (this.state === "disposed") return;
+    if (this.state === "disposed") {
+      return;
+    }
+
     this.errorMessage = error instanceof Error ? error.message : String(error);
     this.state = "error";
   }
@@ -110,8 +131,10 @@ export class SessionCatalogModalComponent implements Focusable {
   handleInput(data: string): void {
     if (this.child) {
       this.child.handleInput(data);
+
       return;
     }
+
     if (
       matchesKey(data, Key.escape)
       || matchesKey(data, Key.ctrl("c"))
@@ -122,8 +145,13 @@ export class SessionCatalogModalComponent implements Focusable {
   }
 
   render(width: number): string[] {
-    if (this.child) return this.child.render(width);
-    if (width < 2) return [""];
+    if (this.child) {
+      return this.child.render(width);
+    }
+
+    if (width < 2) {
+      return [""];
+    }
 
     const innerWidth = width - 2;
     const border = (value: string) => this.theme.fg("border", value);
@@ -193,20 +221,24 @@ export class SessionSidebarComponent implements Focusable {
   handleInput(data: string): void {
     if (matchesKey(data, Key.escape)) {
       this.done(undefined);
+
       return;
     }
 
     if (matchesKey(data, Key.enter) || matchesKey(data, Key.space)) {
       const selected = this.filtered[this.selectedIndex];
+
       if (selected) {
         this.done(selected);
       }
+
       return;
     }
 
     if (matchesKey(data, Key.up)) {
       if (this.selectedIndex > 0) {
         this.selectedIndex--;
+
         // Scroll when cursor goes above the visible window
         if (this.selectedIndex < this.scrollOffset) {
           this.scrollOffset = this.selectedIndex;
@@ -215,6 +247,7 @@ export class SessionSidebarComponent implements Focusable {
     } else if (matchesKey(data, Key.down)) {
       if (this.selectedIndex < this.filtered.length - 1) {
         this.selectedIndex++;
+
         // Scroll when cursor goes below the visible window
         if (this.selectedIndex >= this.scrollOffset + this.visibleItems) {
           this.scrollOffset = this.selectedIndex - this.visibleItems + 1;
@@ -259,10 +292,12 @@ export class SessionSidebarComponent implements Focusable {
   private applyFilter(): void {
     if (!this.query) {
       this.filtered = [...this.sessions];
+
       return;
     }
 
     const q = this.query.toLowerCase();
+
     this.filtered = this.sessions.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
@@ -273,7 +308,10 @@ export class SessionSidebarComponent implements Focusable {
   }
 
   render(width: number): string[] {
-    if (width < 2) return [""];
+    if (width < 2) {
+      return [""];
+    }
+
     const w = width;
     const th = this.theme;
     const innerW = w - 2;
@@ -299,6 +337,7 @@ export class SessionSidebarComponent implements Focusable {
     const cursorMark = this.focused ? "" : "";
     const searchText = this.query || th.fg("dim", "Filter...");
     const searchLine = `${searchLabel}${searchPrefix}${searchText}${cursorMark}`;
+
     lines.push(row(searchLine));
     lines.push(th.fg("border", `├${"─".repeat(innerW)}┤`));
 
@@ -324,33 +363,44 @@ export class SessionSidebarComponent implements Focusable {
         const folderLine = isSelected
           ? selectedStyle(` ▶ 📁 ${folderStr}`)
           : normalStyle(`   📁 ${folderStr}`);
+
         lines.push(row(folderLine));
 
         // Last user message
         if (session.lastUserMessage) {
           const msgStr = truncateToWidth(session.lastUserMessage, innerW - 6);
           const msgLine = `  ${th.fg("text", `"${msgStr}"`)}`;
+
           lines.push(row(isSelected ? selectedStyle(msgLine) : msgLine));
         }
 
         // Session meta: date + messages + model
         const dateStr = formatDate(session.date);
         const metaParts: string[] = [];
-        if (dateStr) metaParts.push(dateStr);
+
+        if (dateStr) {
+          metaParts.push(dateStr);
+        }
+
         metaParts.push(`${session.messageCount} msgs`);
+
         if (session.model) {
           const shortModel = session.model.includes("/")
             ? session.model.split("/").pop() ?? session.model
             : session.model;
+
           metaParts.push(shortModel);
         }
+
         if (session.provider) {
           metaParts.push(session.provider);
         }
+
         const metaStr = truncateToWidth(
           `  ${th.fg("dim", metaParts.join(" · "))}`,
           innerW - 2,
         );
+
         lines.push(row(isSelected ? selectedStyle(metaStr) : metaStr));
 
         // Spacer between sessions
@@ -367,13 +417,20 @@ export class SessionSidebarComponent implements Focusable {
     const aboveCount = this.scrollOffset;
     const belowCount = Math.max(0, this.filtered.length - (this.scrollOffset + this.visibleItems));
     let scrollHint = "";
-    if (aboveCount > 0) scrollHint += `↑${aboveCount} `;
-    if (belowCount > 0) scrollHint += `↓${belowCount} `;
+
+    if (aboveCount > 0) {
+      scrollHint += `↑${aboveCount} `;
+    }
+
+    if (belowCount > 0) {
+      scrollHint += `↓${belowCount} `;
+    }
 
     const footerHint =
       this.filtered.length > 0
         ? `${scrollHint}↑↓ navigate • Enter load • ${this.filtered.length} total`
         : "Esc close";
+
     lines.push(row(` ${th.fg("dim", truncateToWidth(footerHint, innerW - 2))}`));
     lines.push(th.fg("border", `╰${"─".repeat(innerW)}╯`));
 
@@ -414,20 +471,24 @@ export class FolderSidebarComponent implements Focusable {
   handleInput(data: string): void {
     if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("c"))) {
       this.done(undefined);
+
       return;
     }
 
     if (matchesKey(data, Key.enter) || matchesKey(data, Key.space)) {
       const selected = this.filtered[this.selectedIndex];
+
       if (selected) {
         this.done(selected);
       }
+
       return;
     }
 
     if (matchesKey(data, Key.up)) {
       if (this.selectedIndex > 0) {
         this.selectedIndex--;
+
         if (this.selectedIndex < this.scrollOffset) {
           this.scrollOffset = this.selectedIndex;
         }
@@ -435,6 +496,7 @@ export class FolderSidebarComponent implements Focusable {
     } else if (matchesKey(data, Key.down)) {
       if (this.selectedIndex < this.filtered.length - 1) {
         this.selectedIndex++;
+
         if (this.selectedIndex >= this.scrollOffset + this.visibleItems) {
           this.scrollOffset = this.selectedIndex - this.visibleItems + 1;
         }
@@ -469,10 +531,12 @@ export class FolderSidebarComponent implements Focusable {
   private applyFilter(): void {
     if (!this.query) {
       this.filtered = [...this.folders];
+
       return;
     }
 
     const q = this.query.toLowerCase();
+
     this.filtered = this.folders.filter(
       (f) =>
         f.folder.toLowerCase().includes(q) ||
@@ -482,7 +546,10 @@ export class FolderSidebarComponent implements Focusable {
   }
 
   render(width: number): string[] {
-    if (width < 2) return [""];
+    if (width < 2) {
+      return [""];
+    }
+
     const w = width;
     const th = this.theme;
     const innerW = w - 2;
@@ -505,6 +572,7 @@ export class FolderSidebarComponent implements Focusable {
     const searchLabel = th.fg("dim", "🔍 ");
     const searchText = this.query || th.fg("dim", "Filter...");
     const searchLine = `${searchLabel}${searchText}`;
+
     lines.push(row(searchLine));
     lines.push(th.fg("border", `├${"─".repeat(innerW)}┤`));
 
@@ -525,31 +593,41 @@ export class FolderSidebarComponent implements Focusable {
         const folderLine = isSelected
           ? selectedStyle(` ▶ 📁 ${folderStr}`)
           : normalStyle(`   📁 ${folderStr}`);
+
         lines.push(row(folderLine));
 
         // Last user message from latest session
         if (folder.lastUserMessage) {
           const msgStr = truncateToWidth(folder.lastUserMessage, innerW - 6);
           const msgLine = `  ${th.fg("text", `"${msgStr}"`)}`;
+
           lines.push(row(isSelected ? selectedStyle(msgLine) : msgLine));
         }
 
         // Aggregated metadata
         const dateStr = formatDate(folder.latestDate);
         const metaParts: string[] = [];
-        if (dateStr) metaParts.push(dateStr);
+
+        if (dateStr) {
+          metaParts.push(dateStr);
+        }
+
         metaParts.push(`${folder.sessionCount} sessions`);
         metaParts.push(`${folder.totalMessages} msgs`);
+
         if (folder.latestModel) {
           const shortModel = folder.latestModel.includes("/")
             ? folder.latestModel.split("/").pop() ?? folder.latestModel
             : folder.latestModel;
+
           metaParts.push(shortModel);
         }
+
         const metaStr = truncateToWidth(
           `  ${th.fg("dim", metaParts.join(" · "))}`,
           innerW - 2,
         );
+
         lines.push(row(isSelected ? selectedStyle(metaStr) : metaStr));
 
         // Spacer
@@ -565,12 +643,19 @@ export class FolderSidebarComponent implements Focusable {
     const aboveCount = this.scrollOffset;
     const belowCount = Math.max(0, this.filtered.length - (this.scrollOffset + this.visibleItems));
     let scrollHint = "";
-    if (aboveCount > 0) scrollHint += `↑${aboveCount} `;
-    if (belowCount > 0) scrollHint += `↓${belowCount} `;
+
+    if (aboveCount > 0) {
+      scrollHint += `↑${aboveCount} `;
+    }
+
+    if (belowCount > 0) {
+      scrollHint += `↓${belowCount} `;
+    }
 
     const footerHint = this.filtered.length > 0
       ? `${scrollHint}↑↓ navigate • Enter drill-down • ${this.filtered.length} total`
       : "Esc close";
+
     lines.push(row(` ${th.fg("dim", truncateToWidth(footerHint, innerW - 2))}`));
     lines.push(th.fg("border", `╰${"─".repeat(innerW)}╯`));
 

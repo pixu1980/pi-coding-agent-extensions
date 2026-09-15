@@ -14,6 +14,7 @@ function makeSidebar(sessions, done) {
 test("session sidebar: escape closes with undefined", () => {
   let result = "unset";
   const sb = makeSidebar([sampleSession()], (r) => (result = r));
+
   sb.handleInput(KEY.escape);
   assert.equal(result, undefined);
 });
@@ -22,6 +23,7 @@ test("session sidebar: enter selects the first session", () => {
   const sessions = [sampleSession({ name: "First" }), sampleSession({ name: "Second", file: "/y" })];
   let result;
   const sb = makeSidebar(sessions, (r) => (result = r));
+
   sb.handleInput(KEY.enter);
   assert.equal(result, sessions[0]);
 });
@@ -33,6 +35,7 @@ test("session sidebar: typing filters and enter selects the match", () => {
   ];
   let result;
   const sb = makeSidebar(sessions, (r) => (result = r));
+
   sb.handleInput("a");
   sb.handleInput("u"); // query "au" matches only "Refactor auth"
   sb.handleInput(KEY.enter);
@@ -43,6 +46,7 @@ test("session sidebar: up/down navigation selects other entries", () => {
   const sessions = [sampleSession({ name: "A", file: "/a" }), sampleSession({ name: "B", file: "/b" }), sampleSession({ name: "C", file: "/c" })];
   let result;
   const sb = makeSidebar(sessions, (r) => (result = r));
+
   sb.handleInput(KEY.down);
   sb.handleInput(KEY.down);
   sb.handleInput(KEY.enter);
@@ -56,9 +60,10 @@ test("session sidebar: backspace removes filter chars, ctrl+c closes", () => {
   const sessions = [sampleSession()];
   let result = "unset";
   const sb = makeSidebar(sessions, (r) => (result = r));
+
   sb.handleInput("x");
   sb.handleInput(KEY.backspace);
-  sb.handleInput(KEY.enter); // filter cleared → first session selected
+  sb.handleInput(KEY.enter); // filter cleared -> first session selected
   assert.equal(result, sessions[0]);
   sb.handleInput(KEY.ctrlC);
   assert.equal(result, undefined);
@@ -68,6 +73,7 @@ test("session sidebar: home/end and page navigation", () => {
   const sessions = Array.from({ length: 15 }, (_, i) => sampleSession({ name: `S${i}`, file: `/f${i}` }));
   let result;
   const sb = makeSidebar(sessions, (r) => (result = r));
+
   sb.handleInput(KEY.end);
   sb.handleInput(KEY.enter);
   assert.equal(result.file, "/f14");
@@ -83,9 +89,11 @@ test("session sidebar: home/end and page navigation", () => {
 test("session sidebar: render shows folder, message and no-results state", () => {
   const sb = makeSidebar([sampleSession({ cwd: "/home/dev/app", lastUserMessage: "Visible message" })], () => {});
   const lines = sb.render(60).join("\n");
+
   assert.ok(lines.includes("/home/dev/app"), "folder path rendered");
   assert.ok(lines.includes("Visible message"), "last user message rendered");
   const empty = makeSidebar([], () => {});
+
   assert.ok(empty.render(60).join("\n").includes("No sessions found"));
 });
 
@@ -94,6 +102,7 @@ test("folder sidebar: renders and selects on enter", () => {
   const folders = [{ folder: "/home/dev/app", sessions: [sampleSession()], sessionCount: 1, totalMessages: 3, latestDate: "2026-08-01T00:00:00Z", latestModel: "claude" }];
   const fb = new FolderSidebarComponent(makeTheme(), folders, (r) => (result = r), 30);
   const lines = fb.render(60).join("\n");
+
   assert.ok(lines.includes("/home/dev/app"));
   fb.handleInput(KEY.enter);
   assert.equal(result, folders[0]);
@@ -121,6 +130,7 @@ test("session and project modals stay within the supplied terminal bounds", () =
 
   for (const component of components) {
     const lines = component.render(42);
+
     assert.ok(lines.length <= 30, `modal rendered ${lines.length} rows in a 30-row terminal`);
     assert.ok(
       lines.every((line) => visibleWidth(line) <= 42),

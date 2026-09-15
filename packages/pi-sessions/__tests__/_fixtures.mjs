@@ -16,6 +16,7 @@ import { join } from "node:path";
 
 // Isolate the sessions directory in a temp agent dir
 const AGENT_DIR = mkdtempSync(join(tmpdir(), "pi-sessions-test-"));
+
 process.env.PI_CODING_AGENT_DIR = AGENT_DIR;
 
 import { getSessionsDir, clearSessionsCache } from "../lib/_sessions.ts";
@@ -27,13 +28,16 @@ export const KEY = { escape: "\x1b", enter: "\r", up: "\x1b[A", down: "\x1b[B", 
 
 export function freshAgentDir() {
   const dir = mkdtempSync(join(tmpdir(), "pi-sessions-sub-"));
+
   process.env.PI_CODING_AGENT_DIR = dir;
   clearSessionsCache();
+
   return dir;
 }
 
 export function writeSession(project, file, lines) {
   const dir = join(getSessionsDir(), project);
+
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, file), lines.map((l) => JSON.stringify(l)).join("\n"));
 }

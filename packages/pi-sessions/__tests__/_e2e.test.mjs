@@ -19,10 +19,17 @@ function installModalDriver(ctx) {
       let interactionQueued = false;
       const renders = [];
       const interactWhenReady = () => {
-        if (!component || interactionQueued) return;
+        if (!component || interactionQueued) {
+          return;
+        }
+
         const text = component.render(82).join("\n");
+
         renders.push(text);
-        if (/Loading (sessions|projects)/i.test(text)) return;
+
+        if (/Loading (sessions|projects)/i.test(text)) {
+          return;
+        }
 
         interactionQueued = true;
         queueMicrotask(() => {
@@ -33,6 +40,7 @@ function installModalDriver(ctx) {
           }
         });
       };
+
       const tui = {
         terminal: { rows: 30 },
         requestRender: interactWhenReady,
@@ -50,6 +58,7 @@ function installModalDriver(ctx) {
 
 test("registers /sessions, /projects and session_start", () => {
   const { pi, handlers, commands } = createMockPi();
+
   sessionsExtension(pi);
   assert.ok(handlers.get("session_start")?.length);
   assert.ok(commands.has("sessions"));
@@ -64,6 +73,7 @@ test("session_start: invalidates the session cache so a new session is listed", 
   ]);
   const { getSessions } = await import("../lib/_sessions.ts");
   const listed = await getSessions();
+
   assert.ok(listed.some((s) => s.cwd === "/cache-a"), "baseline list");
 
   // A session file appearing while the cache is warm: only the session_start
@@ -73,29 +83,35 @@ test("session_start: invalidates the session cache so a new session is listed", 
     { type: "message", message: { role: "user", content: "b" } },
   ]);
   const { pi, emit } = createMockPi();
+
   sessionsExtension(pi);
   await emit("session_start", {}, createMockCtx());
 
   const refreshed = await getSessions();
+
   assert.ok(refreshed.some((s) => s.cwd === "/cache-b"), "session_start must invalidate the cached list");
 });
 
 test("session_start: auto-names the session from the first user message", async () => {
   const { pi, emit, calls, state } = createMockPi();
+
   sessionsExtension(pi);
   const entries = [
     { type: "message", message: { role: "user", content: "Deploy the new dashboard" } },
   ];
   const ctx = createMockCtx({ sessionManager: { getEntries: () => entries, getBranch: () => [] } });
+
   await emit("session_start", {}, ctx);
   assert.equal(state.sessionName, "Deploy the new dashboard");
 });
 
 test("session_start: keeps an existing session name", async () => {
   const { pi, emit, calls, state } = createMockPi();
+
   state.sessionName = "Already named";
   sessionsExtension(pi);
   const ctx = createMockCtx({ sessionManager: { getEntries: () => [{ type: "message", message: { role: "user", content: "New content" } }], getBranch: () => [] } });
+
   await emit("session_start", {}, ctx);
   assert.equal(state.sessionName, "Already named");
   assert.equal(calls.setSessionName.length, 0);
@@ -103,8 +119,10 @@ test("session_start: keeps an existing session name", async () => {
 
 test("session_start: empty user message is not set as name", async () => {
   const { pi, emit, calls } = createMockPi();
+
   sessionsExtension(pi);
   const ctx = createMockCtx({ sessionManager: { getEntries: () => [{ type: "message", message: { role: "user", content: "" } }], getBranch: () => [] } });
+
   await emit("session_start", {}, ctx);
   assert.equal(calls.setSessionName.length, 0);
 });
@@ -113,8 +131,10 @@ test("session_start: empty user message is not set as name", async () => {
 
 test("/sessions: non-tui mode notifies error", async () => {
   const { pi, runCommand } = createMockPi();
+
   sessionsExtension(pi);
   const ctx = createMockCtx({ mode: "headless" });
+
   await runCommand("sessions", "", ctx);
   assert.ok(ctx.ui._uiCalls.some(([c, , t]) => c === "notify" && t === "error"));
 });
@@ -122,6 +142,7 @@ test("/sessions: non-tui mode notifies error", async () => {
 test("/sessions: empty history is shown inside a centered modal", async () => {
   freshAgentDir();
   const { pi, runCommand } = createMockPi();
+
   sessionsExtension(pi);
   const ctx = createMockCtx();
   const modals = installModalDriver(ctx);
@@ -141,6 +162,7 @@ test("/sessions: empty history is shown inside a centered modal", async () => {
 test("/sessions: loads and restores from one MCP-style centered modal", async () => {
   freshAgentDir();
   const { pi, runCommand } = createMockPi();
+
   sessionsExtension(pi);
   writeSession("projA", "s1.jsonl", [
     { type: "session", id: "session-a", cwd: "/home/dev/app", timestamp: "2026-07-01T00:00:00Z" },
@@ -152,9 +174,11 @@ test("/sessions: loads and restores from one MCP-style centered modal", async ()
   const ctx = createMockCtx();
   const modals = installModalDriver(ctx);
   const switched = [];
+
   ctx.switchSession = async (file) => {
     switched.push(file);
-    return { cancelled: false };
+
+    return { canceled: false };
   };
 
   await runCommand("sessions", "", ctx);
@@ -174,6 +198,7 @@ test("/sessions: loads and restores from one MCP-style centered modal", async ()
 test("/projects: loads in a centered modal and drills down in the same style", async () => {
   freshAgentDir();
   const { pi, runCommand } = createMockPi();
+
   sessionsExtension(pi);
   writeSession("projB", "s2.jsonl", [
     { type: "session", id: "session-b", cwd: "/home/dev/other", timestamp: "2026-07-02T00:00:00Z" },
@@ -184,17 +209,21 @@ test("/projects: loads in a centered modal and drills down in the same style", a
   const ctx = createMockCtx();
   const modals = installModalDriver(ctx);
   const switched = [];
+
   ctx.switchSession = async (file) => {
     switched.push(file);
-    return { cancelled: false };
+
+    return { canceled: false };
   };
 
   await runCommand("projects", "", ctx);
 
   assert.equal(modals.length, 2, "project picker and drill-down each use a modal");
+
   for (const modal of modals) {
     assert.deepEqual(modal.options, MCP_STYLE_MODAL_OPTIONS);
   }
+
   assert.match(modals[0].initialText, /Loading projects/i);
   assert.ok(modals[0].renders.some((text) => text.includes("/home/dev/other")));
   assert.ok(modals[1].renders.some((text) => text.includes("Fix pipeline")));
@@ -207,9 +236,11 @@ test("/projects: loads in a centered modal and drills down in the same style", a
 
 test("/projects: escape from folder list exits", async () => {
   const { pi, runCommand } = createMockPi();
+
   sessionsExtension(pi);
   const ctx = createMockCtx();
-  ctx.ui.custom = async () => undefined; // Esc → no selection
+
+  ctx.ui.custom = async () => undefined; // Esc -> no selection
   await runCommand("projects", "", ctx);
   assert.ok(true, "exits cleanly without crashing");
 });

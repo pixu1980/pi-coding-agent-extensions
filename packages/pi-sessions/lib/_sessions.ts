@@ -64,17 +64,22 @@ export async function getSessions(onProgress?: SessionListProgress): Promise<Ses
 
   const generation = cacheGeneration;
   const request = listSessionsAsync(onProgress);
+
   pendingSessions = request;
 
   try {
     const sessions = await request;
+
     if (generation === cacheGeneration) {
       cachedSessions = sessions;
       cacheTimestamp = Date.now();
     }
+
     return sessions;
   } finally {
-    if (pendingSessions === request) pendingSessions = null;
+    if (pendingSessions === request) {
+      pendingSessions = null;
+    }
   }
 }
 
@@ -85,6 +90,7 @@ export async function getSessions(onProgress?: SessionListProgress): Promise<Ses
  */
 export function getSessionsDir(): string {
   const agentDir = process.env.PI_CODING_AGENT_DIR || join(homedir(), ".pi", "agent");
+
   return join(agentDir, SESSION_DIR_NAME);
 }
 
@@ -103,7 +109,9 @@ function isTextBlock(value: unknown): value is TextContentBlock {
  * Auto-generate a session name from the first user message content.
  */
 export function autoNameSession(content: unknown): string {
-  if (!content) return "Empty session";
+  if (!content) {
+    return "Empty session";
+  }
 
   let text = "";
 
@@ -119,8 +127,11 @@ export function autoNameSession(content: unknown): string {
   }
 
   // Clean up: trim, remove excessive whitespace, truncate
-  text = text.replace(/\s+/g, " ").trim();
-  if (!text) return "Empty session";
+  text = text.replaceAll(/\s+/g, " ").trim();
+
+  if (!text) {
+    return "Empty session";
+  }
 
   const truncated = text.length > MAX_NAME_LENGTH
     ? text.slice(0, MAX_NAME_LENGTH - 3) + "..."
@@ -150,38 +161,63 @@ function createSessionScan(): SessionScan {
 
 function scanSessionEntry(scan: SessionScan, entry: Record<string, any>): void {
   if (entry.type === "session") {
-    if (typeof entry.cwd === "string") scan.cwd = entry.cwd;
-    if (typeof entry.timestamp === "string") scan.date = entry.timestamp;
+    if (typeof entry.cwd === "string") {
+      scan.cwd = entry.cwd;
+    }
+
+    if (typeof entry.timestamp === "string") {
+      scan.date = entry.timestamp;
+    }
+
     return;
   }
+
   if (entry.type === "session_info") {
     scan.explicitName = typeof entry.name === "string" && entry.name.trim()
       ? entry.name.trim()
       : undefined;
+
     return;
   }
-  if (entry.type !== "message" || !entry.message) return;
+
+  if (entry.type !== "message" || !entry.message) {
+    return;
+  }
 
   const message = entry.message as Record<string, any>;
+
   if (message.role === "user") {
     if (scan.generatedName === "Unknown session") {
       scan.generatedName = autoNameSession(message.content);
     }
+
     scan.lastUserMessage = autoNameSession(message.content);
     scan.messageCount++;
+
     return;
   }
+
   if (message.role === "assistant") {
-    if (typeof message.model === "string") scan.model = message.model;
-    if (typeof message.provider === "string") scan.provider = message.provider;
+    if (typeof message.model === "string") {
+      scan.model = message.model;
+    }
+
+    if (typeof message.provider === "string") {
+      scan.provider = message.provider;
+    }
+
     scan.messageCount++;
   }
 }
 
 function scanSessionLine(scan: SessionScan, line: string): void {
-  if (!line.trim()) return;
+  if (!line.trim()) {
+    return;
+  }
+
   try {
     const entry = JSON.parse(line);
+
     if (entry && typeof entry === "object" && !Array.isArray(entry)) {
       scanSessionEntry(scan, entry as Record<string, any>);
     }
@@ -217,9 +253,11 @@ export function parseSessionFile(filePath: string): SessionSummary | null {
     const content = readFileSync(filePath, "utf8");
     const stats = statSync(filePath);
     const scan = createSessionScan();
+
     for (const line of content.split("\n")) {
       scanSessionLine(scan, line);
     }
+
     return finishSessionSummary(filePath, scan, stats.mtimeMs, stats.mtime);
   } catch {
     return null;
@@ -252,7 +290,10 @@ async function mapWithConcurrency<T, R>(
   limit: number,
   worker: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
-  if (items.length === 0) return [];
+  if (items.length === 0) {
+    return [];
+  }
+
   // Backpressure contract: at most `limit` reads in flight; the remaining
   // items wait in the loop (deferred, never dropped). The caller bounds the
   // item count (MAX_SESSIONS candidates) so the queue itself is bounded.
@@ -263,36 +304,48 @@ async function mapWithConcurrency<T, R>(
     async () => {
       while (true) {
         const index = nextIndex++;
-        if (index >= items.length) return;
+
+        if (index >= items.length) {
+          return;
+        }
+
         results[index] = await worker(items[index]!, index);
       }
     },
   );
+
   await Promise.all(workers);
+
   return results;
 }
 
 async function parseSessionFileAsync(filePath: string): Promise<SessionSummary | null> {
   sessionsStats.filesParsed++;
+
   try {
     const stats = await stat(filePath);
     const input = createReadStream(filePath, { encoding: "utf8" });
     const lines = createInterface({ input, crlfDelay: Infinity });
     const scan = createSessionScan();
     let scanned = 0;
+
     try {
       for await (const line of lines) {
         scanSessionLine(scan, line);
         scanned++;
+
         // A summary only needs the header, the first user message and a
         // sample of metadata; stop reading pathological files at the cap.
-        if (scanned >= MAX_SESSION_SCAN_LINES) break;
+        if (scanned >= MAX_SESSION_SCAN_LINES) {
+          break;
+        }
       }
     } finally {
       lines.close();
       input.destroy();
       sessionsStats.linesScanned += scanned;
     }
+
     return finishSessionSummary(filePath, scan, stats.mtimeMs, stats.mtime);
   } catch {
     return null;
@@ -309,44 +362,62 @@ function insertCandidate(
 ): void {
   let lo = 0;
   let hi = top.length;
+
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
-    if (top[mid]!.mtime > entry.mtime) lo = mid + 1;
-    else hi = mid;
+
+    if (top[mid]!.mtime > entry.mtime) {
+      lo = mid + 1;
+    } else {
+      hi = mid;
+    }
   }
+
   top.splice(lo, 0, entry);
-  if (top.length > MAX_SESSIONS) top.length = MAX_SESSIONS;
+
+  if (top.length > MAX_SESSIONS) {
+    top.length = MAX_SESSIONS;
+  }
 }
 
 async function findSessionCandidates(): Promise<string[]> {
   const sessionsDir = getSessionsDir();
+
   try {
     sessionsStats.dirReads++;
     const projects = (await readdir(sessionsDir, { withFileTypes: true }))
       .filter((entry) => entry.isDirectory());
     const top: Array<{ path: string; mtime: number }> = [];
+
     await Promise.all(projects.map(async (project) => {
       const projectPath = join(sessionsDir, project.name);
+
       try {
         sessionsStats.dirReads++;
         const files = (await readdir(projectPath, { withFileTypes: true }))
           .filter((entry) => entry.name.endsWith(".jsonl"));
+
         await mapWithConcurrency(files, MAX_CONCURRENT_SESSION_READS, async (entry) => {
           const filePath = join(projectPath, entry.name);
+
           try {
             sessionsStats.fileStats++;
             const info = await stat(filePath);
-            if (info.isFile()) insertCandidate(top, { path: filePath, mtime: info.mtimeMs });
+
+            if (info.isFile()) {
+              insertCandidate(top, { path: filePath, mtime: info.mtimeMs });
+            }
           } catch {
-            // unreadable file → skip
+            // unreadable file -> skip
           }
         });
       } catch {
-        // unreadable project dir → skip
+        // unreadable project dir -> skip
       }
     }));
 
     sessionsStats.candidatesReturned = top.length;
+
     return top.map((entry) => entry.path);
   } catch {
     return [];
@@ -364,6 +435,7 @@ async function listSessionsAsync(onProgress?: SessionListProgress): Promise<Sess
       onProgress?.(loaded, files.length);
     }
   });
+
   return summaries
     .filter((summary): summary is SessionSummary => summary !== null)
     .sort((left, right) => right.mtime - left.mtime);
@@ -375,12 +447,16 @@ async function listSessionsAsync(onProgress?: SessionListProgress): Promise<Sess
  */
 export function formatDate(isoStr: string): string {
   try {
-    // Normalise: if no timezone offset/Z, treat as UTC
-    const normalised = /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith("Z") && !isoStr.endsWith("+00:00")
+    // Normalize: if no timezone offset/Z, treat as UTC
+    const normalized = /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith("Z") && !isoStr.endsWith("+00:00")
       ? isoStr + "Z"
       : isoStr;
-    const d = new Date(normalised);
-    if (isNaN(d.getTime())) return "";
+    const d = new Date(normalized);
+
+    if (isNaN(d.getTime())) {
+      return "";
+    }
+
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
     const diffDays = Math.floor(diffMs / 86400000);

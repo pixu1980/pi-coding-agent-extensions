@@ -19,6 +19,7 @@ test("autoNameSession: string content is cleaned and truncated", () => {
   assert.equal(autoNameSession("   hello    world  "), "hello world");
   const long = "a".repeat(100);
   const named = autoNameSession(long);
+
   assert.equal(named.length, 60);
   assert.ok(named.endsWith("..."));
 });
@@ -30,7 +31,7 @@ test("autoNameSession: text blocks from content arrays", () => {
   );
 });
 
-test("autoNameSession: empty or non-text content → Empty session", () => {
+test("autoNameSession: empty or non-text content -> Empty session", () => {
   assert.equal(autoNameSession(undefined), "Empty session");
   assert.equal(autoNameSession(""), "Empty session");
   assert.equal(autoNameSession([{ type: "toolUse", name: "x" }]), "Empty session");
@@ -41,6 +42,7 @@ test("autoNameSession: empty or non-text content → Empty session", () => {
 
 test("parseSessionFile: extracts name, model, provider, cwd and counts", () => {
   const file = join(getSessionsDir(), "proj", "s.jsonl");
+
   mkdirSync(join(getSessionsDir(), "proj"), { recursive: true });
   writeFileSync(
     file,
@@ -52,6 +54,7 @@ test("parseSessionFile: extracts name, model, provider, cwd and counts", () => {
     ].map((l) => JSON.stringify(l)).join("\n"),
   );
   const s = parseSessionFile(file);
+
   assert.equal(s.name, "Fix login bug");
   assert.equal(s.cwd, "/home/dev/app");
   assert.equal(s.model, "claude-opus-4");
@@ -59,18 +62,20 @@ test("parseSessionFile: extracts name, model, provider, cwd and counts", () => {
   assert.equal(s.messageCount, 2, "only user+assistant counted");
 });
 
-test("parseSessionFile: malformed lines are skipped, missing file → null", () => {
+test("parseSessionFile: malformed lines are skipped, missing file -> null", () => {
   const file = join(getSessionsDir(), "proj2", "s.jsonl");
+
   mkdirSync(join(getSessionsDir(), "proj2"), { recursive: true });
   writeFileSync(file, "not json\n{ \"type\": \"message\", \"message\": { \"role\": \"user\", \"content\": \"Hi\" } }\n");
   const s = parseSessionFile(file);
+
   assert.equal(s.name, "Hi");
   assert.equal(parseSessionFile(join(getSessionsDir(), "missing.jsonl")), null);
 });
 
 // ── Unit: formatDate ──────────────────────────────────────────────
 
-test("formatDate: invalid input → empty string", () => {
+test("formatDate: invalid input -> empty string", () => {
   assert.equal(formatDate("garbage"), "");
   assert.equal(formatDate(""), "");
 });
@@ -78,13 +83,16 @@ test("formatDate: invalid input → empty string", () => {
 test("formatDate: normalizes timestamps without timezone to UTC", () => {
   const now = new Date();
   const iso = now.toISOString().slice(0, 19); // no Z
+
   assert.ok(formatDate(iso).length > 0);
 });
 
 test("formatDate: yesterday / older-than-week buckets", () => {
   const yesterday = new Date(Date.now() - 86400000).toISOString();
+
   assert.equal(formatDate(yesterday), "Yesterday");
   const threeDays = new Date(Date.now() - 3 * 86400000).toISOString();
+
   assert.match(formatDate(threeDays), /^\d+d ago$/);
 });
 
@@ -95,6 +103,7 @@ test("groupSessionsByFolder: groups by cwd and sorts folders newest first", () =
   const b = sampleSession({ cwd: "/b", date: "2026-08-01T00:00:00Z", mtime: 3, messageCount: 5 });
   const c = sampleSession({ cwd: "/a", date: "2026-07-02T00:00:00Z", mtime: 2, messageCount: 1 });
   const folders = groupSessionsByFolder([a, b, c]);
+
   assert.equal(folders.length, 2);
   assert.equal(folders[0].folder, "/b", "newest folder first");
   assert.equal(folders[0].sessionCount, 1);
@@ -122,12 +131,15 @@ test("getSessions: loads asynchronously and reports progress", async () => {
 
   const progress = [];
   const pending = getSessions((loaded, total) => progress.push([loaded, total]));
+
   assert.ok(pending instanceof Promise, "session discovery must not block the TUI thread");
 
   const sessions = await pending;
+
   assert.equal(sessions.length, 2);
   assert.deepEqual(progress.at(-1), [2, 2]);
   const enriched = sessions.find((session) => session.cwd === "/a");
+
   assert.equal(enriched.lastUserMessage, "latest request");
   assert.equal(enriched.model, "gpt-5");
   assert.equal(enriched.provider, "openai");
@@ -145,9 +157,11 @@ test("getSessions: reads nested project dirs, newest first", async () => {
   ]);
   const fs = await import("node:fs");
   const now = new Date();
+
   fs.utimesSync(join(getSessionsDir(), "projB", "2.jsonl"), now, now);
   fs.utimesSync(join(getSessionsDir(), "projA", "1.jsonl"), new Date(now - 10000), new Date(now - 10000));
   const sessions = await getSessions();
+
   assert.equal(sessions.length, 2);
   assert.equal(sessions[0].name, "newer session", "newest first");
 });

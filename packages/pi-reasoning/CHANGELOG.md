@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.14](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.2.13...@pixu1980/pi-reasoning@0.2.14) (2026-09-15)
+
+### Features
+
+* **pi-cursor:** keep local agents working on a Free Cursor plan ([2202763](https://github.com/pixu1980/pi-coding-agent-extensions/commit/2202763d399ff26d0523fe495f9eb44e21070127))
 ## [0.2.13](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-reasoning@0.2.12...@pixu1980/pi-reasoning@0.2.13) (2026-09-15)
 
 ### Features

@@ -47,7 +47,7 @@ _Avoid_: Bill, payment request
 - An **Order** produces one or more **Invoices**
 - An **Invoice** belongs to exactly one **Customer**
 
-## Example dialogue
+## Example dialog
 
 > **Dev:** "When a **Customer** places an **Order**, do we create the **Invoice** immediately?"
 > **Domain expert:** "No - an **Invoice** is only generated once a **Fulfillment** is confirmed."
@@ -57,7 +57,7 @@ _Avoid_: Bill, payment request
 - "account" was used to mean both **Customer** and **User** - resolved: these are distinct concepts.
 \\\`\\\`\\\`
 
-Rules: be opinionated (pick the best word, list aliases to avoid); flag conflicts explicitly; keep definitions tight (one sentence, what it IS); show relationships with cardinality; only include context-specific terms; write an example dialogue. Single context: one \\\`CONTEXT.md\\\` at the root. Multiple contexts: a \\\`CONTEXT-MAP.md\\\` lists each context. Create files lazily.`;
+Rules: be opinionated (pick the best word, list aliases to avoid); flag conflicts explicitly; keep definitions tight (one sentence, what it IS); show relationships with cardinality; only include context-specific terms; write an example dialog. Single context: one \\\`CONTEXT.md\\\` at the root. Multiple contexts: a \\\`CONTEXT-MAP.md\\\` lists each context. Create files lazily.`;
 
 const ADR_FORMAT = `# ADR Format
 
@@ -76,7 +76,7 @@ Offer an ADR only when ALL three hold: (1) hard to reverse, (2) surprising witho
 // ── Prompts ────────────────────────────────────────────────────────────────
 
 function askPrompt(topic: string): string {
-	return `Single-question mode: ask the user exactly ONE question about: ${topic}
+  return `Single-question mode: ask the user exactly ONE question about: ${topic}
 
 Use the "ask" tool (options + custom answer + optional note). Provide 3-5 clear, distinct options. Use multiSelect only when several choices can coexist. If the user cancels, rephrase or continue with what you have - never loop. After the answer, summarize in one or two lines and proceed with the task.
 
@@ -86,8 +86,8 @@ Start now with your question.`;
 }
 
 function interviewPrompt(topic: string, withDocs = false): string {
-	const docsBlock = withDocs
-		? `
+  const docsBlock = withDocs
+    ? `
 
 ## Domain awareness
 
@@ -102,10 +102,11 @@ During the session: challenge the user's terms against the CONTEXT.md glossary a
 CONTEXT.md format: ${CONTEXT_FORMAT}
 
 ADR format: ${ADR_FORMAT}`
-		: "";
-	return `Interview mode: gather structured input from the developer about: ${topic}
+    : "";
 
-Use the "interview" tool to ask a structured set of questions. Split the questions into multiple labelled waves when the topic spans phases (e.g. "Wave 1 - Baseline" and "Wave 2 - Follow-up" for a two-wave study); group questions by hierarchical or structural criteria (sections, difficulty, phases) and let each wave carry any number of questions. Provide 3-5 clear options per question; use multiSelect only when several choices can coexist. If the user cancels a question, rephrase or continue with what you have - never loop. After the answers, summarize in one or two lines, list any CONTEXT.md / ADR updates you made, and proceed with the task.${docsBlock}
+  return `Interview mode: gather structured input from the developer about: ${topic}
+
+Use the "interview" tool to ask a structured set of questions. Split the questions into multiple labeled waves when the topic spans phases (e.g. "Wave 1 - Baseline" and "Wave 2 - Follow-up" for a two-wave study); group questions by hierarchical or structural criteria (sections, difficulty, phases) and let each wave carry any number of questions. Provide 3-5 clear options per question; use multiSelect only when several choices can coexist. If the user cancels a question, rephrase or continue with what you have - never loop. After the answers, summarize in one or two lines, list any CONTEXT.md / ADR updates you made, and proceed with the task.${docsBlock}
 
 Start now with your first wave/question.`;
 }
@@ -117,32 +118,32 @@ Start now with your first wave/question.`;
  * interview (one question at a time with recommended answers).
  */
 const ASK_KEYWORDS = [
-	// plain single question
-	"fammi una domanda",
-	"fai una domanda",
-	"fammi qualche domanda",
-	"una domanda sola",
-	"domanda singola",
-	"chiedimi qualcosa",
-	"chiedimi una cosa",
-	"fammi un quiz",
-	"chiedimi",
-	"ask me a question",
-	"ask me something",
-	"ask me one question",
-	"single question",
-	"quiz me",
-	"one question for me",
-	// sharp-interview phrasing (plan-sharpening behaviour, natural language)
-	"intervistami sul piano",
-	"intervista il mio piano",
-	"sfida il piano",
-	"sfida il mio piano",
-	"stress-test il piano",
-	"stress test il piano",
-	"metti alla prova il piano",
-	"challenge my plan",
-	"stress-test my plan",
+  // plain single question
+  "fammi una domanda",
+  "fai una domanda",
+  "fammi qualche domanda",
+  "una domanda sola",
+  "domanda singola",
+  "chiedimi qualcosa",
+  "chiedimi una cosa",
+  "fammi un quiz",
+  "chiedimi",
+  "ask me a question",
+  "ask me something",
+  "ask me one question",
+  "single question",
+  "quiz me",
+  "one question for me",
+  // sharp-interview phrasing (plan-sharpening behavior, natural language)
+  "intervistami sul piano",
+  "intervista il mio piano",
+  "sfida il piano",
+  "sfida il mio piano",
+  "stress-test il piano",
+  "stress test il piano",
+  "metti alla prova il piano",
+  "challenge my plan",
+  "stress-test my plan",
 ];
 
 /**
@@ -150,86 +151,93 @@ const ASK_KEYWORDS = [
  * including the domain-aware variant (CONTEXT.md / ADR).
  */
 const INTERVIEW_KEYWORDS = [
-	// plain interview
-	"intervistami",
-	"fammi un'intervista",
-	"fammi una intervista",
-	"intervista",
-	"serie di domande",
-	"set di domande",
-	"batteria di domande",
-	"più domande",
-	"piu domande",
-	"domande strutturate",
-	"più wave",
-	"piu wave",
-	"due wave",
-	"2 wave",
-	"n wave",
-	"due ondate",
-	"interview me",
-	"a survey",
-	"series of questions",
-	"set of questions",
-	"multiple waves",
-	"two waves",
-	"structured questions",
-	// domain-aware sharp interview (upgrade to docs mode)
-	"intervistami col dominio",
-	"intervista il piano contro",
-	"sfida il piano contro",
-	"contro il dominio",
-	"contro il domain model",
-	"con il glossario",
-	"con CONTEXT.md",
-	"domain-aware",
+  // plain interview
+  "intervistami",
+  "fammi un'intervista",
+  "fammi una intervista",
+  "intervista",
+  "serie di domande",
+  "set di domande",
+  "batteria di domande",
+  "più domande",
+  "piu domande",
+  "domande strutturate",
+  "più wave",
+  "piu wave",
+  "due wave",
+  "2 wave",
+  "n wave",
+  "due ondate",
+  "interview me",
+  "a survey",
+  "series of questions",
+  "set of questions",
+  "multiple waves",
+  "two waves",
+  "structured questions",
+  // domain-aware sharp interview (upgrade to docs mode)
+  "intervistami col dominio",
+  "intervista il piano contro",
+  "sfida il piano contro",
+  "contro il dominio",
+  "contro il domain model",
+  "con il glossario",
+  "con CONTEXT.md",
+  "domain-aware",
 ];
 
 /** Phrases that upgrade an interview to the domain-aware (docs) mode. */
 const DOCS_KEYWORDS = [
-	"con dominio",
-	"col dominio",
-	"domain model",
-	"domain-aware",
-	"contro il dominio",
-	"contro il domain model",
-	"con il glossario",
-	"con CONTEXT.md",
-	"sfida il piano contro",
-	"--docs",
+  "con dominio",
+  "col dominio",
+  "domain model",
+  "domain-aware",
+  "contro il dominio",
+  "contro il domain model",
+  "con il glossario",
+  "con CONTEXT.md",
+  "sfida il piano contro",
+  "--docs",
 ];
 
 function wantsDocs(text: string): boolean {
-	const lower = text.toLowerCase();
-	return DOCS_KEYWORDS.some((k) => lower.includes(k));
+  const lower = text.toLowerCase();
+
+  return DOCS_KEYWORDS.some((k) => lower.includes(k));
 }
 
 export function registerAskCommands(pi: ExtensionAPI) {
-	pi.registerCommand("ask", {
-		description: "Ask the user a single question (options, custom answer, note) - also covers sharp plan interviews",
-		handler: async (args, ctx) => {
-			if (ctx.mode !== "tui") {
-				ctx.ui.notify("ask requires interactive mode", "error");
-				return;
-			}
-			const topic = (args ?? "").trim() || "the current task";
-			await pi.sendUserMessage(askPrompt(topic), { deliverAs: "followUp" });
-		},
-	});
+  pi.registerCommand("ask", {
+    description: "Ask the user a single question (options, custom answer, note) - also covers sharp plan interviews",
+    handler: async (args, ctx) => {
+      if (ctx.mode !== "tui") {
+        ctx.ui.notify("ask requires interactive mode", "error");
 
-	pi.registerCommand("ask-interview", {
-		description: "Run a structured interview (multiple questions, optional waves); append 'con dominio' or --docs for a domain-aware interview (CONTEXT.md / ADR)",
-		handler: async (args, ctx) => {
-			if (ctx.mode !== "tui") {
-				ctx.ui.notify("ask-interview requires interactive mode", "error");
-				return;
-			}
-			const raw = (args ?? "").trim();
-			const withDocs = wantsDocs(raw);
-			const topic = raw.replace(/--docs\b/g, "").trim() || "the current task";
-			await pi.sendUserMessage(interviewPrompt(topic, withDocs), { deliverAs: "followUp" });
-		},
-	});
+        return;
+      }
+
+      const topic = (args ?? "").trim() || "the current task";
+
+      await pi.sendUserMessage(askPrompt(topic), { deliverAs: "followUp" });
+    },
+  });
+
+  pi.registerCommand("ask-interview", {
+    description: "Run a structured interview (multiple questions, optional waves); append 'con dominio' or --docs for a domain-aware interview (CONTEXT.md / ADR)",
+    handler: async (args, ctx) => {
+      if (ctx.mode !== "tui") {
+        ctx.ui.notify("ask-interview requires interactive mode", "error");
+
+        return;
+      }
+
+      const raw = (args ?? "").trim();
+      const withDocs = wantsDocs(raw);
+      const topic = raw.replaceAll(/--docs\b/g, "").trim() || "the current task";
+
+      await pi.sendUserMessage(interviewPrompt(topic, withDocs), { deliverAs: "followUp" });
+    },
+  });
 }
 
 /**
@@ -237,24 +245,36 @@ export function registerAskCommands(pi: ExtensionAPI) {
  * route the message into the matching mode automatically.
  */
 export function registerAskAutoTrigger(pi: ExtensionAPI) {
-	pi.on("input", async (event) => {
-		if (event.source !== "interactive") return { action: "continue" };
-		const text = (event.text ?? "").trim();
-		if (!text || text.startsWith("/")) return { action: "continue" };
+  pi.on("input", async (event) => {
+    if (event.source !== "interactive") {
+      return { action: "continue" };
+    }
 
-		const lower = text.toLowerCase();
-		const interviewHit = INTERVIEW_KEYWORDS.find((k) => lower.includes(k));
-		if (interviewHit) {
-			await pi.sendUserMessage(interviewPrompt(text, wantsDocs(text)), { deliverAs: "followUp" });
-			return { action: "handled" };
-		}
-		const askHit = ASK_KEYWORDS.find((k) => lower.includes(k));
-		if (askHit) {
-			await pi.sendUserMessage(askPrompt(text), { deliverAs: "followUp" });
-			return { action: "handled" };
-		}
-		return { action: "continue" };
-	});
+    const text = (event.text ?? "").trim();
+
+    if (!text || text.startsWith("/")) {
+      return { action: "continue" };
+    }
+
+    const lower = text.toLowerCase();
+    const interviewHit = INTERVIEW_KEYWORDS.find((k) => lower.includes(k));
+
+    if (interviewHit) {
+      await pi.sendUserMessage(interviewPrompt(text, wantsDocs(text)), { deliverAs: "followUp" });
+
+      return { action: "handled" };
+    }
+
+    const askHit = ASK_KEYWORDS.find((k) => lower.includes(k));
+
+    if (askHit) {
+      await pi.sendUserMessage(askPrompt(text), { deliverAs: "followUp" });
+
+      return { action: "handled" };
+    }
+
+    return { action: "continue" };
+  });
 }
 
 // ── Guardrails (system-prompt level) ───────────────────────────────────────
@@ -279,12 +299,20 @@ const INTERVIEW_DOCS_GUARDRAIL = `\n\n## MANDATORY INSTRUCTION (pi-ask guardrail
 const ASK_GUARDRAIL = `\n\n## MANDATORY INSTRUCTION (pi-ask guardrail)\nThe user's message requests a single question. You MUST call the \`ask\` tool before writing any other text - do not reply with a plain-text question. Provide 3-5 clear, distinct options; use multiSelect only when several choices can coexist. If the user asks for a sharp interview or to challenge a plan, put your recommended answer first marked "(recommended)", explore the codebase to answer questions yourself, and challenge assumptions. If the user cancels, rephrase or continue with what you have - never loop.`;
 
 function findMatch(text: string): { kind: "interview" | "ask"; docs: boolean; keyword: string } | null {
-	const lower = text.toLowerCase();
-	const interviewHit = INTERVIEW_KEYWORDS.find((k) => lower.includes(k));
-	if (interviewHit) return { kind: "interview", docs: wantsDocs(text), keyword: interviewHit };
-	const askHit = ASK_KEYWORDS.find((k) => lower.includes(k));
-	if (askHit) return { kind: "ask", docs: false, keyword: askHit };
-	return null;
+  const lower = text.toLowerCase();
+  const interviewHit = INTERVIEW_KEYWORDS.find((k) => lower.includes(k));
+
+  if (interviewHit) {
+    return { kind: "interview", docs: wantsDocs(text), keyword: interviewHit };
+  }
+
+  const askHit = ASK_KEYWORDS.find((k) => lower.includes(k));
+
+  if (askHit) {
+    return { kind: "ask", docs: false, keyword: askHit };
+  }
+
+  return null;
 }
 
 /**
@@ -294,17 +322,26 @@ function findMatch(text: string): { kind: "interview" | "ask"; docs: boolean; ke
  * (pi-ask) is installed.
  */
 export function registerAskGuardrails(pi: ExtensionAPI) {
-	pi.on("before_agent_start", (event) => {
-		const prompt = (event.prompt ?? "").trim();
-		if (!prompt || prompt.startsWith("/")) return;
-		const match = findMatch(prompt);
-		if (!match) return;
-		const guardrail =
-			match.kind === "interview"
-				? match.docs
-					? INTERVIEW_DOCS_GUARDRAIL
-					: INTERVIEW_GUARDRAIL
-				: ASK_GUARDRAIL;
-		return { systemPrompt: `${event.systemPrompt}${guardrail}` };
-	});
+  pi.on("before_agent_start", (event) => {
+    const prompt = (event.prompt ?? "").trim();
+
+    if (!prompt || prompt.startsWith("/")) {
+      return;
+    }
+
+    const match = findMatch(prompt);
+
+    if (!match) {
+      return;
+    }
+
+    const guardrail =
+      match.kind === "interview"
+        ? match.docs
+          ? INTERVIEW_DOCS_GUARDRAIL
+          : INTERVIEW_GUARDRAIL
+        : ASK_GUARDRAIL;
+
+    return { systemPrompt: `${event.systemPrompt}${guardrail}` };
+  });
 }

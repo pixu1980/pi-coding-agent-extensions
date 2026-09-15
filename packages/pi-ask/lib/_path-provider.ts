@@ -15,7 +15,7 @@
  *     payload: { cwd: string; reply: (provider) => void }
  *
  * When pi-path-picker is not installed nobody answers `reply`, the editor keeps
- * no provider, and behaviour is exactly what it was before. Nothing here can
+ * its own provider-less behavior. Nothing here can
  * break the host UI, and the completion rule stays owned by pi-path-picker:
  * `./`, `~/` or `/` inside `"`, `'` or `` ` `` plus Tab.
  *
@@ -29,13 +29,13 @@ export const PATH_PICKER_PROVIDER_CHANNEL = "pi-path-picker:provider";
 
 /** Minimal slice of pi we need: only the inter-extension event bus. */
 export interface PathProviderBus {
-	events: { emit(channel: string, data: unknown): void };
+  events: { emit(channel: string, data: unknown): void };
 }
 
 /** The editor surface we attach to; pi-tui's `Editor` satisfies it. */
 export interface AutocompleteHost {
-	setAutocompleteProvider?(provider: unknown): void;
-	isShowingAutocomplete?(): boolean;
+  setAutocompleteProvider?(provider: unknown): void;
+  isShowingAutocomplete?(): boolean;
 }
 
 /**
@@ -45,23 +45,28 @@ export interface AutocompleteHost {
  * caller treats as "no completion" rather than an error.
  */
 export function resolvePathAutocompleteProvider(
-	bus: PathProviderBus | undefined,
-	cwd: string,
+  bus: PathProviderBus | undefined,
+  cwd: string,
 ): unknown | undefined {
-	if (!bus?.events || typeof bus.events.emit !== "function") return undefined;
-	let provider: unknown;
-	try {
-		bus.events.emit(PATH_PICKER_PROVIDER_CHANNEL, {
-			cwd,
-			reply: (value: unknown) => {
-				provider = value;
-			},
-		});
-	} catch {
-		// A misbehaving listener must never take the interview UI down with it.
-		return undefined;
-	}
-	return provider;
+  if (!bus?.events || typeof bus.events.emit !== "function") {
+    return undefined;
+  }
+
+  let provider: unknown;
+
+  try {
+    bus.events.emit(PATH_PICKER_PROVIDER_CHANNEL, {
+      cwd,
+      reply: (value: unknown) => {
+        provider = value;
+      },
+    });
+  } catch {
+    // A misbehaving listener must never take the interview UI down with it.
+    return undefined;
+  }
+
+  return provider;
 }
 
 /**
@@ -69,15 +74,23 @@ export function resolvePathAutocompleteProvider(
  * attached, so tests can assert the wiring instead of the side effect.
  */
 export function attachPathAutocomplete(
-	editor: AutocompleteHost | undefined,
-	bus: PathProviderBus | undefined,
-	cwd: string,
+  editor: AutocompleteHost | undefined,
+  bus: PathProviderBus | undefined,
+  cwd: string,
 ): boolean {
-	if (!editor || typeof editor.setAutocompleteProvider !== "function") return false;
-	const provider = resolvePathAutocompleteProvider(bus, cwd);
-	if (!provider) return false;
-	editor.setAutocompleteProvider(provider);
-	return true;
+  if (!editor || typeof editor.setAutocompleteProvider !== "function") {
+    return false;
+  }
+
+  const provider = resolvePathAutocompleteProvider(bus, cwd);
+
+  if (!provider) {
+    return false;
+  }
+
+  editor.setAutocompleteProvider(provider);
+
+  return true;
 }
 
 /**
@@ -91,5 +104,5 @@ export function attachPathAutocomplete(
  * Without this check the menu would exist but never be painted.
  */
 export function mustRebuildForAutocomplete(editor: AutocompleteHost | undefined): boolean {
-	return editor?.isShowingAutocomplete?.() === true;
+  return editor?.isShowingAutocomplete?.() === true;
 }

@@ -27,10 +27,10 @@ import { registerAskAutoTrigger, registerAskCommands, registerAskGuardrails } fr
 import { registerChatLanguageTracking } from "./_lang.ts";
 
 export default function (pi: ExtensionAPI) {
-	pi.registerTool(createAskTool(pi));
-	pi.registerTool(createInterviewTool(pi));
-	registerAskCommands(pi);
-	registerAskAutoTrigger(pi);
-	registerAskGuardrails(pi);
-	registerChatLanguageTracking(pi);
+  pi.registerTool(createAskTool(pi));
+  pi.registerTool(createInterviewTool(pi));
+  registerAskCommands(pi);
+  registerAskAutoTrigger(pi);
+  registerAskGuardrails(pi);
+  registerChatLanguageTracking(pi);
 }

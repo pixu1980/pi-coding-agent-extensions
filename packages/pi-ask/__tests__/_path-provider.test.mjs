@@ -31,37 +31,49 @@ const KEY = { escape: "\x1b", enter: "\r", up: "\x1b[A", down: "\x1b[B" };
 
 function seededCwd() {
   const cwd = mkdtempSync(join(tmpdir(), "pi-ask-paths-"));
+
   writeFileSync(join(cwd, "alpha.txt"), "");
   mkdirSync(join(cwd, "subdir"));
+
   return cwd;
 }
 
 /** A `pi` whose event bus carries a real pi-path-picker listener. */
 function piWithPathPicker() {
   const { pi } = createMockPi();
+
   pathPickerExtension(pi);
+
   return pi;
 }
 
 function installDriver(ctx) {
   let component;
+
   ctx.ui.custom = (factory) =>
     new Promise((resolve) => {
       const tui = { terminal: { rows: 40 }, requestRender() {} };
+
       component = factory(tui, makeTheme(), {}, resolve);
     });
+
   return {
     render: () => component.render(100).join("\n"),
     key: (k) => component.handleInput(k),
     type: (text) => {
-      for (const ch of text) component.handleInput(ch);
+      for (const ch of text) {
+        component.handleInput(ch);
+      }
     },
   };
 }
 
 /** Let the editor's (async) suggestion request settle. */
 async function settle() {
-  for (let i = 0; i < 5; i++) await Promise.resolve();
+  for (let i = 0; i < 5; i++) {
+    await Promise.resolve();
+  }
+
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
@@ -90,6 +102,7 @@ test("the request carries cwd and a reply callback", () => {
     },
   };
   const provider = resolvePathAutocompleteProvider(bus, "/some/cwd");
+
   assert.deepEqual(provider, { sentinel: true });
   assert.equal(seen.length, 1);
   assert.equal(seen[0][0], PATH_PICKER_PROVIDER_CHANNEL);
@@ -105,12 +118,14 @@ test("a throwing bus is contained", () => {
       },
     },
   };
+
   assert.equal(resolvePathAutocompleteProvider(bus, "/tmp"), undefined);
 });
 
 test("attach returns false and touches nothing when no provider answers", () => {
   const calls = [];
   const editor = { setAutocompleteProvider: (p) => calls.push(p) };
+
   assert.equal(attachPathAutocomplete(editor, undefined, "/tmp"), false);
   assert.equal(attachPathAutocomplete(editor, { events: { emit() {} } }, "/tmp"), false);
   assert.deepEqual(calls, []);
@@ -118,6 +133,7 @@ test("attach returns false and touches nothing when no provider answers", () => 
 
 test("attach returns false when the editor cannot host autocomplete", () => {
   const pi = piWithPathPicker();
+
   assert.equal(attachPathAutocomplete({}, pi, "/tmp"), false);
   assert.equal(attachPathAutocomplete(undefined, pi, "/tmp"), false);
 });
@@ -126,6 +142,7 @@ test("attach installs the provider on a capable editor", () => {
   const pi = piWithPathPicker();
   const calls = [];
   const editor = { setAutocompleteProvider: (p) => calls.push(p) };
+
   assert.equal(attachPathAutocomplete(editor, pi, "/tmp"), true);
   assert.equal(calls.length, 1);
   assert.equal(typeof calls[0].getSuggestions, "function");
@@ -167,6 +184,7 @@ test("ask: Tab inside a quoted path renders the picker in the custom-answer fiel
   await settle();
 
   const text = driver.render();
+
   assert.match(text, /alpha\.txt/, `picker must list the cwd contents, got:\n${text}`);
   assert.match(text, /subdir/, "directories must be listed too");
 
@@ -222,6 +240,7 @@ test("ask: without pi-path-picker the field behaves exactly as before", async ()
   await settle();
 
   const text = driver.render();
+
   assert.equal(text.includes("alpha.txt"), false);
   assert.match(text, /Your answer:/, "editor must still render");
 
@@ -256,6 +275,7 @@ test("interview: Tab inside a quoted path renders the picker in the custom-answe
   await settle();
 
   const text = driver.render();
+
   assert.match(text, /alpha\.txt/, `picker must list the cwd contents, got:\n${text}`);
 
   driver.key(KEY.escape);

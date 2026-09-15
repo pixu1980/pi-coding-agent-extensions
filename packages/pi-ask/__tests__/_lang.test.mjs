@@ -10,93 +10,96 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-	chatInterviewLabel,
-	chatInterviewNextSuffix,
-	detectChatLanguage,
-	registerChatLanguageTracking,
-	resetChatLanguageForTests,
-	trackChatLanguage,
+  chatInterviewLabel,
+  chatInterviewNextSuffix,
+  detectChatLanguage,
+  registerChatLanguageTracking,
+  resetChatLanguageForTests,
+  trackChatLanguage,
 } from "../lib/_lang.ts";
 import { createMockPi } from "../../../test/harness.mjs";
 
 test("lang: detectChatLanguage picks Italian from Italian stopwords", () => {
-	assert.equal(detectChatLanguage(["vorrei un'intervista, fammi qualche domanda per favore"]), "it");
-	assert.equal(detectChatLanguage(["fammi una domanda sul progetto"]), "it");
+  assert.equal(detectChatLanguage(["vorrei un'intervista, fammi qualche domanda per favore"]), "it");
+  assert.equal(detectChatLanguage(["fammi una domanda sul progetto"]), "it");
 });
 
 test("lang: detectChatLanguage picks English from English stopwords", () => {
-	assert.equal(detectChatLanguage(["please ask me a few questions about the project"]), "en");
-	assert.equal(detectChatLanguage(["could you help me with this?"]), "en");
+  assert.equal(detectChatLanguage(["please ask me a few questions about the project"]), "en");
+  assert.equal(detectChatLanguage(["could you help me with this?"]), "en");
 });
 
 test("lang: detectChatLanguage defaults to English on empty or neutral text", () => {
-	assert.equal(detectChatLanguage([]), "en");
-	assert.equal(detectChatLanguage(["ok"]), "en");
+  assert.equal(detectChatLanguage([]), "en");
+  assert.equal(detectChatLanguage(["ok"]), "en");
 });
 
 test("lang: chatInterviewLabel localizes the interview word after tracking", () => {
-	resetChatLanguageForTests();
-	assert.equal(chatInterviewLabel(), "Interview");
-	trackChatLanguage(["vorrei un'intervista, fammi qualche domanda"]);
-	assert.equal(chatInterviewLabel(), "Intervista");
+  resetChatLanguageForTests();
+  assert.equal(chatInterviewLabel(), "Interview");
+  trackChatLanguage(["vorrei un'intervista, fammi qualche domanda"]);
+  assert.equal(chatInterviewLabel(), "Intervista");
 });
 
 test("lang: chatInterviewNextSuffix localizes the next-chunk phrase", () => {
-	resetChatLanguageForTests();
-	assert.equal(chatInterviewNextSuffix(), "next interview");
-	trackChatLanguage(["vorrei un'intervista, fammi qualche domanda"]);
-	assert.equal(chatInterviewNextSuffix(), "prossima intervista");
+  resetChatLanguageForTests();
+  assert.equal(chatInterviewNextSuffix(), "next interview");
+  trackChatLanguage(["vorrei un'intervista, fammi qualche domanda"]);
+  assert.equal(chatInterviewNextSuffix(), "prossima intervista");
 });
 
 test("lang: resetChatLanguageForTests restores English", () => {
-	trackChatLanguage(["vorrei un'intervista"]);
-	assert.equal(chatInterviewLabel(), "Intervista");
-	resetChatLanguageForTests();
-	assert.equal(chatInterviewLabel(), "Interview");
-	assert.equal(chatInterviewNextSuffix(), "next interview");
+  trackChatLanguage(["vorrei un'intervista"]);
+  assert.equal(chatInterviewLabel(), "Intervista");
+  resetChatLanguageForTests();
+  assert.equal(chatInterviewLabel(), "Interview");
+  assert.equal(chatInterviewNextSuffix(), "next interview");
 });
 
 test("lang: context event with recent Italian user messages switches the label", async () => {
-	resetChatLanguageForTests();
-	const { pi, emit } = createMockPi();
-	registerChatLanguageTracking(pi);
+  resetChatLanguageForTests();
+  const { pi, emit } = createMockPi();
 
-	await emit("context", {
-		messages: [
-			{ role: "user", content: "ciao" },
-			{ role: "assistant", content: "Ciao! Come posso aiutarti?" },
-			{ role: "user", content: "vorrei un'intervista, fammi qualche domanda" },
-		],
-	});
-	assert.equal(chatInterviewLabel(), "Intervista");
-	assert.equal(chatInterviewNextSuffix(), "prossima intervista");
-	resetChatLanguageForTests();
+  registerChatLanguageTracking(pi);
+
+  await emit("context", {
+    messages: [
+      { role: "user", content: "ciao" },
+      { role: "assistant", content: "Ciao! Come posso aiutarti?" },
+      { role: "user", content: "vorrei un'intervista, fammi qualche domanda" },
+    ],
+  });
+  assert.equal(chatInterviewLabel(), "Intervista");
+  assert.equal(chatInterviewNextSuffix(), "prossima intervista");
+  resetChatLanguageForTests();
 });
 
 test("lang: context event resets to English when recent messages are English", async () => {
-	resetChatLanguageForTests();
-	const { pi, emit } = createMockPi();
-	registerChatLanguageTracking(pi);
+  resetChatLanguageForTests();
+  const { pi, emit } = createMockPi();
 
-	await emit("context", { messages: [{ role: "user", content: "vorrei un'intervista" }] });
-	assert.equal(chatInterviewLabel(), "Intervista");
-	await emit("context", { messages: [{ role: "user", content: "please ask me a few questions about the project" }] });
-	assert.equal(chatInterviewLabel(), "Interview");
-	resetChatLanguageForTests();
+  registerChatLanguageTracking(pi);
+
+  await emit("context", { messages: [{ role: "user", content: "vorrei un'intervista" }] });
+  assert.equal(chatInterviewLabel(), "Intervista");
+  await emit("context", { messages: [{ role: "user", content: "please ask me a few questions about the project" }] });
+  assert.equal(chatInterviewLabel(), "Interview");
+  resetChatLanguageForTests();
 });
 
 test("lang: interactive input event feeds the language detector, non-interactive does not", async () => {
-	resetChatLanguageForTests();
-	const { pi, emit } = createMockPi();
-	registerChatLanguageTracking(pi);
+  resetChatLanguageForTests();
+  const { pi, emit } = createMockPi();
 
-	await emit("context", { messages: [{ role: "user", content: "please help me" }] });
-	assert.equal(chatInterviewLabel(), "Interview");
-	// RPC input must not override the detected language.
-	await emit("input", { text: "vorrei un'intervista, fammi qualche domanda", source: "rpc" });
-	assert.equal(chatInterviewLabel(), "Interview");
-	// Interactive input does.
-	await emit("input", { text: "vorrei un'intervista, fammi qualche domanda", source: "interactive" });
-	assert.equal(chatInterviewLabel(), "Intervista");
-	resetChatLanguageForTests();
+  registerChatLanguageTracking(pi);
+
+  await emit("context", { messages: [{ role: "user", content: "please help me" }] });
+  assert.equal(chatInterviewLabel(), "Interview");
+  // RPC input must not override the detected language.
+  await emit("input", { text: "vorrei un'intervista, fammi qualche domanda", source: "rpc" });
+  assert.equal(chatInterviewLabel(), "Interview");
+  // Interactive input does.
+  await emit("input", { text: "vorrei un'intervista, fammi qualche domanda", source: "interactive" });
+  assert.equal(chatInterviewLabel(), "Intervista");
+  resetChatLanguageForTests();
 });

@@ -20,44 +20,44 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
  * short: they only need to tip the score, not classify exhaustively.
  */
 const STOPWORDS: Record<string, string[]> = {
-	it: [
-		"fammi",
-		"fai",
-		"vorrei",
-		"puoi",
-		"devi",
-		"devo",
-		"grazie",
-		"perché",
-		"perche'",
-		"dammi",
-		"anche",
-		"questo",
-		"questa",
-		"qualche",
-		"intervistami",
-	],
-	en: [
-		"the",
-		"please",
-		"could",
-		"would",
-		"want",
-		"need",
-		"help",
-		"thanks",
-		"because",
-		"maybe",
-		"what",
-		"when",
-		"where",
-		"who",
-		"should",
-		"this",
-	],
-	es: ["por favor", "quiero", "puedes", "gracias", "qué", "cómo", "cuándo", "dónde", "necesito", "debería", "hazme"],
-	fr: ["svp", "s'il vous plaît", "voudrais", "peux", "merci", "quoi", "comment", "quand", "où", "besoin", "fais-moi"],
-	de: ["bitte", "möchte", "kannst", "danke", "was", "wie", "wann", "wo", "brauche", "sollte", "mach"],
+  it: [
+    "fammi",
+    "fai",
+    "vorrei",
+    "puoi",
+    "devi",
+    "devo",
+    "grazie",
+    "perché",
+    "perche'",
+    "dammi",
+    "anche",
+    "questo",
+    "questa",
+    "qualche",
+    "intervistami",
+  ],
+  en: [
+    "the",
+    "please",
+    "could",
+    "would",
+    "want",
+    "need",
+    "help",
+    "thanks",
+    "because",
+    "maybe",
+    "what",
+    "when",
+    "where",
+    "who",
+    "should",
+    "this",
+  ],
+  es: ["por favor", "quiero", "puedes", "gracias", "qué", "cómo", "cuándo", "dónde", "necesito", "debería", "hazme"],
+  fr: ["svp", "s'il vous plaît", "voudrais", "peux", "merci", "quoi", "comment", "quand", "où", "besoin", "fais-moi"],
+  de: ["bitte", "möchte", "kannst", "danke", "was", "wie", "wann", "wo", "brauche", "sollte", "mach"],
 };
 
 /**
@@ -67,11 +67,11 @@ const STOPWORDS: Record<string, string[]> = {
  * "next", so it reads naturally: `next interview`, `prossima intervista`.
  */
 const INTERVIEW_WORDS: Record<string, { label: string; next: string }> = {
-	en: { label: "Interview", next: "next interview" },
-	it: { label: "Intervista", next: "prossima intervista" },
-	es: { label: "Entrevista", next: "siguiente entrevista" },
-	fr: { label: "Entretien", next: "prochain entretien" },
-	de: { label: "Interview", next: "nächstes Interview" },
+  en: { label: "Interview", next: "next interview" },
+  it: { label: "Intervista", next: "prossima intervista" },
+  es: { label: "Entrevista", next: "siguiente entrevista" },
+  fr: { label: "Entretien", next: "prochain entretien" },
+  de: { label: "Interview", next: "nächstes Interview" },
 };
 
 /** Last language detected from the chat. */
@@ -83,26 +83,35 @@ let detectedLanguage = "en";
  * first call falls back to English.
  */
 export function detectChatLanguage(texts: Iterable<string>): string {
-	const scores: Record<string, number> = {};
-	for (const [lang, words] of Object.entries(STOPWORDS)) {
-		let score = 0;
-		for (const text of texts) {
-			const lower = text.toLowerCase();
-			for (const word of words) {
-				if (lower.includes(word)) score++;
-			}
-		}
-		scores[lang] = score;
-	}
-	let best: string = detectedLanguage;
-	let bestScore = -1;
-	for (const [lang, score] of Object.entries(scores)) {
-		if (score > bestScore) {
-			best = lang;
-			bestScore = score;
-		}
-	}
-	return bestScore <= 0 ? "en" : best;
+  const scores: Record<string, number> = {};
+
+  for (const [lang, words] of Object.entries(STOPWORDS)) {
+    let score = 0;
+
+    for (const text of texts) {
+      const lower = text.toLowerCase();
+
+      for (const word of words) {
+        if (lower.includes(word)) {
+          score++;
+        }
+      }
+    }
+
+    scores[lang] = score;
+  }
+
+  let best: string = detectedLanguage;
+  let bestScore = -1;
+
+  for (const [lang, score] of Object.entries(scores)) {
+    if (score > bestScore) {
+      best = lang;
+      bestScore = score;
+    }
+  }
+
+  return bestScore <= 0 ? "en" : best;
 }
 
 /**
@@ -110,38 +119,47 @@ export function detectChatLanguage(texts: Iterable<string>): string {
  * interview UI. Returns the detected language.
  */
 export function trackChatLanguage(texts: Iterable<string>): string {
-	detectedLanguage = detectChatLanguage(texts);
-	return detectedLanguage;
+  detectedLanguage = detectChatLanguage(texts);
+
+  return detectedLanguage;
 }
 
 /** Localized word used in the interview progress header. */
 export function chatInterviewLabel(): string {
-	return INTERVIEW_WORDS[detectedLanguage]?.label ?? "Interview";
+  return INTERVIEW_WORDS[detectedLanguage]?.label ?? "Interview";
 }
 
 /** Localized suffix for "Press Enter to submit <next chunk>". */
 export function chatInterviewNextSuffix(): string {
-	return INTERVIEW_WORDS[detectedLanguage]?.next ?? "next interview";
+  return INTERVIEW_WORDS[detectedLanguage]?.next ?? "next interview";
 }
 
 /** Reset the cached language to English (test isolation). */
 export function resetChatLanguageForTests(): void {
-	detectedLanguage = "en";
+  detectedLanguage = "en";
 }
 
 /** Extract the text of an agent message, whatever the content shape. */
 function messageText(message: { role?: string; content?: unknown }): string {
-	if (message.role !== "user") return "";
-	const content = message.content;
-	if (typeof content === "string") return content;
-	if (Array.isArray(content)) {
-		return content
-			.map((block) =>
-				block && typeof block === "object" && "text" in block ? String((block as { text: unknown }).text ?? "") : "",
-			)
-			.join(" ");
-	}
-	return "";
+  if (message.role !== "user") {
+    return "";
+  }
+
+  const content = message.content;
+
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((block) =>
+        block && typeof block === "object" && "text" in block ? String((block as { text: unknown }).text ?? "") : "",
+      )
+      .join(" ");
+  }
+
+  return "";
 }
 
 /**
@@ -150,18 +168,32 @@ function messageText(message: { role?: string; content?: unknown }): string {
  * message. Register once from the extension factory.
  */
 export function registerChatLanguageTracking(pi: ExtensionAPI) {
-	pi.on("context", (event) => {
-		const recentUserTexts: string[] = [];
-		for (const message of event.messages.slice(-4)) {
-			const text = messageText(message);
-			if (text.trim()) recentUserTexts.push(text);
-		}
-		if (recentUserTexts.length > 0) trackChatLanguage(recentUserTexts);
-	});
-	pi.on("input", (event) => {
-		if (event.source !== "interactive") return { action: "continue" };
-		const text = (event.text ?? "").trim();
-		if (text) trackChatLanguage([text]);
-		return { action: "continue" };
-	});
+  pi.on("context", (event) => {
+    const recentUserTexts: string[] = [];
+
+    for (const message of event.messages.slice(-4)) {
+      const text = messageText(message);
+
+      if (text.trim()) {
+        recentUserTexts.push(text);
+      }
+    }
+
+    if (recentUserTexts.length > 0) {
+      trackChatLanguage(recentUserTexts);
+    }
+  });
+  pi.on("input", (event) => {
+    if (event.source !== "interactive") {
+      return { action: "continue" };
+    }
+
+    const text = (event.text ?? "").trim();
+
+    if (text) {
+      trackChatLanguage([text]);
+    }
+
+    return { action: "continue" };
+  });
 }

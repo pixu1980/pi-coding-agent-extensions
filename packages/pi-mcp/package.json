@@ -30,6 +30,7 @@
   },
   "scripts": {
     "test": "node --import tsx --test __tests__/index.test.mjs",
+    "bench": "node --import tsx bench/startup.bench.mjs",
     "test:watch": "node --import tsx --test --watch __tests__/index.test.mjs",
     "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs"
   },

@@ -34,6 +34,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
     "release": "node ../../scripts/release.mjs",
     "release:dry": "node ../../scripts/release.mjs --dry-run",

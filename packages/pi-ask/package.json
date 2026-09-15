@@ -35,6 +35,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
     "test": "node --import tsx --test __tests__/index.test.mjs",
     "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs",

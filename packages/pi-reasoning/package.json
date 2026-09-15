@@ -34,6 +34,9 @@
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "scripts": {
     "test": "node --import tsx --test __tests__/index.test.mjs",
     "release": "node ../../scripts/release.mjs",

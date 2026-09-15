@@ -22,7 +22,7 @@ import { truncateToWidth } from "@earendil-works/pi-tui";
 import type { TUI } from "@earendil-works/pi-tui";
 import type { StatusLineData, StatusLineSettings } from "./_types.ts";
 import { DEFAULT_SETTINGS } from "./_types.ts";
-import { getGitStatus, invalidateGitCache } from "./_git.ts";
+import { getGitStatus, invalidateGitCache, getGitCacheStats } from "./_git.ts";
 import {
   resolveTemplate,
   compileTemplate,
@@ -31,8 +31,8 @@ import {
   validateTemplate,
 } from "./_template.ts";
 import { loadSettings, saveSettings, openSettingsPanel } from "./_settings-ui.ts";
-import { getProjectPath, getEffortLabel, getEffortEmoji, estWidth } from "./_helpers.ts";
-import { getMcpInfo } from "./_mcp.ts";
+import { getProjectPath, getEffortLabel, getEffortEmoji, estWidth, invalidateProjectPathCache, getProjectPathStats } from "./_helpers.ts";
+import { getMcpInfo, getMcpStats } from "./_mcp.ts";
 
 // ── Module-level state ─────────────────────────────────────────
 
@@ -40,6 +40,12 @@ let settings: StatusLineSettings = { ...DEFAULT_SETTINGS };
 let cachedTmpl: string | null = null;
 let compiledRender: ((data: StatusLineData) => string) | null = null;
 let compileError: string | null = null;
+
+// Memoized first-user-message: buildData runs per TUI frame, scanning the
+// whole session branch each time would be O(n) per frame. The first message
+// never changes unless the branch grows, so cache by branch length.
+let cachedInitialPrompt = "";
+let cachedBranchLen = -1;
 
 // ── Context usage ─────────────────────────────────────────────
 
@@ -56,13 +62,13 @@ function computeContextUsage(ctx: ExtensionContext): { used: number; total: numb
 
 // ── Line 1: template-based statusline ─────────────────────────
 
-function buildData(ctx: ExtensionContext): StatusLineData {
-  const { status: git, hasGit } = getGitStatus(ctx.cwd);
-  const usage = computeContextUsage(ctx);
-
-  let initialPrompt = "";
+function getInitialPrompt(ctx: ExtensionContext): string {
   try {
-    for (const e of ctx.sessionManager.getBranch()) {
+    const branch = ctx.sessionManager.getBranch();
+    // Fast path: same length → first message unchanged, zero iteration.
+    if (branch.length === cachedBranchLen) return cachedInitialPrompt;
+    cachedBranchLen = branch.length;
+    for (const e of branch) {
       if (e.type === "message" && (e as any).message?.role === "user") {
         const msg = (e as any).message;
         const texts: string[] = [];
@@ -70,11 +76,21 @@ function buildData(ctx: ExtensionContext): StatusLineData {
           if (c?.type === "text" && typeof c?.text === "string") texts.push(c.text);
         }
         const text = texts.join(" ");
-        if (text) initialPrompt = text.length > 72 ? text.slice(0, 72) + "..." : text;
-        break;
+        cachedInitialPrompt = text ? (text.length > 72 ? text.slice(0, 72) + "..." : text) : "";
+        return cachedInitialPrompt;
       }
     }
-  } catch { /* session not available */ }
+    cachedInitialPrompt = "";
+    return cachedInitialPrompt;
+  } catch {
+    return cachedInitialPrompt;
+  }
+}
+
+function buildData(ctx: ExtensionContext): StatusLineData {
+  const { status: git, hasGit } = getGitStatus(ctx.cwd);
+  const usage = computeContextUsage(ctx);
+  const initialPrompt = getInitialPrompt(ctx);
 
   return {
     project: getProjectPath(ctx.cwd, settings.projectStyle),
@@ -118,7 +134,14 @@ function formatLine(ctx: ExtensionContext, width?: number): string {
 
 function createFooter(ctx: ExtensionContext) {
   return (tui: TUI, theme: Theme, footerData: ReadonlyFooterDataProvider) => {
-    const unsub = footerData.onBranchChange(() => tui.requestRender());
+    const unsub = footerData.onBranchChange(() => {
+      // A branch change makes every cached git answer for this cwd stale:
+      // drop the entry so the next render backfills the new branch, and the
+      // project-path display (repo-relative) refreshes too.
+      invalidateGitCache(ctx.cwd);
+      invalidateProjectPathCache(ctx.cwd);
+      tui.requestRender();
+    });
     return {
       dispose: unsub,
       invalidate() {},
@@ -208,6 +231,23 @@ export default function (pi: ExtensionAPI): void {
         cachedTmpl = null;
         compiledRender = null;
         ctx.ui.notify("Statusline settings reloaded", "info");
+        return;
+      }
+
+      if (sub === "debug") {
+        const git = getGitCacheStats();
+        const project = getProjectPathStats();
+        const mcp = getMcpStats();
+        const rate = (n: { hits: number; misses: number; staleServes?: number }) => {
+          const total = n.hits + n.misses + (n.staleServes ?? 0);
+          return total === 0 ? "0%" : `${Math.round((n.hits / total) * 1000) / 10}%`;
+        };
+        ctx.ui.notify(
+          `Cache debug\ngit cache: hits=${git.hits} misses=${git.misses} stale=${git.staleServes} invalidations=${git.invalidations} (hit rate ${rate(git)})\n` +
+          `project cache: hits=${project.hits} misses=${project.misses} stale=${project.staleServes} (hit rate ${rate(project)})\n` +
+          `mcp cache: hits=${mcp.hits} misses=${mcp.misses} (hit rate ${rate(mcp)})`,
+          "info",
+        );
         return;
       }
 

@@ -15,12 +15,28 @@ export interface McpInfo {
 }
 
 let mcpCache: { data: McpInfo; ts: number } | null = null;
-const MCP_CACHE_TTL_MS = 5000;
+// TTL rationale: mcp.json / mcp-cache.json change only when servers are
+// configured or connected; 30s bounds the two small file reads to 2/min
+// while keeping the footer count honest enough for a status display.
+const MCP_CACHE_TTL_MS = 30000;
+
+interface McpCacheStats {
+  hits: number;
+  misses: number;
+}
+
+const mcpCacheStats: McpCacheStats = { hits: 0, misses: 0 };
+
+export function getMcpStats(): McpCacheStats {
+  return { ...mcpCacheStats };
+}
 
 export function getMcpInfo(): McpInfo {
   if (mcpCache && Date.now() - mcpCache.ts < MCP_CACHE_TTL_MS) {
+    mcpCacheStats.hits++;
     return mcpCache.data;
   }
+  mcpCacheStats.misses++;
 
   const agentDir = getAgentDir();
   const mcpConfigPath = path.join(agentDir, "mcp.json");

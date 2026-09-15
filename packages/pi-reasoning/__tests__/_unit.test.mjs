@@ -17,8 +17,12 @@ import {
   getAvailableLevels,
   buildReasoningMenuOptions,
   resolveThinkingLevel,
+  formatEmojiText,
+  formatLevelLabel,
+  formatReasoningLevelChange,
 } from "../lib/_levels.ts";
-import { LEVEL_EMOJI, DEFAULT_MODEL_MAP } from "../lib/_constants.ts";
+import { LEVEL_EMOJI, DEFAULT_MODEL_MAP, ALL_THINKING_LEVELS } from "../lib/_constants.ts";
+import { assertCanonicalLabel, assertLevelLabel, spacesAfterEmoji } from "./_helpers.mjs";
 
 // ── Unit: getAvailableLevels ──────────────────────────────────────
 
@@ -87,6 +91,57 @@ test("buildReasoningMenuOptions: lists available levels + auto", () => {
 test("buildReasoningMenuOptions: non-reasoning model → off + auto", () => {
   const options = buildReasoningMenuOptions({ reasoning: false });
   assert.deepEqual(options.map((o) => o.value), ["off", "auto"]);
+});
+
+// ── Unit: canonical emoji label rendering ─────────────────────────
+//
+// Regression guard: the level notifications used to render `❤️ high` (one
+// space) while the menu rendered `❤️  high` (two), so the same level looked
+// different depending on where it appeared.
+
+test("formatEmojiText: one emoji, two spaces, then the text", () => {
+  assert.equal(formatEmojiText("🧠", "auto"), "🧠  auto");
+  assert.equal(spacesAfterEmoji(formatEmojiText("❤️", "high")), 2);
+});
+
+test("formatLevelLabel: separator per level (high/xhigh 2, rest 1)", () => {
+  const expected = {
+    off: "⚪ off",
+    minimal: "💚 minimal",
+    low: "💛 low",
+    medium: "🧡 medium",
+    high: "❤️  high",
+    xhigh: "❤️‍🔥  xhigh",
+    max: "🔥 max",
+  };
+  for (const level of ALL_THINKING_LEVELS) {
+    const label = formatLevelLabel(level);
+    assert.equal(label, expected[level]);
+    assertLevelLabel(label, level);
+  }
+});
+
+test("formatReasoningLevelChange: level mentions keep the optical separator", () => {
+  assert.equal(formatReasoningLevelChange("high", "high"), `Reasoning level → ${LEVEL_EMOJI.high}  high`);
+  assertLevelLabel(`${LEVEL_EMOJI.high}  high`, "high");
+
+  // `max` requested on a model that can only reach `high` → rounded notice:
+  // applied `high` keeps two spaces, the `max` mention takes one.
+  const rounded = formatReasoningLevelChange("max", "high");
+  assert.match(rounded, /\(rounded, your choice was /);
+  const requestedMention = rounded.slice(rounded.indexOf("your choice was ") + "your choice was ".length);
+  assertLevelLabel(requestedMention.slice(0, requestedMention.indexOf(")")), "max");
+});
+
+test("buildReasoningMenuOptions: every label uses the optical separator", () => {
+  const options = buildReasoningMenuOptions({
+    reasoning: true,
+    thinkingLevelMap: { xhigh: "max", max: "max" },
+  });
+  for (const option of options) {
+    if (option.value === "auto") assertCanonicalLabel(option.label);
+    else assertLevelLabel(option.label, option.value);
+  }
 });
 
 // ── Unit: LEVEL_EMOJI + DEFAULT_MODEL_MAP invariants ──────────────

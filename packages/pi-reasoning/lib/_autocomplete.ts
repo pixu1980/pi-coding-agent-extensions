@@ -1,7 +1,8 @@
 /**
- * pi-reasoning - /reasoning autocomplete provider wrapper (private module)
+ * pi-reasoning - /reasoning and /effort autocomplete provider (private module)
  *
- * Intercepts ONLY "/reasoning " (with trailing space). Everything else is
+ * Intercepts ONLY "/reasoning " and "/effort " (with trailing space), so the
+ * alias gets the same menu as the primary command. Everything else is
  * delegated to the wrapped provider unchanged.
  */
 
@@ -32,8 +33,8 @@ export function createReasoningAutocompleteProvider(
       const currentLine = lines[cursorLine] ?? "";
       const textBeforeCursor = currentLine.slice(0, cursorCol);
 
-      // Intercept ONLY "/reasoning " followed by optional prefix
-      const match = textBeforeCursor.match(/^\/reasoning\s+(.*)$/);
+      // Intercept ONLY "/reasoning " or "/effort " followed by optional prefix
+      const match = textBeforeCursor.match(/^\/(?:reasoning|effort)\s+(.*)$/);
       if (match) {
         const userPrefix = match[1] ?? "";
         const menuOptions = buildReasoningMenuOptions(getCurrentModel());
@@ -89,8 +90,8 @@ export function createReasoningAutocompleteProvider(
 
     shouldTriggerFileCompletion(lines, cursorLine, cursorCol) {
       const currentLine = lines[cursorLine] ?? "";
-      // Allow forced refreshes (for example Tab) for /reasoning too.
-      if (currentLine.match(/^\/reasoning\s/)) {
+      // Allow forced refreshes (for example Tab) for /reasoning and /effort too.
+      if (currentLine.match(/^\/(?:reasoning|effort)\s/)) {
         return true;
       }
       // Delegate to wrapped provider for everything else

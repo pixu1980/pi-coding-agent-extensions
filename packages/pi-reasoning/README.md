@@ -15,7 +15,7 @@ No more manually adjusting reasoning every time you switch models -
 
 - **🧠 Auto-reasoning** - Model change → optimal thinking level applied instantly
 - **📋 Sensible defaults** - Covers Claude, GPT, Gemini, DeepSeek, Llama, Mistral, Kimi, o-series
-- **⚙️ `/reasoning` command** - Manual override, auto re-apply, or check current level
+- **⚙️ `/reasoning` command** - Manual override, auto re-apply, or check current level (`/effort` is an alias)
 - **📊 Status bar indicator** - Colored dot + level always visible
 - **🔌 Zero config** - Install and go
 
@@ -73,32 +73,43 @@ by pi.dev. This means:
 
 ### `/reasoning` - Show or set reasoning level
 
+`/effort` is an alias: it is the same command under both names.
+
 ```
-/reasoning                    Show current level
+/reasoning                    Show current level (interactive menu)
 /reasoning auto               Re-apply auto-reasoning for current model
 /reasoning high               Set specific level (off/minimal/low/medium/high/xhigh/max)
 /reasoning reset              Restore default model mappings
 /reasoning map                Show active model→level mappings
+
+/effort                       Alias for /reasoning (all arguments identical)
 ```
+
+Every menu entry, status line and notification renders a level as
+`emoji + level` with a per-level separator: one space for
+`off`/`minimal`/`low`/`medium`/`max` (`⚪ off`, `🔥 max`), two spaces for
+`high`/`xhigh` (`❤️  high`, `❤️‍🔥  xhigh`).
 
 ### Examples
 
 ```bash
 # Check current level
 /reasoning
-# → "Reasoning: 🟡 medium"
+# → select menu: ⚪ off / 💚 minimal / 💛 low / 🧡 medium / ❤️  high / ⚙️  auto
 
 # Switch to a reasoning model
 /model claude-sonnet-4-20250514
-# → Status bar: 🟠 claude-sonnet-...
+# → Status bar: ❤️  claude-sonnet-...
 
-# Override manually
+# Override manually (either name works)
 /reasoning max
-# → "Reasoning level → 💜 max"
+# → "Reasoning level → 🔥 max"
+/effort low
+# → "Reasoning level → 💛 low"
 
 # Re-apply auto after manual override
 /reasoning auto
-# → "Auto-reasoning → 🟠 high (anthropic/claude-sonnet-4-20250514)"
+# → "Auto-reasoning → ❤️  high (anthropic/claude-sonnet-4-20250514)"
 
 # See all mappings
 /reasoning map
@@ -115,12 +126,12 @@ The extension adds a status bar entry showing the current model and level:
 | Indicator | Level |
 |-----------|-------|
 | ⚪ model | off |
-| 🔵 model | minimal |
-| 🟢 model | low |
-| 🟡 model | medium |
-| 🟠 model | high |
-| 🔴 model | xhigh |
-| 💜 model | max |
+| 💚 model | minimal |
+| 💛 model | low |
+| 🧡 model | medium |
+| ❤️ model | high |
+| ❤️‍🔥 model | xhigh |
+| 🔥 model | max |
 
 The status updates automatically on model change and level change.
 
@@ -159,7 +170,7 @@ pi -e .                  # Test locally
 
 | File | Role |
 |------|------|
-| `index.ts` | Extension entry - model map, event handlers, /reasoning command |
+| `index.ts` | Extension entry - model map, event handlers, /reasoning + /effort command |
 | `package.json` | Package metadata, peer deps |
 | `README.md` | This file |
 

@@ -31,6 +31,49 @@ export function getAvailableLevels(model?: ReasoningModelCapabilities): Thinking
 }
 
 /**
+ * Canonical emoji-prefixed render: one emoji, two spaces, then the text.
+ *
+ * Generic helper for non-level strings (provider/model labels, `auto`,
+ * section titles). Thinking-level labels go through formatLevelLabel,
+ * which compensates the separator per level so the visual gap looks the
+ * same everywhere.
+ *
+ * History: the surfaces used to disagree (menu `❤️  high` vs notification
+ * `❤️ high`), so the same level looked different depending on where it
+ * appeared. Every emoji-labelled string goes through these two helpers so
+ * they cannot drift apart again.
+ */
+export function formatEmojiText(emoji: string, text: string): string {
+  return `${emoji}  ${text}`;
+}
+
+/**
+ * Levels rendered with a single space after the emoji: `off`, `minimal`,
+ * `low`, `medium` and `max`. `high` and `xhigh` keep two spaces. This is
+ * the requested rendering (see README): the set is the single source of
+ * truth, every surface derives its separator from it. Add a level here to
+ * switch it to one space.
+ */
+export const SINGLE_SPACE_LEVELS: ReadonlySet<ThinkingLevel> = new Set([
+  "off",
+  "minimal",
+  "low",
+  "medium",
+  "max",
+]);
+
+/**
+ * Canonical "emoji + level" render: `❤️  high`, `❤️‍🔥  xhigh`, `🔥 max`.
+ * Every surface (menu, autocomplete, status bar, notifications) uses this,
+ * so a level looks identical wherever it appears.
+ */
+export function formatLevelLabel(level: ThinkingLevel): string {
+  const sep = SINGLE_SPACE_LEVELS.has(level) ? " " : "  ";
+
+  return `${LEVEL_EMOJI[level] ?? "🧠"}${sep}${level}`;
+}
+
+/**
  * Build menu options for the /reasoning command.
  * Shows only levels the model actually supports + "auto".
  */
@@ -40,9 +83,9 @@ export function buildReasoningMenuOptions(
   return [
     ...getAvailableLevels(model).map((level) => ({
       value: level,
-      label: `${LEVEL_EMOJI[level]}  ${level}`,
+      label: formatLevelLabel(level),
     })),
-    { value: "auto" as const, label: "⚙️  auto" },
+    { value: "auto" as const, label: formatEmojiText("⚙️", "auto") },
   ];
 }
 
@@ -62,6 +105,6 @@ export function resolveThinkingLevel(
 export function formatReasoningLevelChange(requested: ThinkingLevel, applied: ThinkingLevel): string {
   const rounded = requested === applied
     ? ""
-    : ` (rounded, your choice was ${LEVEL_EMOJI[requested]} ${requested})`;
-  return `Reasoning level → ${LEVEL_EMOJI[applied]} ${applied}${rounded}`;
+    : ` (rounded, your choice was ${formatLevelLabel(requested)})`;
+  return `Reasoning level → ${formatLevelLabel(applied)}${rounded}`;
 }

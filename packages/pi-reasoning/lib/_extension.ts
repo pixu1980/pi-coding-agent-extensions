@@ -6,7 +6,7 @@
  * indicator and the /reasoning autocomplete provider.
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, RegisteredCommand } from "@earendil-works/pi-coding-agent";
 import type { AutocompleteProvider } from "@earendil-works/pi-tui";
 import {
   DEFAULT_MODEL_MAP,
@@ -20,6 +20,8 @@ import {
   buildReasoningMenuOptions,
   resolveThinkingLevel,
   formatReasoningLevelChange,
+  formatEmojiText,
+  formatLevelLabel,
 } from "./_levels.ts";
 import { createReasoningAutocompleteProvider } from "./_autocomplete.ts";
 
@@ -33,12 +35,14 @@ export default function (pi: ExtensionAPI): void {
   // ── Notify on load ────────────────────────────────────────
   pi.on("session_start", async (_event, ctx) => {
     const currentLevel = pi.getThinkingLevel();
-    const emoji = LEVEL_EMOJI[currentLevel] ?? "🧠";
     const model = ctx.model;
     currentModel = model;
     const modelLabel = model ? `${model.provider}/${model.id}` : "no model";
-    ctx.ui.setStatus(STATUS_KEY, `${emoji} ${currentLevel}`);
-    ctx.ui.notify(`🧠 pi-reasoning loaded - ${emoji} ${currentLevel} (${modelLabel})`, "info");
+    ctx.ui.setStatus(STATUS_KEY, formatLevelLabel(currentLevel));
+    ctx.ui.notify(
+      formatEmojiText("🧠", `pi-reasoning loaded - ${formatLevelLabel(currentLevel)} (${modelLabel})`),
+      "info",
+    );
   });
 
   // Register after every extension has handled session_start. This keeps
@@ -86,7 +90,7 @@ export default function (pi: ExtensionAPI): void {
       : model.id;
 
     if (!model.reasoning) {
-      ctx.ui.setStatus(STATUS_KEY, `⚪ ${modelLabel}`);
+      ctx.ui.setStatus(STATUS_KEY, formatEmojiText("⚪", modelLabel));
       return;
     }
 
@@ -95,23 +99,24 @@ export default function (pi: ExtensionAPI): void {
 
     const safeLevel = resolveThinkingLevel(level, getAvailableLevels(model));
     if (!safeLevel) {
-      ctx.ui.setStatus(STATUS_KEY, `🧠 ${modelLabel}`);
+      ctx.ui.setStatus(STATUS_KEY, formatEmojiText("🧠", modelLabel));
       return;
     }
 
     pi.setThinkingLevel(safeLevel);
     const emoji = LEVEL_EMOJI[safeLevel] ?? "🧠";
-    ctx.ui.setStatus(STATUS_KEY, `${emoji} ${modelLabel}`);
+    ctx.ui.setStatus(STATUS_KEY, formatEmojiText(emoji, modelLabel));
   });
 
   // ── Thinking Level Select Event ─────────────────────────────
 
   pi.on("thinking_level_select", async (event, ctx) => {
-    const emoji = LEVEL_EMOJI[event.level] ?? "🧠";
-    ctx.ui.setStatus(STATUS_KEY, `${emoji} ${event.level}`);
+    ctx.ui.setStatus(STATUS_KEY, formatLevelLabel(event.level));
   });
 
-  // ── /reasoning Command ──────────────────────────────────────
+  // ── /reasoning + /effort Command ────────────────────────────
+  //
+  // `/effort` is an alias: same definition object, registered twice.
   //
   // Usage:
   //   /reasoning                              - interactive menu
@@ -119,11 +124,12 @@ export default function (pi: ExtensionAPI): void {
   //   /reasoning auto                         - re-apply auto-reasoning
   //   /reasoning reset                        - restore default map
   //   /reasoning map                          - show active mappings
+  //   /effort ...                             - identical to /reasoning
 
-  pi.registerCommand("reasoning", {
+  const reasoningCommand: Omit<RegisteredCommand, "name" | "sourceInfo"> = {
     description:
       "Show or set the thinking/reasoning level for the current model. " +
-      "Use a level name as argument, or press ENTER for an interactive menu.",
+      "Alias: /effort. Use a level name as argument, or press ENTER for an interactive menu.",
     getArgumentCompletions: (prefix: string) => {
       const normalizedPrefix = prefix.trim().toLowerCase();
       const menuOptions = buildReasoningMenuOptions(currentModel);
@@ -214,7 +220,10 @@ export default function (pi: ExtensionAPI): void {
         "warning",
       );
     },
-  });
+  };
+
+  pi.registerCommand("reasoning", reasoningCommand);
+  pi.registerCommand("effort", reasoningCommand);
 
   // ── Shared auto handler ─────────────────────────────────────
 
@@ -237,14 +246,12 @@ export default function (pi: ExtensionAPI): void {
       return;
     }
 
-    const emoji = LEVEL_EMOJI[safeLevel] ?? "🧠";
-    const originEmoji = LEVEL_EMOJI[level] ?? "";
     const note = safeLevel !== level
-      ? ` (rounded, your choice was ${originEmoji} ${level})`
+      ? ` (rounded, your choice was ${formatLevelLabel(level)})`
       : "";
     pi.setThinkingLevel(safeLevel);
     ctx.ui.notify(
-      `Auto-reasoning → ${emoji} ${safeLevel}${note} (${model.provider}/${model.id})`,
+      `Auto-reasoning → ${formatLevelLabel(safeLevel)}${note} (${model.provider}/${model.id})`,
       "info",
     );
   }

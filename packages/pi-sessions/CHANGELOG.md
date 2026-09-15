@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.14](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.13...@pixu1980/pi-sessions@0.1.14) (2026-09-15)
+
+### Features
+
+* **pi-ask:** complete paths in the ask and interview editors ([98b2264](https://github.com/pixu1980/pi-coding-agent-extensions/commit/98b226437a9f5f2d951f6f2f063bcd94374093ee))
+* **pi-cursor:** add Cursor API key provider extension ([74e9d5e](https://github.com/pixu1980/pi-coding-agent-extensions/commit/74e9d5ef12ba335fad4cd4853d8c2e0db8f16736))
+* **pi-path-picker:** publish the autocomplete provider over the event bus ([c0ea384](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c0ea384b4afc52bcf0e53a4502fd18ca32683286))
+* **pi-reasoning:** share the /effort menu and derive level labels from one rule ([c66dfc0](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c66dfc093afa9ee73ce95ec46a8aeecca0483464))
+
+### Bug Fixes
+
+* **pi-statusline:** match pi-reasoning's effort emoji and measure width by grapheme ([763ef16](https://github.com/pixu1980/pi-coding-agent-extensions/commit/763ef169381641ad336237167bbf4085f45215d9))
 ## [0.1.13](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-sessions@0.1.12...@pixu1980/pi-sessions@0.1.13) (2026-09-15)
 
 ### Features

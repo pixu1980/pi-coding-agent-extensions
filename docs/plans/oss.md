@@ -55,7 +55,7 @@ already proved work.
 | ----- | ---- | ------- | -------------- |
 | 3.1 | Step 6 | OSS-06 | Half done. The policy, the boundary and the FUNDING.yml are written. Enrollment in GitHub Sponsors and the repository Sponsorships setting are account-level actions only the maintainer can clear. |
 | 3.2 | Step 12 | OSS-12 | Half done. RELEASING.md and the cadence are written and verified against the script. The GitHub Releases need a write the run does not have, and the roadmap needs product direction from the maintainer. |
-| 3.3 | Step 14 | OSS-14 | Discoverability. Independent, but best done once the landing documents exist so topics and the homepage point at real pages. |
+| 3.3 | Step 14 | OSS-14 | Half decided. Topics, homepage, description and wiki toggle are repository settings only the maintainer can clear; wiki-off and Discussions-off are recorded. |
 | 3.4 | Step 18 | OSS-18 | Depends on Step 7 for the dependency decision and on Step 2 for the manual dependency-update paragraph. |
 
 ### Phase 4 - Remaining hygiene
@@ -196,12 +196,12 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **13.3**: Change the test-all.mjs summary line and failure label to English, so the aggregator output matches the language rule every other artifact follows (there is no CI, so this output is only ever read locally by the maintainer and by contributors running the suite).
   - [ ] **13.4**: Add a guard test that scans tracked source and config files for a small list of high-signal Italian words, so the rule is enforced rather than remembered.
   - [ ] **13.5**: Gate: the guard test passes and pnpm test:all prints an English summary line.
-- [ ] **Step 14 - OSS-14 (medium)**: The repository's public metadata is incomplete, so the project is hard to find and the community venues it does have are unused.
-  - [ ] **14.1**: Add repository topics covering the domain and the ecosystem, for example pi, pi-coding-agent, mcp, coding-agent, llm, typescript, monorepo.
-  - [ ] **14.2**: Set the repository homepage to the pi.dev gallery page for the packages, and keep description aligned with the root package.json description.
-  - [ ] **14.3**: Decide the fate of the wiki: populate it with the contribution and governance links, or disable it so it does not look like an abandoned documentation channel.
-  - [ ] **14.4**: Evaluate enabling GitHub Discussions as the community venue for questions that are not bugs, given has_issues is True but no discussion area exists.
-  - [ ] **14.5**: Gate: topics are non-empty, homepage resolves, and the wiki is either populated or disabled.
+- [ ] **Step 14 - OSS-14 (medium)**: The repository's public metadata was incomplete, so the project was hard to find and the one community venue it had enabled was unused.
+  - [ ] **14.1**: MANUAL GATE, maintainer only. Add nine topics: pi, pi-coding-agent, mcp, coding-agent, typescript, llm, monorepo, extensions, ai-agent. All were verified to exist, and pi was checked rather than assumed: its most-starred repositories are coding agents. Left out deliberately only claude-code, which is the wrong product.
+  - [ ] **14.2**: MANUAL GATE, maintainer only. Set the homepage to the pi.dev gallery and the description to the corrected root package.json text, which no longer claims themes, skills and prompts the repository does not contain.
+  - [x] **14.3**: Decided: the wiki goes off. The documentation already lives versioned in the repository, linked from every README that needs it, and the wiki is empty, so it reads as an abandoned channel rather than a possible one. Re-enabling it is one toggle if that ever changes.
+  - [x] **14.4**: Evaluated and declined for now: Discussions stays off until real demand surfaces. The repository has five stars, no forks and no support thread to move; the issue templates cover bugs and features, and a second empty venue would only spread the absence of activity across more pages.
+  - [ ] **14.5**: Gate, blocked on 14.1 and 14.2. Topics non-empty, homepage resolving to the gallery, and the wiki disabled.
 - [x] **Step 15 - OSS-15 (medium)**: Contributor attribution was inconsistent: one person committed under three email identities, so git shortlog -sne listed them three times and any future sign-off requirement would have had no single identity to check.
   - [x] **15.1**: Added .mailmap folding emiliano.pisu@webidoo.com and 75838944+pixu1980@users.noreply.github.com into Emiliano Pisu <pisuemiliano.1980@gmail.com>. GitHub's committer-side <noreply@github.com> is deliberately left out, because the web interface performed that commit and folding it would misattribute the action.
   - [x] **15.2**: Verified rather than set: the repository-local user.name and user.email were already the canonical pair, and `git var GIT_AUTHOR_IDENT` confirms it, so new commits add no fourth identity. The global identity points at the work address, which is why the historical one-off commits exist, but the local setting overrides it for this repository.

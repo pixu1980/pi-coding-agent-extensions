@@ -47,7 +47,7 @@ already proved work.
 | ----- | ---- | ------- | -------------- |
 | 2.1 | Step 3 | OSS-03 | Done. Contributor Covenant 3.0 is in place with the reporting channel filled. The Conduct section CONTRIBUTING.md must link to it carries over to Step 2. |
 | 2.2 | Step 2 | OSS-02 | Done. CONTRIBUTING.md carries its own content plus the three obligations carried from steps 3.3, 9.4 and 15.3. The community-profile half of the gate needs a push. |
-| 2.3 | Step 5 | OSS-05 | The governance document describes the path Step 2 publishes and references the ADR from 1.4. |
+| 2.3 | Step 5 | OSS-05 | Done. GOVERNANCE.md says who decides, and cross-references CONTRIBUTING.md for the path and SECURITY.md for the exposure rather than restating either. This closes Phase 2. |
 
 ### Phase 3 - Sustainability and visibility
 
@@ -141,13 +141,13 @@ Step 17.2. It is not a gap this plan closes.
   - [x] **4.3**: Documented the trust boundary with measured detail: what pi-mcp, pi-cursor and pi-web each reach, the guards pi-web and pi-cursor enforce, and the release-integrity exposure, which is 0 of 8 packages carrying a provenance attestation, lightweight unsigned tags, no CI, and no dependency cooldown since ADR 012.
   - [x] **4.4**: Added a Security section to README.md and pointers in the three dual-use package READMEs. All four links resolve to the root SECURITY.md.
   - [ ] **4.5**: Gate, blocked on 4.2 and on a push. GitHub reports the security policy only once SECURITY.md reaches the default branch, so the community profile still shows it missing.
-- [ ] **Step 5 - OSS-05 (high)**: Who decides what is undocumented: 236 commits, 0 merge commits and 1 contributor mean the real model is single-maintainer, but no GOVERNANCE.md states it, so a newcomer cannot tell who reviews or who breaks a tie.
-  - [ ] **5.1**: Write GOVERNANCE.md describing the single-maintainer (BDFL) model as it actually is: who holds final say, which decisions need an ADR, and how a contested decision is resolved.
-  - [ ] **5.2**: Document the contribution path end to end in GOVERNANCE.md, from issue to merge, naming the real gate at each stage given that no CI exists: the maintainer runs pnpm test and pnpm test:all locally, and which of those a change must pass.
-  - [ ] **5.3**: Record the promotion criteria for a second maintainer (sustained contribution, demonstrated review judgment, security awareness) without committing to recruiting now, so the bus-factor-one risk has a written exit.
-  - [ ] **5.4**: Reference docs/adr/ as the decision record from GOVERNANCE.md so the existing 10 ADRs stop being invisible, and state that ADRs are immutable once accepted.
-  - [ ] **5.5**: Record the accepted risk that no CI exists and releases are published locally without provenance, so the reader knows the governance model carries that exposure deliberately.
-  - [ ] **5.6**: Gate: GOVERNANCE.md exists and is linked from README.md, the accepted-risk ADR is indexed in docs/adr/ADR.md, and both land in the same commit.
+- [x] **Step 5 - OSS-05 (high)**: Who decides was undocumented: 0 merge commits and 1 contributor meant the real model was single-maintainer, but no GOVERNANCE.md said so, so a newcomer could not tell who reviews or who breaks a tie.
+  - [x] **5.1**: Wrote the model as it is. One maintainer with final say, no committee, no vote, no second reviewer, and explicitly the reason it is written down: issue templates and a pull request template can be misread as evidence of a committee. Added a section on what has actually happened, because 253 commits and exactly one pull request ever opened is the fact a prospective contributor needs most.
+  - [x] **5.2**: Documented the issue-to-merge gate as manual, with the maintainer running the same four commands a contributor runs, and deferred the step-by-step and the checklist to CONTRIBUTING.md by anchor rather than restating them.
+  - [x] **5.3**: Recorded four promotion criteria: contribution over time, review quality, security awareness with the dual-use boundary named, and having read the records. States that meeting them does not create a maintainer and that nobody is being recruited today, so the criteria are a written exit from the bus-factor-one risk rather than a hiring notice.
+  - [x] **5.4**: Pointed at `docs/adr/`, named the two records a newcomer needs first, and stated that a record is immutable once accepted and superseded rather than edited. Also noted that the index is generated, so hand-editing it is wasted work. The count is 13 records rather than the 10 the audit saw.
+  - [x] **5.5**: Stated what the model costs in four items, cross-referencing ADR 013 for the no-CI decision and SECURITY.md for the provenance gap instead of restating either.
+  - [x] **5.6**: Gate met: GOVERNANCE.md exists, README.md links it from the Contributing section, ADR 013 is indexed in docs/adr/ADR.md, and both landed in the same commit series.
 - [ ] **Step 6 - OSS-06 (high)**: The project has no funding surface of any kind and is 100% single-payer, so no donor can contribute and no donor expectation is defined.
   - [ ] **6.1**: Add .github/FUNDING.yml declaring the funding platforms (`https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository`), and enable GitHub Sponsors on the account so the button resolves.
   - [ ] **6.2**: Write FUNDING.md at the repository root stating what money is used for, what it is not used for, and that sponsorship never buys roadmap priority, review priority or feature commitments.

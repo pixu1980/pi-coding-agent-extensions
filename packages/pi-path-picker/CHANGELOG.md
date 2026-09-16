@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.26](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.25...@pixu1980/pi-path-picker@0.1.26) (2026-09-16)
+
+### Bug Fixes
+
+* **lint:** clear the correctness rules and the small style rules ([b49a599](https://github.com/pixu1980/pi-coding-agent-extensions/commit/b49a5997bddeedc7879897518423909011f9757a))
+* **lint:** take the mechanical style rules and re-enable what is clean ([b5b11da](https://github.com/pixu1980/pi-coding-agent-extensions/commit/b5b11da60b9f5fcee8b0e86773bce8c98b0174b3))
+* **packages:** describe the root package as what it is ([ea4f6bc](https://github.com/pixu1980/pi-coding-agent-extensions/commit/ea4f6bc8f50f0c872c0b3fd559966e0cd1bef947))
+* **packages:** require the node version pi itself requires ([99ff790](https://github.com/pixu1980/pi-coding-agent-extensions/commit/99ff790ea910ac1c6499f5a99bae5aaa419dc577))
+* **packaging:** ship the license text in every published package ([8a40274](https://github.com/pixu1980/pi-coding-agent-extensions/commit/8a40274fc51bb42b53df167655ef3fc0c4712100))
+* **pi-web:** typecheck the entry point instead of a stale file list ([751751b](https://github.com/pixu1980/pi-coding-agent-extensions/commit/751751b65edef8dfaa05158e4a472a3f3b0c0542))
+* **pnpm:** declare allowBuilds so every package script runs again ([a051440](https://github.com/pixu1980/pi-coding-agent-extensions/commit/a0514406ea21bf2f45535784e9388154879c1eb8))
+* **release:** report what a dry run would release ([a7700e5](https://github.com/pixu1980/pi-coding-agent-extensions/commit/a7700e5d1e9f2245e702b6c14ee11092a83f864c))
+
 ## [0.1.25](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.24...@pixu1980/pi-path-picker@0.1.25) (2026-09-15)
 
 ### Features

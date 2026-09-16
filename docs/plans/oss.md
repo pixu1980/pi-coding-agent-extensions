@@ -65,7 +65,7 @@ already proved work.
 | 4.1 | Step 8 | OSS-08 | Done. The policy is documented in CONTRIBUTING.md and enforced by three guards, each verified by injecting the violation and watching it fire. |
 | 4.2 | Step 10 | OSS-10 | Done. Six of eight packages were affected rather than three, and the fix uncovered OSS-22 in pi-web's typecheck script. pnpm test and pnpm typecheck now exit 0 everywhere. |
 | 4.3 | Step 11 | OSS-11 | Done. The bundle has a script, a header naming its version, three guards and an ADR. |
-| 4.4 | Step 13 | OSS-13 | Italian prose in two remaining repository-owned files; .npmrc was translated when the cooldown was removed. |
+| 4.4 | Step 13 | OSS-13 | Done. Six code sites translated, not three, and the rule is enforced by a guard whose word list produces no false positives. |
 | 4.5 | Step 19 | OSS-21 | Done. Fourteen rules are back on with zero diagnostics; five stay off, each for a measured reason. The disabled list shrank from twenty to five. |
 
 ### Dependency table
@@ -190,12 +190,12 @@ Step 17.2. It is not a gap this plan closes.
   - [x] **12.3**: Stated the cadence as the tool already behaves: releases are cut on demand per package when its release-worthy files change, with no calendar and no joint batching, and the versions on npm are the only schedule that is promised.
   - [ ] **12.4**: Deferred by maintainer decision. RELEASING.md and the stated cadence are enough for now; a product roadmap would invent direction that does not exist, because both roadmaps the previous session left were closed.
   - [ ] **12.5**: Gate, blocked on 12.1 alone. RELEASING.md is linked from a new Releases section in CONTRIBUTING.md, which Step 2's text did not foresee and which also states that nothing in a pull request triggers or configures a release. No GitHub Release points at any package version.
-- [ ] **Step 13 - OSS-13 (medium)**: Repository-owned files contain Italian prose, contradicting the project's own rule that every artifact except chat is written in English.
-  - [ ] **13.1**: Translate the three Italian comment lines in .npmrc into English, keeping the measured justification for minimumReleaseAge=4320.
-  - [ ] **13.2**: Translate the two Italian comments in packages/pi-path-picker/lib/_provider.ts around the path-token menu logic.
-  - [ ] **13.3**: Change the test-all.mjs summary line and failure label to English, so the aggregator output matches the language rule every other artifact follows (there is no CI, so this output is only ever read locally by the maintainer and by contributors running the suite).
-  - [ ] **13.4**: Add a guard test that scans tracked source and config files for a small list of high-signal Italian words, so the rule is enforced rather than remembered.
-  - [ ] **13.5**: Gate: the guard test passes and pnpm test:all prints an English summary line.
+- [x] **Step 13 - OSS-13 (medium)**: Repository-owned files contained Italian prose, contradicting the project's own rule that every artifact except chat is written in English.
+  - [x] **13.1**: Already done. The three Italian comment lines in .npmrc disappeared with the cooldown they described, and the replacement text is English.
+  - [x] **13.2**: Translated pi-path-picker/lib/_provider.ts. The audit found two Italian comment lines; a broader scan found four separate blocks, including one at line 86 that no earlier check had touched and one at line 219 that was half Italian and half English in the same sentence.
+  - [x] **13.3**: Changed the test-all.mjs summary line and failure label to English, so the aggregator reads `result: 8 ok, 0 failed`. The audit had described those two as comments; they are output strings.
+  - [x] **13.4**: Added test/language-rule.test.mjs, which scans every source and config file against 56 unambiguous Italian words. Three deliberate exclusions: docs/ because the dossier quotes the Italian it reports on, the generated bundle because it is minified third-party code, and packages/pi-ask/lib/_lang.ts because its Italian is stopword data the language-detection feature matches on. That last one is the distinction the guard has to respect: a rule that cannot tell prose from data would force a working feature to be deleted.
+  - [x] **13.5**: Gate met, and the guard was verified rather than assumed. Its word list produces zero hits on the clean repository, which matters because a check that fires on correct code gets ignored; and it was then confirmed to fail when Italian is injected into a comment and again into an output string. pnpm test reports 34 pass 0 fail, pnpm test:all prints an English summary, and pnpm lint and pnpm format:check exit 0.
 - [ ] **Step 14 - OSS-14 (medium)**: The repository's public metadata was incomplete, so the project was hard to find and the one community venue it had enabled was unused.
   - [ ] **14.1**: MANUAL GATE, maintainer only. Add nine topics: pi, pi-coding-agent, mcp, coding-agent, typescript, llm, monorepo, extensions, ai-agent. All were verified to exist, and pi was checked rather than assumed: its most-starred repositories are coding agents. Left out deliberately only claude-code, which is the wrong product.
   - [ ] **14.2**: MANUAL GATE, maintainer only. Set the homepage to the pi.dev gallery and the description to the corrected root package.json text, which no longer claims themes, skills and prompts the repository does not contain.

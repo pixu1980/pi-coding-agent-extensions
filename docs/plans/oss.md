@@ -53,7 +53,7 @@ already proved work.
 
 | Order | Step | Finding | Why it is here |
 | ----- | ---- | ------- | -------------- |
-| 3.1 | Step 6 | OSS-06 | Step 6.3 writes the maintainer and donor boundary into GOVERNANCE.md, so it follows Step 5. |
+| 3.1 | Step 6 | OSS-06 | Half done. The policy, the boundary and the FUNDING.yml are written. Enrollment in GitHub Sponsors and the repository Sponsorships setting are account-level actions only the maintainer can clear. |
 | 3.2 | Step 12 | OSS-12 | Release notes and cadence depend on a releasable tree (Step 7) and on governance naming the release gate (Step 5). |
 | 3.3 | Step 14 | OSS-14 | Discoverability. Independent, but best done once the landing documents exist so topics and the homepage point at real pages. |
 | 3.4 | Step 18 | OSS-18 | Depends on Step 7 for the dependency decision and on Step 2 for the manual dependency-update paragraph. |
@@ -148,12 +148,12 @@ Step 17.2. It is not a gap this plan closes.
   - [x] **5.4**: Pointed at `docs/adr/`, named the two records a newcomer needs first, and stated that a record is immutable once accepted and superseded rather than edited. Also noted that the index is generated, so hand-editing it is wasted work. The count is 13 records rather than the 10 the audit saw.
   - [x] **5.5**: Stated what the model costs in four items, cross-referencing ADR 013 for the no-CI decision and SECURITY.md for the provenance gap instead of restating either.
   - [x] **5.6**: Gate met: GOVERNANCE.md exists, README.md links it from the Contributing section, ADR 013 is indexed in docs/adr/ADR.md, and both landed in the same commit series.
-- [ ] **Step 6 - OSS-06 (high)**: The project has no funding surface of any kind and is 100% single-payer, so no donor can contribute and no donor expectation is defined.
-  - [ ] **6.1**: Add .github/FUNDING.yml declaring the funding platforms (`https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository`), and enable GitHub Sponsors on the account so the button resolves.
-  - [ ] **6.2**: Write FUNDING.md at the repository root stating what money is used for, what it is not used for, and that sponsorship never buys roadmap priority, review priority or feature commitments.
-  - [ ] **6.3**: Add a Funding section to GOVERNANCE.md defining the maintainer and donor boundary: who decides when a donor request conflicts with maintainer judgment, and that the answer is the maintainer.
-  - [ ] **6.4**: Add a funding pointer to README.md and keep it below the install instructions so the README does not read as a solicitation.
-  - [ ] **6.5**: Gate: the Sponsor button appears on the repository, and FUNDING.md is linked from both README.md and GOVERNANCE.md.
+- [ ] **Step 6 - OSS-06 (high)**: The project had no funding surface of any kind and was 100% single-payer, so no donor could contribute and no donor expectation was defined.
+  - [ ] **6.1**: .github/FUNDING.yml is written, declaring `github: pixu1980`, and it parses as valid YAML. MANUAL GATE, maintainer only: GitHub Sponsors has to be enrolled on the account and the Sponsorships feature enabled on the repository. Checked from outside and the answer is ambiguous, not conclusive: the sponsors URL resolves and titles as a Sponsor page rather than redirecting to a profile, but carries no priced tier, so the button may lead to an empty page until a tier exists.
+  - [x] **6.2**: Wrote FUNDING.md. The honest substance is that money here pays for time and nothing else, because there is no hosting bill and no runner to pay for, so a sponsorship unlocks nothing and gates nothing.
+  - [x] **6.3**: Added the boundary to GOVERNANCE.md as one line plus its consequences: a donor request that conflicts with the maintainer's judgment loses, a sponsor asking for a feature gets an answer on the same merits as anyone else, and a request to jump the review queue is refused. Also states that declining sponsorship is allowed for reasons unrelated to the amount.
+  - [x] **6.4**: Added the funding pointer to README.md below the install instructions, so the first thing a reader meets is still how to install the package.
+  - [ ] **6.5**: Gate, blocked on 6.1's manual half. FUNDING.md is linked from both README.md and GOVERNANCE.md, verified by grep, but the Sponsor button cannot be confirmed until enrollment and the repository setting are done.
 - [x] **Step 7 - OSS-07 (high)**: The intentional dependency bump was uncommitted, so the tree was dirty: the release path refused to run and all 8 packages were detected as release-worthy.
   - [x] **7.1**: Confirmed that the deletion of packages/pi-path-picker/package-lock.json and packages/pi-reasoning/package-lock.json is the intended npm-to-pnpm cleanup. Both stayed deleted and the deletion landed in the commit.
   - [x] **7.2**: Verified that no manifest reintroduces the `packageManager` field or a `workspaces` field. The pnpm-only shape holds across all 9 manifests.

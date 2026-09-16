@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.9](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.8...@pixu1980/pi-web@0.1.9) (2026-09-16)
+
+### Bug Fixes
+
+* **deps:** declare what pi cannot install for us ([da9d859](https://github.com/pixu1980/pi-coding-agent-extensions/commit/da9d85943844d94680849c5844b7a2f5e0938c83))
+* **pnpm:** move the cooldown setting where pnpm actually reads it ([c090d28](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c090d2841913d5b1405e71d9146bbe42b9673ca4))
+
 ## [0.1.8](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-web@0.1.7...@pixu1980/pi-web@0.1.8) (2026-09-16)
 
 ### Bug Fixes

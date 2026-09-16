@@ -54,7 +54,7 @@ already proved work.
 | Order | Step | Finding | Why it is here |
 | ----- | ---- | ------- | -------------- |
 | 3.1 | Step 6 | OSS-06 | Half done. The policy, the boundary and the FUNDING.yml are written. Enrollment in GitHub Sponsors and the repository Sponsorships setting are account-level actions only the maintainer can clear. |
-| 3.2 | Step 12 | OSS-12 | Release notes and cadence depend on a releasable tree (Step 7) and on governance naming the release gate (Step 5). |
+| 3.2 | Step 12 | OSS-12 | Half done. RELEASING.md and the cadence are written and verified against the script. The GitHub Releases need a write the run does not have, and the roadmap needs product direction from the maintainer. |
 | 3.3 | Step 14 | OSS-14 | Discoverability. Independent, but best done once the landing documents exist so topics and the homepage point at real pages. |
 | 3.4 | Step 18 | OSS-18 | Depends on Step 7 for the dependency decision and on Step 2 for the manual dependency-update paragraph. |
 
@@ -185,11 +185,11 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **11.4**: Decide and document whether the bundle should ship at all, since shipping a build artifact inside an extension that the host serves to a local UI widens the trust surface; record the outcome and the rationale in an ADR.
   - [ ] **11.5**: Gate: a single documented command regenerates the bundle byte-for-byte, and the freshness test passes.
 - [ ] **Step 12 - OSS-12 (medium)**: There is no release cadence and no release notes surface, so a contributor or user cannot plan around releases or see what changed.
-  - [ ] **12.1**: Publish GitHub Releases from the existing lightweight tags so the tag-format history becomes a readable changelog, taking each release body from the package's generated CHANGELOG.md.
-  - [ ] **12.2**: Write a RELEASING.md documenting the real procedure and its preconditions: clean tree, npm login, pnpm release, tag push, and which packages publish.
-  - [ ] **12.3**: State a release cadence in RELEASING.md in terms a contributor can rely on, for example releases cut on demand when a package's release-worthy files change, with no fixed calendar.
-  - [ ] **12.4**: Publish a ROADMAP.md or docs/roadmap.md listing what is planned per package so the community can see direction instead of inferring it from closed pull requests.
-  - [ ] **12.5**: Gate: at least one GitHub Release exists per package version currently on npm, and RELEASING.md is linked from CONTRIBUTING.md.
+  - [ ] **12.1**: MANUAL GATE, maintainer only. Publish a GitHub Release for each of the eight current package versions, created from its lightweight tag with the new entries from that package's CHANGELOG.md as the body. This run has no GitHub write access: no `gh` binary and no token in the environment.
+  - [x] **12.2**: Wrote RELEASING.md and verified every sentence that can be checked against scripts/release.mjs: the clean-tree refusal, the dry run, the tag comparison that skips CHANGELOG.md-only changes, the first-release case, the bump, tag push and publish order, and that the run stops on the first error while published packages stay published.
+  - [x] **12.3**: Stated the cadence as the tool already behaves: releases are cut on demand per package when its release-worthy files change, with no calendar and no joint batching, and the versions on npm are the only schedule that is promised.
+  - [ ] **12.4**: Product direction belongs to the maintainer, and the two roadmaps the previous session left were both closed, so there is no existing direction to republish. Waiting on what is planned per package rather than inventing it.
+  - [ ] **12.5**: Gate, blocked on 12.1 alone. RELEASING.md is linked from a new Releases section in CONTRIBUTING.md, which Step 2's text did not foresee and which also states that nothing in a pull request triggers or configures a release. No GitHub Release points at any package version.
 - [ ] **Step 13 - OSS-13 (medium)**: Repository-owned files contain Italian prose, contradicting the project's own rule that every artifact except chat is written in English.
   - [ ] **13.1**: Translate the three Italian comment lines in .npmrc into English, keeping the measured justification for minimumReleaseAge=4320.
   - [ ] **13.2**: Translate the two Italian comments in packages/pi-path-picker/lib/_provider.ts around the path-token menu logic.

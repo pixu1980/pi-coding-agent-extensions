@@ -39,6 +39,7 @@ lenses into a shape the plan can execute.
 | What response time should the security policy promise? | Acknowledge a vulnerability report within 3 working days, then confirm or dismiss it. | OSS-04 |
 | Is the absence of `package-lock.json` and of a `packageManager` field intentional? | Yes. pnpm only, with the pnpm lockfile per package; every `package.json` is meant to look that way. | OSS-07, OSS-08 |
 | Are `packages: []` at the root and the per-package `overrides`/`allowBuilds` divergence intentional? | Yes. Each package is a standalone pnpm project carrying only the dependencies it needs, and the root is a script runner rather than a workspace. | OSS-08, OSS-10 |
+| Should a product ROADMAP.md be written now? | No. RELEASING.md and the stated cadence are enough; a product roadmap would invent direction that does not exist, because both roadmaps the previous session left were closed. | OSS-12 |
 
 Findings distilled from [the audit](../audits/oss.md). A finding this run no longer reports is
 flipped to resolved and kept one run for visibility, then removed.

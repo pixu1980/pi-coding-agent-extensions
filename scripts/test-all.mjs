@@ -76,8 +76,9 @@ for (const pkg of packages) {
   }
 }
 
-console.log(`\n═══ risultato: ${pass} ok, ${fail} falliti ═══`);
+console.log(`\n═══ result: ${pass} ok, ${fail} failed ═══`);
+
 if (failures.length) {
-  console.log('falliti:', failures.join(', '));
+  console.log('failed:', failures.join(', '));
   process.exit(1);
 }

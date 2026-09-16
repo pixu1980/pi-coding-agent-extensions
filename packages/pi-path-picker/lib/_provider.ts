@@ -82,9 +82,9 @@ function tokenRange(line: string, col: number): { token: string; start: number; 
  */
 export function createPathAutocompleteProvider(current: AutocompleteProvider, cwd: string): AutocompleteProvider {
   return {
-    // Non aggiunge trigger characters: preserva esclusivamente quelli nativi.
-    // Il path picker viene attivato solo da Tab, dentro una regione quotata,
-    // quando il token contiene almeno uno slash.
+    // Adds no trigger characters of its own: it preserves exactly the native
+    // ones. The path picker activates on Tab alone, inside a quoted region,
+    // when the token contains at least one slash.
     triggerCharacters: current.triggerCharacters,
 
     async getSuggestions(
@@ -115,8 +115,8 @@ export function createPathAutocompleteProvider(current: AutocompleteProvider, cw
       const text = regionText(currentLine, region, cursorCol);
       const token = extractPathToken(text);
 
-      // Nessun token di percorso (o "~" senza slash) chiude eventuali menu
-      // aperti, senza passare dal provider nativo.
+      // No path token, or a bare "~" with no slash after it, closes any open
+      // menu without delegating to the native provider.
       if (!token?.path.includes('/')) {
         return null;
       }
@@ -211,14 +211,14 @@ export function createPathAutocompleteProvider(current: AutocompleteProvider, cw
       const currentLine = lines[cursorLine] ?? '';
       const region = findQuoteRegion(currentLine, cursorCol);
 
-      // Fuori dalla regione preserva esattamente il comportamento nativo.
+      // Outside a region this preserves the native behavior exactly.
       if (!region) {
         return current.shouldTriggerFileCompletion?.(lines, cursorLine, cursorCol) ?? true;
       }
 
-      // Dentro una regione quotata (aperta, chiusa o appena chiusa) spetta
-      // al path picker decidere tramite getSuggestions: only a null result
-      // can immediately close a stale menu.
+      // Inside a quoted region, whether open, closed or just closed, the path
+      // picker decides through getSuggestions: only a null result can
+      // immediately close a stale menu.
       return true;
     },
   };

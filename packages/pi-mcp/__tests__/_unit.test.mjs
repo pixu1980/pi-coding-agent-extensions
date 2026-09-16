@@ -323,9 +323,9 @@ test('error subclasses keep their type and code', () => {
   assert.equal(consentErr.code, 'CONSENT_REQUIRED');
 });
 
-// ── _types.ts: comandi slash nudi (toolPrefix "none") ────────────────
-// Richiesta: /pix-frontend-vanilla-reactive, /pix-process-code-review,
-// /pix-data-indexed-db - niente prefisso server, trattini al posto degli underscore.
+// ── _types.ts: bare slash commands (toolPrefix "none") ────────────────
+// Request: /pix-frontend-vanilla-reactive, /pix-process-code-review,
+// /pix-data-indexed-db - no server prefix, dashes instead of underscores.
 
 test('isInstantHelpResult detects single assistant usage messages', () => {
   const usage = 'Usage: /pix-frontend <request>\n\nFrontend work following pix styleguides.';

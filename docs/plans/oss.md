@@ -36,7 +36,7 @@ reporter somewhere private to go.
 | 1.1 | Step 1 | OSS-01 | Six of eight published packages currently breach their own license terms. Highest legal exposure. |
 | 1.2 | Step 4 | OSS-04 | Half done. SECURITY.md and the README pointers are written, which is what Step 17 needs to state the exposure. The private reporting toggle is a repository setting only the maintainer can clear. |
 | 1.3 | Step 15 | OSS-15 | Done. The mailmap folds three historical identities into one, and the repository-local git identity was already canonical. |
-| 1.4 | Step 17 | OSS-17 | Records the accepted no-CI risk. Depends on 1.2 because its exposure statement lives in SECURITY.md. |
+| 1.4 | Step 17 | OSS-17 | Done. ADR 013 records the decision and the exposure, and SECURITY.md publishes it. This closes Phase 1. |
 
 ### Phase 2 - Contributor entry
 
@@ -212,11 +212,11 @@ Step 17.2. It is not a gap this plan closes.
   - [x] **16.2**: Gave all eight packages engines.node >=22.19.0. The sub-step proposed copying pi-cursor's >=22.13.0, and measuring that value showed it is wrong: @earendil-works/pi-coding-agent 0.85.1 declares `node: >=22.19.0` for itself and every package here peers on it, so >=22.13.0 admits a runtime pi cannot load into. pi-cursor was corrected along with the five that had no engines at all.
   - [x] **16.3**: Added test/package-metadata.test.mjs, covering engines, license, repository.directory, the files array, and the LICENSE plus README that the files array must actually ship.
   - [x] **16.4**: Gate met: pnpm release:dry prints 'would release: 8' instead of 'released: 0', pnpm test reports 27 pass 0 fail, and pnpm lint and pnpm format:check both exit 0.
-- [ ] **Step 17 - OSS-17 (info)**: Accepted risk, recorded by maintainer decision on this run: the repository has no CI, so 0 of 8 packages carry provenance attestations and releases are published from a developer machine with a personal npm credential.
-  - [ ] **17.1**: Write an ADR under docs/adr/ recording the decision to publish locally without CI, the residual supply-chain exposure it accepts, and the trigger that would reopen it such as a second maintainer or a reported compromise.
-  - [ ] **17.2**: State the exposure in SECURITY.md so a consumer can weigh it, including that no release is provenance-attested and that tags are lightweight and unsigned.
-  - [ ] **17.3**: Record the manual compensations that do exist, so the accepted risk is bounded and auditable: exact pinned versions in every manifest, a lockfile and a test suite per package, and the maintainer's 2FA. The dependency cooldown is deliberately not among them, because ADR 012 removed it for the opposite reason.
-  - [ ] **17.4**: Gate: the ADR is indexed in docs/adr/ADR.md, SECURITY.md states the exposure, and no workflow file is added.
+- [x] **Step 17 - OSS-17 (info)**: Accepted risk, recorded by maintainer decision: the repository has no CI, so 0 of 8 packages carry provenance attestations and releases are published from a developer machine with a personal npm credential.
+  - [x] **17.1**: Wrote ADR 013, which records the decision, the exposure it accepts, the four alternatives that were considered and rejected, and the three observations that would reopen it: a second maintainer, a consumer who requires provenance, and any reported compromise traceable to a released tarball.
+  - [x] **17.2**: Done as part of step 4.3. SECURITY.md states the provenance gap, that tags are lightweight and unsigned, that no CI runs the gates, and that no release-age cooldown is configured. Verified by grep for each statement rather than by reading the file.
+  - [x] **17.3**: Recorded the credible bounds in the ADR. Measured the 2FA claim instead of asserting it: npm profile get reports `two-factor auth: auth-and-writes`, so a publish needs a second factor. The other bounds are exact pinned versions, a lockfile and a test suite per package. The dependency cooldown is explicitly not among them, because ADR 012 removed it for the opposite reason.
+  - [x] **17.4**: Gate met: ADR 013 is indexed in docs/adr/ADR.md, SECURITY.md states the exposure in three verifiable sentences, and no .github directory exists at all, so no workflow file was added.
 - [ ] **Step 18 - OSS-18 (info)**: Accepted risk, recorded by maintainer decision on this run: dependency updates have no automation because .github/dependabot.yml was removed, and dependabot pull request #2 has been open since 2026-09-11.
   - [ ] **18.1**: Close or land dependabot pull request #2 deliberately and record the reason on the pull request, so it stops being an unexplained open item on a repository whose only open issue is that pull request.
   - [ ] **18.2**: Delete the stale remote branch dependabot/npm_and_yarn/packages/pi-mcp/npm_and_yarn-8bd3e5320a once the pull request is resolved.

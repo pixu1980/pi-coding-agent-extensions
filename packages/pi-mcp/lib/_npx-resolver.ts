@@ -379,7 +379,7 @@ async function forceNpxCache(packageSpec: string, signal?: AbortSignal): Promise
         reject(err);
       });
     });
-  } catch (error) {
+  } catch {
     if (signal?.aborted) {
       throwIfAborted(signal);
     }
@@ -683,7 +683,7 @@ export function saveNpxCacheEntry(key: string, entry: NpxCacheEntry): void {
 
   mkdirSync(dir, { recursive: true });
 
-  let merged: NpxCache = { version: CACHE_VERSION, entries: {} };
+  const merged: NpxCache = { version: CACHE_VERSION, entries: {} };
 
   try {
     if (existsSync(cachePath)) {

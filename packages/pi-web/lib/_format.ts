@@ -46,7 +46,7 @@ export function formatFetchResult(page: FormatPage, options: { maxChars: number 
   return { text, truncated, totalChars };
 }
 
-export function formatMultiFetchSummary(pages: FormatPage[], totalChars: number): string {
+export function formatMultiFetchSummary(pages: FormatPage[]): string {
   let text = '## Fetched URLs\n\n';
 
   for (const page of pages) {

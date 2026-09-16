@@ -445,7 +445,7 @@ export function formatDate(isoStr: string): string {
       /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith('Z') && !isoStr.endsWith('+00:00') ? isoStr + 'Z' : isoStr;
     const d = new Date(normalized);
 
-    if (isNaN(d.getTime())) {
+    if (Number.isNaN(d.getTime())) {
       return '';
     }
 

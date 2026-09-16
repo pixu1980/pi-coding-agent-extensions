@@ -578,7 +578,7 @@ export function executeSearch(
       }
 
       pattern = new RegExp(query, 'i');
-      let safety;
+      let safety: { status: string };
 
       try {
         const { checkSync } = require('recheck') as typeof import('recheck');

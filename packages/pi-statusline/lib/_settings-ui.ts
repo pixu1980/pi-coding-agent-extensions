@@ -9,7 +9,6 @@ import type { ExtensionCommandContext } from '@earendil-works/pi-coding-agent';
 import { getAgentDir, getSettingsListTheme } from '@earendil-works/pi-coding-agent';
 import { Container, type SettingItem, SettingsList, Text } from '@earendil-works/pi-tui';
 import { DEFAULT_SETTINGS, type StatusLineSettings, type FormatPreset, type ProjectStyle } from './_types.js';
-import { validateTemplate } from './_template.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 

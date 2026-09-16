@@ -99,8 +99,6 @@ export function createMockCtx(overrides = {}) {
     model: undefined,
     thinkingLevel: 'high',
     signal: new AbortController().signal,
-    ui,
-    sessionManager,
     getContextUsage() {
       return undefined;
     },

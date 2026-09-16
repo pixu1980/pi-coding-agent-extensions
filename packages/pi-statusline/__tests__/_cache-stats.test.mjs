@@ -25,7 +25,6 @@ import { getMcpInfo, getMcpStats } from '../lib/_mcp.ts';
 import { createMockPi, createMockCtx, makeModel } from '../../../test/harness.mjs';
 import statuslineExtension from '../index.ts';
 import { initTheme } from '@earendil-works/pi-coding-agent';
-import { makeTheme } from '../../../test/harness.mjs';
 
 function makeTempRepo() {
   const dir = mkdtempSync(join(tmpdir(), 'pi-statusline-stats-'));

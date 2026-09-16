@@ -9,7 +9,6 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { freshAgentDir, writeSession } from './_fixtures.mjs';
 import { getSessions, getSessionsDir, getSessionsStats, clearSessionsCache } from '../lib/_sessions.ts';

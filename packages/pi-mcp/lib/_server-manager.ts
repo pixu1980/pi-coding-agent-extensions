@@ -46,7 +46,7 @@ import { combineAbortSignals } from './_runtime-owner.ts';
 import {
   createMcpTraceWriter,
   isMcpTraceEnabled,
-  McpTraceWriter,
+  type McpTraceWriter,
   type McpTraceObserver,
   traceTransportKind,
   wrapTransportWithMcpTrace,
@@ -345,9 +345,11 @@ export class McpServerManager {
     const client = this.createClient(name);
 
     const tracingEnabled = isMcpTraceEnabled(definition, this.traceSettings);
-    const traceWriter = tracingEnabled
-      ? (this.traceWriter ??= createMcpTraceWriter(this.defaultCwd, this.traceSettings ?? {}))
-      : undefined;
+    if (tracingEnabled) {
+      this.traceWriter ??= createMcpTraceWriter(this.defaultCwd, this.traceSettings ?? {});
+    }
+
+    const traceWriter = tracingEnabled ? this.traceWriter : undefined;
     const traceObserver: McpTraceObserver | undefined = traceWriter
       ? { record: (event) => traceWriter.write(event) }
       : undefined;
@@ -773,7 +775,7 @@ export class McpServerManager {
         : resolveBearerToken(definition);
 
       if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+        headers.Authorization = `Bearer ${token}`;
       }
     }
 

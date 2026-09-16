@@ -29,7 +29,6 @@ import {
   normalizeOptions,
   summarizeAnswers,
   type AskDetails,
-  type DisplayOption,
   type SelectAnswer,
 } from './_types.ts';
 import { parseDigitKey, selectionFromCustom, selectionFromIndex, toggleIndex, withNote } from './_logic.ts';
@@ -174,8 +173,6 @@ export function createAskTool(pi?: PathProviderBus): ToolDefinition<typeof AskPa
         }
 
         function submitOption(index: number) {
-          const opt = displayOptions[index];
-
           if (multi) {
             state.multi = toggleIndex(state.multi, index);
             state.optionIndex = index;

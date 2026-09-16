@@ -155,7 +155,7 @@ test('custom answer: Type something auto-enters write mode when highlighted, one
   driver.key(KEY.down);
   driver.key(KEY.down);
   driver.key(KEY.down);
-  let text = driver.render();
+  const text = driver.render();
 
   assert.match(text, /Your answer:/);
 

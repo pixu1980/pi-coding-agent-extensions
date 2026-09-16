@@ -756,8 +756,6 @@ function installMcpAdapter(pi: ExtensionAPI, options: McpAdapterOptions) {
           break;
         }
 
-        case 'status':
-        case '':
         default:
           if (commandCtx.hasUI) {
             commandOwner?.throwIfInactive();

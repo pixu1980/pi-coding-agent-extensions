@@ -209,10 +209,10 @@ function extractUiMeta(meta: Record<string, unknown> | undefined): UiResourceMet
 
   const ui = isRecord(meta.ui) ? meta.ui : undefined;
   const out: UiResourceMeta = {};
-  const openAiCsp = hasOwnProperty(meta, 'openai/widgetCSP')
+  const openAiCsp = Object.hasOwn(meta, 'openai/widgetCSP')
     ? normalizeOpenAiWidgetCsp(meta['openai/widgetCSP'])
     : undefined;
-  const hasStandardCsp = !!ui && hasOwnProperty(ui, 'csp');
+  const hasStandardCsp = !!ui && Object.hasOwn(ui, 'csp');
   const standardCspValue = hasStandardCsp ? ui.csp : undefined;
 
   if (hasStandardCsp && !isRecord(standardCspValue)) {
@@ -226,7 +226,7 @@ function extractUiMeta(meta: Record<string, unknown> | undefined): UiResourceMet
 
       if (isRecord(standardCspValue)) {
         for (const [, standardField] of OPENAI_CSP_FIELD_MAPPINGS) {
-          if (hasOwnProperty(standardCspValue, standardField) && !copyStringArray(standardCspValue[standardField])) {
+          if (Object.hasOwn(standardCspValue, standardField) && !copyStringArray(standardCspValue[standardField])) {
             delete out.csp[standardField];
           }
         }
@@ -287,10 +287,6 @@ function normalizeOpenAiWidgetCsp(value: unknown): UiResourceCsp {
 
 function copyStringArray(value: unknown): string[] | undefined {
   return Array.isArray(value) && value.every((entry) => typeof entry === 'string') ? [...value] : undefined;
-}
-
-function hasOwnProperty(record: Record<string, unknown>, property: string): boolean {
-  return Object.prototype.hasOwnProperty.call(record, property);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

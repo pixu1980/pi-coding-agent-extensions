@@ -124,7 +124,7 @@ export default function piWebExtension(pi: ExtensionAPI) {
       const totalChars = pages.reduce((sum, page) => sum + page.content.length, 0);
 
       return {
-        content: [{ type: 'text', text: formatMultiFetchSummary(pages, totalChars) }],
+        content: [{ type: 'text', text: formatMultiFetchSummary(pages) }],
         details: { ids: pages.map((page) => page.id), successful, totalChars, urlCount: urlList.length },
       };
     },

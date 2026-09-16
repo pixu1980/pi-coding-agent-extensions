@@ -719,7 +719,6 @@ export class McpSetupPanel {
             'It intentionally avoids adding a fake placeholder server that would fail on first reload.',
           ]
         );
-      case 'close':
       default:
         return this.formatPreview(['Close the setup flow.']);
     }

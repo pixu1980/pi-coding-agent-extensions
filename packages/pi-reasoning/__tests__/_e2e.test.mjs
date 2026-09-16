@@ -208,7 +208,7 @@ test('/reasoning: menu selection sets the chosen level', async () => {
   });
   const ctx = createMockCtx({ model });
 
-  ctx.ui.select = async (_p, options) => '❤️  high';
+  ctx.ui.select = async (_p, _options) => '❤️  high';
   await runCommand('reasoning', '', ctx);
   assert.equal(calls.setThinkingLevel.at(-1), 'high');
 });
@@ -464,10 +464,10 @@ async function getProvider(pi, emit, model) {
   const factory = ctx.ui._providers[0];
   const current = {
     triggerCharacters: ['/'],
-    async getSuggestions(lines, line, col, options) {
+    async getSuggestions(_lines, _line, _col, _options) {
       return { prefix: 'native', items: [{ value: 'x', label: 'native' }] };
     },
-    applyCompletion(lines, line, col, item, prefix) {
+    applyCompletion(lines, line, col, _item, _prefix) {
       return { lines: [...lines], cursorLine: line, cursorCol: col, delegated: true };
     },
     shouldTriggerFileCompletion() {
@@ -572,7 +572,7 @@ test("autocomplete: no model yet → description 'current model'", async () => {
 
 test('autocomplete: other lines delegate to wrapped provider', async () => {
   const { pi, emit } = createMockPi();
-  const { provider, current } = await getProvider(pi, emit);
+  const { provider } = await getProvider(pi, emit);
   const result = await provider.getSuggestions(['ls -la'], 0, 6, SIG);
 
   assert.equal(result.prefix, 'native');
@@ -581,7 +581,7 @@ test('autocomplete: other lines delegate to wrapped provider', async () => {
 
 test('autocomplete: shouldTriggerFileCompletion for /reasoning forces true', async () => {
   const { pi, emit } = createMockPi();
-  const { provider, current } = await getProvider(pi, emit);
+  const { provider } = await getProvider(pi, emit);
 
   assert.equal(provider.shouldTriggerFileCompletion(['/reasoning high'], 0, 15), true);
   assert.equal(provider.shouldTriggerFileCompletion(['ls'], 0, 2), 'native');
@@ -589,7 +589,7 @@ test('autocomplete: shouldTriggerFileCompletion for /reasoning forces true', asy
 
 test('autocomplete: applyCompletion delegates, fallback replaces text', async () => {
   const { pi, emit } = createMockPi();
-  const { provider, current } = await getProvider(pi, emit);
+  const { provider } = await getProvider(pi, emit);
   const delegated = provider.applyCompletion(['/reasoning '], 0, 11, { value: 'auto', label: 'auto' }, ' ');
 
   assert.equal(delegated.delegated, true, 'must delegate to wrapped provider');

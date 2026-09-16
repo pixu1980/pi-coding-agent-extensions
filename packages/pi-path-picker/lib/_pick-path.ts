@@ -18,7 +18,7 @@
  */
 
 import { readdirSync, statSync, realpathSync } from 'node:fs';
-import { resolve, relative, sep, basename, dirname, join } from 'node:path';
+import { resolve, relative, dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 
 // ── Config ─────────────────────────────────────────────────────────

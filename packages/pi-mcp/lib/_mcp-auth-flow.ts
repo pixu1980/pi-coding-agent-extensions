@@ -306,7 +306,7 @@ async function probeAuthDiscovery(
     await response.body?.cancel().catch(() => {});
 
     return { ...(resourceMetadataUrl ? { resourceMetadataUrl } : {}), ...(scope ? { scope } : {}) };
-  } catch (error) {
+  } catch {
     if (signal?.aborted) {
       throwIfAborted(signal);
     }
@@ -705,7 +705,6 @@ export async function completeAuthFromInput(
 
   throwIfAborted(signal);
   const key = getPendingAuthKey(serverName, fallbackAuthStorageOptions);
-  const authStorageOptions = runtimeState.pendingAuths.get(key)?.authStorageOptions ?? fallbackAuthStorageOptions;
   const oauthState = runtimeState.pendingAuthStates.get(key);
 
   throwIfAborted(signal);
@@ -792,9 +791,11 @@ export async function completeAuth(
         await clearPendingAuth(runtime, serverName, oauthState, authStorageOptions);
       } catch (cleanupError) {
         if (caughtError !== undefined) {
+          // biome-ignore lint/correctness/noUnsafeFinally: deliberately composes the cleanup failure with the error that caused it.
           throw new AggregateError([caughtError, cleanupError], 'OAuth completion cleanup failed');
         }
 
+        // biome-ignore lint/correctness/noUnsafeFinally: the only error to report after a successful main flow.
         throw cleanupError;
       }
     }
@@ -1013,7 +1014,10 @@ export async function getValidToken(
  * @returns The current auth status
  */
 export async function getAuthStatus(serverName: string, options: AuthenticateOptions = {}): Promise<AuthStatus> {
-  const runtime = getRuntime(options);
+  // getRuntime is called for its side effects: it throws when the signal is
+  // already aborted and it registers the runtime. Nothing below needs the
+  // handle back, so the result is intentionally discarded.
+  getRuntime(options);
   const authStorageOptions = options.authStorageOptions ?? {};
   const hasTokens = await hasStoredTokens(serverName, authStorageOptions);
 

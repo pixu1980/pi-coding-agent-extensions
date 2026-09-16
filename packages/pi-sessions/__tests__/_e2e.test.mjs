@@ -99,7 +99,7 @@ test('session_start: invalidates the session cache so a new session is listed', 
 });
 
 test('session_start: auto-names the session from the first user message', async () => {
-  const { pi, emit, calls, state } = createMockPi();
+  const { pi, emit, state } = createMockPi();
 
   sessionsExtension(pi);
   const entries = [{ type: 'message', message: { role: 'user', content: 'Deploy the new dashboard' } }];

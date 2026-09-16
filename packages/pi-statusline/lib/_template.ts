@@ -51,6 +51,7 @@ export function validateTemplate(template: string): string | null {
   const re = new RegExp(TOKEN_PATTERN.source, 'g');
   let m: RegExpExecArray | null;
 
+  // biome-ignore lint/suspicious/noAssignInExpressions: the stateful RegExp.exec loop idiom, not a mistaken comparison.
   while ((m = re.exec(template)) !== null) {
     const tok = m[1]!;
 
@@ -169,6 +170,7 @@ export function compileTemplate(template: string): CompiledTemplate | string {
   const re = new RegExp(TOKEN_PATTERN.source, 'g');
   let m: RegExpExecArray | null;
 
+  // biome-ignore lint/suspicious/noAssignInExpressions: the stateful RegExp.exec loop idiom, not a mistaken comparison.
   while ((m = re.exec(template)) !== null) {
     if (m.index > last) {
       segs.push({ type: 'static', text: template.slice(last, m.index) });

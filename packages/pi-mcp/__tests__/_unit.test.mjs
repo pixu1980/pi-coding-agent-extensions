@@ -183,13 +183,13 @@ test('metadata cache: save then load returns merged content (atomic write)', () 
   saveMetadataCache({ version: 1, servers: { s1: { configHash: 'a', tools: [], resources: [], cachedAt: 1 } } });
   const loaded = loadMetadataCache();
 
-  assert.ok(loaded?.servers?.['s1'], 'saved entry must be readable back');
+  assert.ok(loaded?.servers?.s1, 'saved entry must be readable back');
   // A second save merges instead of clobbering.
   saveMetadataCache({ version: 1, servers: { s2: { configHash: 'b', tools: [], resources: [], cachedAt: 2 } } });
   const merged = loadMetadataCache();
 
-  assert.ok(merged?.servers?.['s1'], 'first entry survives merge');
-  assert.ok(merged?.servers?.['s2'], 'second entry present after merge');
+  assert.ok(merged?.servers?.s1, 'first entry survives merge');
+  assert.ok(merged?.servers?.s2, 'second entry present after merge');
 });
 
 test('metadata cache: unchanged file is read only once thanks to mtime read-through', () => {

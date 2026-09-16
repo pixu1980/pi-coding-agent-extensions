@@ -160,7 +160,7 @@ export function saveMetadataCache(cache: MetadataCache): void {
 
   mkdirSync(dir, { recursive: true });
 
-  let merged: MetadataCache = { version: CACHE_VERSION, servers: {} };
+  const merged: MetadataCache = { version: CACHE_VERSION, servers: {} };
 
   try {
     if (existsSync(cachePath)) {

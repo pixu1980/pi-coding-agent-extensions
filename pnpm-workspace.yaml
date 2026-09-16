@@ -1,4 +1,16 @@
+# The root is a script runner, not a workspace: every directory under packages/
+# is its own pnpm project with its own manifest, lockfile and workspace file.
+# The empty list below is what keeps that true, so do not fill it in.
 packages: []
+
+# Build scripts are declared explicitly, the same way each package declares its
+# own. The root carries tooling only, so there is exactly one entry: esbuild is
+# the bundler behind `pnpm build:app-bridge`. It is false because esbuild works
+# here without its install script, which `esbuild --version` confirms; leaving
+# the entry undecided is what makes pnpm write a placeholder and fail every
+# script that follows.
+allowBuilds:
+  esbuild: false
 
 overrides:
   'brace-expansion@<5': ^1.1.17

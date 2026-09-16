@@ -51,8 +51,7 @@
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": ">=0.85.1",
-    "@earendil-works/pi-tui": ">=0.85.1",
-    "typebox": "*"
+    "@earendil-works/pi-tui": ">=0.85.1"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-coding-agent": {
@@ -67,5 +66,8 @@
     "commit-and-tag-version": "13.2.1",
     "tsx": "4.23.13",
     "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "typebox": "1.3.31"
   }
 }

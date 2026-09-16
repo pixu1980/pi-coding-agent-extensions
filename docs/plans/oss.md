@@ -34,7 +34,7 @@ reporter somewhere private to go.
 | Order | Step | Finding | Why it is here |
 | ----- | ---- | ------- | -------------- |
 | 1.1 | Step 1 | OSS-01 | Six of eight published packages currently breach their own license terms. Highest legal exposure. |
-| 1.2 | Step 4 | OSS-04 | SECURITY.md must exist before the accepted-risk exposure can be stated in it (Step 17). |
+| 1.2 | Step 4 | OSS-04 | Half done. SECURITY.md and the README pointers are written, which is what Step 17 needs to state the exposure. The private reporting toggle is a repository setting only the maintainer can clear. |
 | 1.3 | Step 15 | OSS-15 | Attribution hygiene, and a precondition for any future sign-off requirement. |
 | 1.4 | Step 17 | OSS-17 | Records the accepted no-CI risk. Depends on 1.2 because its exposure statement lives in SECURITY.md. |
 
@@ -136,11 +136,11 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **3.3**: Add a Conduct section to CONTRIBUTING.md linking CODE_OF_CONDUCT.md so the standard is reachable from the contribution path.
   - [ ] **3.4**: Gate: community profile reports code_of_conduct_file, and the file passes a markdown lint run.
 - [ ] **Step 4 - OSS-04 (high)**: There is no security policy and no private channel for reporting vulnerabilities, which matters more than usual here because the packages execute inside the user's agent process.
-  - [ ] **4.1**: Write SECURITY.md at the repository root: supported versions per package, the private reporting channel, and an initial response target.
-  - [ ] **4.2**: Enable private vulnerability reporting on the repository so the channel in SECURITY.md actually exists: Settings -> Code security -> Private vulnerability reporting -> Enable (`https://github.com/pixu1980/pi-coding-agent-extensions/settings/security_analysis`).
-  - [ ] **4.3**: Describe the trust boundary honestly in SECURITY.md: pi-mcp, pi-cursor and pi-web are declared contentPolicy dual-use and reach the network, and the local publish path means no provenance attestation exists yet.
-  - [ ] **4.4**: Add a Security section to README.md linking SECURITY.md, and add the same one-line pointer to the three dual-use package READMEs that lack one (pi-mcp and pi-cursor and pi-web).
-  - [ ] **4.5**: Gate: community profile reports a security policy, and the private reporting link in SECURITY.md resolves to the repository security advisory page.
+  - [x] **4.1**: Wrote SECURITY.md with the supported-version rule (latest published version per package, no backports), the reporting channel, and a 3-working-day acknowledgment target the maintainer chose.
+  - [ ] **4.2**: MANUAL GATE, maintainer only. Enable private vulnerability reporting at `https://github.com/pixu1980/pi-coding-agent-extensions/settings/security_analysis`. Until this is done the channel named in SECURITY.md does not exist.
+  - [x] **4.3**: Documented the trust boundary with measured detail: what pi-mcp, pi-cursor and pi-web each reach, the guards pi-web and pi-cursor enforce, and the release-integrity exposure, which is 0 of 8 packages carrying a provenance attestation, lightweight unsigned tags, no CI, and no dependency cooldown since ADR 012.
+  - [x] **4.4**: Added a Security section to README.md and pointers in the three dual-use package READMEs. All four links resolve to the root SECURITY.md.
+  - [ ] **4.5**: Gate, blocked on 4.2 and on a push. GitHub reports the security policy only once SECURITY.md reaches the default branch, so the community profile still shows it missing.
 - [ ] **Step 5 - OSS-05 (high)**: Who decides what is undocumented: 236 commits, 0 merge commits and 1 contributor mean the real model is single-maintainer, but no GOVERNANCE.md states it, so a newcomer cannot tell who reviews or who breaks a tie.
   - [ ] **5.1**: Write GOVERNANCE.md describing the single-maintainer (BDFL) model as it actually is: who holds final say, which decisions need an ADR, and how a contested decision is resolved.
   - [ ] **5.2**: Document the contribution path end to end in GOVERNANCE.md, from issue to merge, naming the real gate at each stage given that no CI exists: the maintainer runs pnpm test and pnpm test:all locally, and which of those a change must pass.

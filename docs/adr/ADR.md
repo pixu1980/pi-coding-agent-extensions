@@ -8,6 +8,7 @@ this directory are the source of truth; this index is generated from them by
 
 | #                                                                                              | Title                                                                                     | Date       | Status   | Tags                                                    |
 | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------- | -------- | ------------------------------------------------------- |
+| [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md)                    | Commit the app bridge browser bundle, built by a pinned script                            | 2026-09-16 | accepted | build, pi-mcp, bundle, supply-chain, reproducibility    |
 | [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md)                         | Publish locally without CI and accept the provenance gap                                  | 2026-09-16 | accepted | release, supply-chain, npm, ci, policy, oss, provenance |
 | [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md)        | Remove the dependency cooldown and consume the newest dependency versions                 | 2026-09-15 | accepted | dependencies, supply-chain, npm, pnpm, policy, oss      |
 | [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) | Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files     | 2026-09-15 | accepted | licensing, compliance, npm, packaging, oss, forks       |
@@ -29,6 +30,7 @@ file. Where a line stops short the rest is in the ADR.
 
 | ADR                                                                                            | Decision                                                                                                                                                                                                                        | Consequence                                                                                                                                                                                                                     |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md)                    | Commit the bundle, and build it with a script that is part of the repository.                                                                                                                                                   | Buys: the file served to the UI always corresponds to the dependency version the package pins, and that correspondence is enforced rather than hoped for.                                                                       |
 | [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md)                         | Keep publishing locally with no CI, and stop treating the provenance gap as a gap to be closed.                                                                                                                                 | Buys: one person can cut a release without a runner, a secret store or a third-party action in the release path, which removes the class of attack that targets CI workflows and the tokens they hold.                          |
 | [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md)        | Remove the cooldown.                                                                                                                                                                                                            | Buys: the configuration stops fighting the working method.                                                                                                                                                                      |
 | [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) | Pin the exception in the test instead of erasing the difference.                                                                                                                                                                | Buys: all eight published packages now carry the license text in their tarball, so the published artifacts stop breaching the terms they are distributed under, and the check is enforced by `pnpm test` instead of by...       |
@@ -71,6 +73,7 @@ theme it carries, and the early ADRs that predate the tag field are listed last.
 
 ### pi-mcp
 
+- [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md) Commit the app bridge browser bundle, built by a pinned script
 - [007](007-lazy-startup-graph-verified-by-bench-in-pi-mcp.md) Lazy startup graph verified by bench in pi-mcp
 - [006](006-bounded-concurrent-reconnect-and-coalesced-panel-renders.md) Bounded concurrent reconnect and coalesced panel renders
 - [003](003-read-through-metadata-cache-for-pi-mcp.md) Read-through metadata cache for pi-mcp
@@ -93,6 +96,12 @@ theme it carries, and the early ADRs that predate the tag field are listed last.
 - [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md) Publish locally without CI and accept the provenance gap
 - [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md) Remove the dependency cooldown and consume the newest dependency versions
 - [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files
+
+### supply-chain
+
+- [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md) Commit the app bridge browser bundle, built by a pinned script
+- [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md) Publish locally without CI and accept the provenance gap
+- [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md) Remove the dependency cooldown and consume the newest dependency versions
 
 ## Operating rules
 

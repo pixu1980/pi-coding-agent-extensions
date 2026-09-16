@@ -28,6 +28,14 @@ The run refuses to start unless all of these hold, in this order:
    removed it, so the newest dependency versions install immediately and a
    release is never scheduled around a delay.
 
+One more thing belongs on that list when the release touches pi-mcp.
+`packages/pi-mcp/lib/_app-bridge.bundle.js` is generated, not hand-written: it is
+rebuilt from the pinned `@modelcontextprotocol/ext-apps` version by
+`pnpm build:app-bridge`. The suite fails while the committed file is stale, so a
+dependency bump that skipped the rebuild blocks the release instead of shipping
+a bundle built from a different version than the manifest names. The decision is
+recorded in [ADR 014](./docs/adr/014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md).
+
 ## The procedure
 
 ```bash

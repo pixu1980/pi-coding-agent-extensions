@@ -17,6 +17,10 @@ const PACKAGES = join(ROOT, 'packages');
 const useCoverage = process.argv.includes('--coverage');
 
 const script = useCoverage ? 'test:coverage' : 'test';
+// The packages under packages/ are standalone pnpm projects and the root is a
+// script runner rather than a workspace, so this walks the directory instead of
+// delegating to `pnpm -r`. Turning it into a workspace command would require
+// making the root a workspace, which this repository deliberately is not.
 const packages = readdirSync(PACKAGES, { withFileTypes: true })
   .filter((d) => d.isDirectory())
   .map((d) => d.name)

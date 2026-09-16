@@ -7,11 +7,20 @@ root is a script runner, not a workspace.
 ## Local setup
 
 This repository uses **pnpm only**. There is no `packageManager` field, no
-`package-lock.json` and no corepack, and that is deliberate: see
-[docs/adr/012](./docs/adr/012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md)
-for the dependency policy and the `biome.json` comment for the shape.
+`package-lock.json` and no corepack. Three tests in
+`test/workspace-config.test.mjs` fail if any of those reappears, so the shape is
+enforced rather than remembered. The dependency policy behind it is in
+[ADR 012](./docs/adr/012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md).
 
-Each package installs and runs on its own:
+### How the repository is laid out
+
+Each directory under `packages/` is a **standalone pnpm project**: its own
+`package.json`, its own `pnpm-lock.yaml` and its own `pnpm-workspace.yaml`. The
+repository root is a **script runner**, not a workspace, which is why its
+`pnpm-workspace.yaml` keeps `packages: []` on purpose. Nothing is hoisted, and
+nothing installed at the root reaches into a package.
+
+Install and test inside the package you are changing:
 
 ```bash
 cd packages/<name>
@@ -19,9 +28,24 @@ pnpm install
 pnpm test
 ```
 
-Installing from the repository root only installs the tooling that lints and
-releases everything. If you run `npm install` inside a package you will create a
-`package-lock.json` and a CI-equivalent check will fail; delete it and use pnpm.
+The root install only brings in the tooling that lints and releases everything.
+That is also why `pnpm test:all` exists: it walks `packages/` and runs each
+package's own suite rather than delegating to a workspace command.
+
+### Why the per-package configuration differs
+
+The `overrides` and `allowBuilds` blocks are not identical across packages, and
+that is a decision rather than drift. Each package declares the dependencies it
+actually resolves, so a package that does not pull in a given transitive
+dependency has no reason to carry an override for it. `allowBuilds` is the same
+idea applied to build scripts: the entries a package lists are the ones pnpm
+reported as ignored in that package's tree, and all of them are `false` because
+none is needed at install time.
+
+If you add a dependency and pnpm reports an ignored build script, declare it in
+that package's `pnpm-workspace.yaml` with an explicit boolean. Leaving it
+undecided is what fails the guard, and pnpm will otherwise write its own
+placeholder into the file.
 
 ## The gates
 

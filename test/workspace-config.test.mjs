@@ -84,3 +84,86 @@ test('every allowBuilds entry is an explicit boolean', () => {
 
   assert.deepEqual(problems, [], `allowBuilds needs an explicit boolean per package:\n${problems.join('\n')}`);
 });
+
+/**
+ * Every manifest in the repository: the root one plus one per package. Each
+ * package is a standalone pnpm project, so there is no workspace member list to
+ * read them from.
+ *
+ * @returns {Array<{ path: string, json: Record<string, unknown> }>}
+ */
+function collectManifests() {
+  const dirs = [
+    root,
+    ...readdirSync(join(root, 'packages'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => join(root, 'packages', entry.name)),
+  ];
+
+  return dirs
+    .map((dir) => ({ path: join(dir, 'package.json') }))
+    .filter((manifest) => existsSync(manifest.path))
+    .map((manifest) => ({ path: manifest.path, json: JSON.parse(readFileSync(manifest.path, 'utf8')) }));
+}
+
+/**
+ * Recursively collect every file with the given name, skipping the directories
+ * that never hold hand-written files.
+ *
+ * @param {string} directory
+ * @param {string} name
+ * @returns {string[]} absolute paths
+ */
+function findFiles(directory, name) {
+  const found = [];
+
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (ignored.has(entry.name)) {
+      continue;
+    }
+
+    const full = join(directory, entry.name);
+
+    if (entry.isDirectory()) {
+      found.push(...findFiles(full, name));
+    } else if (entry.name === name) {
+      found.push(full);
+    }
+  }
+
+  return found;
+}
+
+test('no npm lockfile exists anywhere in the repository', () => {
+  const offenders = findFiles(root, 'package-lock.json').map((file) => file.slice(root.length + 1));
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `this repository installs with pnpm, so these belong to npm by mistake and must be deleted:\n${offenders.join('\n')}`
+  );
+});
+
+test('no manifest declares a package manager', () => {
+  const offenders = collectManifests()
+    .filter((manifest) => 'packageManager' in manifest.json)
+    .map((manifest) => manifest.path.slice(root.length + 1));
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `a packageManager field asks for corepack, which this repository does not use:\n${offenders.join('\n')}`
+  );
+});
+
+test('no manifest declares workspaces', () => {
+  const offenders = collectManifests()
+    .filter((manifest) => 'workspaces' in manifest.json)
+    .map((manifest) => manifest.path.slice(root.length + 1));
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `each package here is a standalone pnpm project and the root is a script runner, so a workspaces field would change how every install resolves:\n${offenders.join('\n')}`
+  );
+});

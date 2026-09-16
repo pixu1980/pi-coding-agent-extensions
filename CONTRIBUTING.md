@@ -52,14 +52,16 @@ feat(pi-statusline): show context usage as a percentage
 
 **This matters more here than in most repositories.** Changelogs are generated
 from commit messages by `commit-and-tag-version` when a package is released, and
-its default preset renders only three types:
+what it renders is narrower than the commit history suggests:
 
 | Type | Appears in the changelog as |
 | ---- | --------------------------- |
 | `feat` | Features |
 | `fix` | Bug Fixes |
-| `perf` | Performance Improvements |
 | everything else | nothing at all |
+
+Eight `perf` commits sit in the history and no Performance Improvements section
+exists in any changelog, so `perf` does not earn an entry here either.
 
 `docs`, `chore`, `refactor`, `style`, `test`, `build` and `ci` are read by the
 tool and then discarded. So a bug fix written as `chore(pi-ask): fix the
@@ -84,6 +86,13 @@ simply be wrong.
 
 Because there is no CI, expect the review to be a conversation rather than a
 green check. The maintainer reviews, runs the gates, and merges.
+
+## Releases
+
+Only the maintainer cuts a release. The procedure, the preconditions and the
+cadence are in [RELEASING.md](./RELEASING.md): a release goes out on demand for
+the packages whose release-worthy files changed, with no fixed calendar.
+Nothing you do in a pull request triggers or configures one.
 
 ## Contribution terms
 

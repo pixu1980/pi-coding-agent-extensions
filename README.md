@@ -76,6 +76,13 @@ Report a vulnerability privately rather than in a public issue:
 [SECURITY.md](./SECURITY.md) names the channel, the supported versions and what
 each package can reach.
 
+## Funding
+
+This project is maintained by one person and has no funding. If you want to
+sponsor that time, there is a Sponsor button on this repository, and
+[FUNDING.md](./FUNDING.md) states what sponsorship does and does not buy:
+nothing here is gated behind it, and it does not move a decision.
+
 ## License
 
 `MIT`

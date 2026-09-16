@@ -107,6 +107,29 @@ invites it. There is no application process, and nobody is being recruited
 today. The criteria are here so that the answer to "how would that even happen"
 is not silence.
 
+## Funding and the donor boundary
+
+This project accepts sponsorship through GitHub Sponsors. [FUNDING.md](./FUNDING.md)
+states what money pays for and what it will never buy.
+
+The boundary, in one line: **a donor request that conflicts with the
+maintainer's judgment loses.** That is not a policy about donors in particular,
+it is the same rule that applies to everyone. Sponsorship buys time, and it buys
+no say in this repository. The model above says the maintainer decides, and
+money does not change that.
+
+What follows from it, said plainly so nobody has to infer it:
+
+- A sponsor asking for a feature gets an answer in the issue tracker, on the
+  same merits as anyone else, and the answer may be no.
+- A sponsor asking for a review to jump the queue gets told that it will not.
+- A sponsor who wants a commitment, a date, or a support agreement is asking
+  for something this project does not sell.
+
+The maintainer is also the only person who decides when to decline
+sponsorship, and the answer can be yes for reasons that have nothing to do with
+the amount. Refusing money is allowed here.
+
 ## What this model costs
 
 Stated plainly, because a governance document that only describes itself is not

@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-cursor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": false,
   "description": "Cursor API key provider for pi.dev - run Cursor local agents from pi using your own Cursor API key, stored only on your machine, with an audited egress surface (Cursor endpoints only)",
   "type": "module",

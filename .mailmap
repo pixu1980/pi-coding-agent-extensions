@@ -1,0 +1,11 @@
+# Fold the maintainer's historical addresses into one identity, so `git shortlog`,
+# `git log --use-mailmap` and the contributors graph report one person instead of
+# three. The canonical address is the one used by the overwhelming majority of
+# commits and by the repository's local user.email.
+#
+# GitHub's own <noreply@github.com> is deliberately absent: it is the committer
+# identity GitHub uses when a commit is made through the web interface, and
+# folding it into a person would misattribute that action.
+
+Emiliano Pisu <pisuemiliano.1980@gmail.com> <emiliano.pisu@webidoo.com>
+Emiliano Pisu <pisuemiliano.1980@gmail.com> <75838944+pixu1980@users.noreply.github.com>

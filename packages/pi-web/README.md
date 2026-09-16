@@ -77,6 +77,7 @@ Create `~/.pi/pi-web.json`:
 - **SSRF guard on by default**: requests to private/reserved addresses are blocked unless explicitly allowlisted (`allowRanges`).
 - **No JS execution**: pages are parsed with linkedom, never rendered, so prompt-injected scripts can't run.
 - **Byte cap + timeout** on every request.
+- This package is declared `dual-use` because it fetches URLs you give it. See [SECURITY.md](../../SECURITY.md) for the reporting channel and the rest of the trust boundary.
 
 ## Development
 
@@ -87,4 +88,4 @@ npx tsc --noEmit # type-check the extension
 
 ## License
 
-MIT
+`MIT`

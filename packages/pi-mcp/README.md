@@ -570,3 +570,11 @@ Advertised tool `outputSchema` values support JSON Schema draft-07 and 2020-12. 
 - Cross-session server sharing not yet implemented (each Pi session runs its own server processes)
 - Compact MCP result rendering summarizes text, but inline images are still controlled by Pi's image display settings and may render below the compact text summary.
 - MCP sampling support is text-only; context inclusion, tools, stop sequences, audio, and image content are rejected with explicit errors.
+
+## Security
+
+This is the widest-reaching package in the repository and is declared `dual-use`:
+it spawns MCP servers as child processes, opens remote connections to endpoints
+you supply, runs a local OAuth callback server and stores tokens in your
+operating system keyring. `DISCLOSURE` lists every capability, and
+[SECURITY.md](../../SECURITY.md) covers how to report a problem privately.

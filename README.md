@@ -42,6 +42,11 @@ cd packages/<name>
 pi -e .
 ```
 
+## Security
+
+Report vulnerabilities privately rather than in a public issue. [SECURITY.md](./SECURITY.md)
+lists the supported versions, the reporting channel and what each package can reach.
+
 ## License
 
-MIT
+`MIT`

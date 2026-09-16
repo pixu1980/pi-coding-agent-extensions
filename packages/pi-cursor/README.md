@@ -162,12 +162,18 @@ refusal of a redirected backend, key scrubbing, the no-write guarantee for key
 material, the cache containing no key-derived value, and a source-level audit
 that fails if anyone adds a network API or a non-Cursor URL literal.
 
+## Security
+
+This package carries your Cursor API key and is declared `dual-use`. Its
+`DISCLOSURE` states exactly what it can reach and what it writes, and
+[SECURITY.md](../../SECURITY.md) covers how to report a problem privately.
+
 ## Credits
 
 Inspired by [`pi-cursor-sdk`](https://github.com/fitchmultz/pi-cursor-sdk)
-(MIT, Mitch Fultz), which established the model-identity scheme and the
+(`MIT`, Mitch Fultz), which established the model-identity scheme and the
 delta-to-pi stream mapping this extension follows.
 
 ## License
 
-MIT
+`MIT`

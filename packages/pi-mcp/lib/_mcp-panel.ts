@@ -874,16 +874,16 @@ class McpPanel {
     const inverse = (s: string) => `\x1b[7m${s}\x1b[27m`;
 
     const row = (content: string) =>
-      fg(t.border, '│') + truncateToWidth(' ' + sanitizeRowContent(content), innerW, '...', true) + fg(t.border, '│');
+      fg(t.border, '│') + truncateToWidth(` ${sanitizeRowContent(content)}`, innerW, '...', true) + fg(t.border, '│');
     const emptyRow = () => fg(t.border, '│') + ' '.repeat(innerW) + fg(t.border, '│');
-    const divider = () => fg(t.border, '├' + '─'.repeat(innerW) + '┤');
+    const divider = () => fg(t.border, `├${'─'.repeat(innerW)}┤`);
 
     const titleText = this.authOnly ? ' MCP OAuth ' : ' MCP Servers ';
     const borderLen = innerW - visibleWidth(titleText);
     const leftB = Math.floor(borderLen / 2);
     const rightB = borderLen - leftB;
 
-    lines.push(fg(t.border, '╭' + '─'.repeat(leftB)) + fg(t.title, titleText) + fg(t.border, '─'.repeat(rightB) + '╮'));
+    lines.push(fg(t.border, `╭${'─'.repeat(leftB)}`) + fg(t.title, titleText) + fg(t.border, `${'─'.repeat(rightB)}╮`));
 
     lines.push(emptyRow());
 
@@ -993,23 +993,23 @@ class McpPanel {
     lines.push(emptyRow());
     const hints = this.authOnly
       ? [
-          italic('↑↓') + ' navigate',
-          italic('⏎') + ' auth',
-          italic('ctrl+a') + ' auth',
-          italic('esc') + ' clear/close',
-          italic('ctrl+c') + ' quit',
+          `${italic('↑↓')} navigate`,
+          `${italic('⏎')} auth`,
+          `${italic('ctrl+a')} auth`,
+          `${italic('esc')} clear/close`,
+          `${italic('ctrl+c')} quit`,
         ]
       : [
-          italic('↑↓') + ' navigate',
-          italic('space') + ' toggle',
-          italic('⏎') + ' expand/auth',
-          italic('ctrl+a') + ' auth',
-          italic('ctrl+r') + ' reconnect',
-          ...(this.selectedServerHasFailureMessage() ? [italic('ctrl+y') + ' copy error'] : []),
-          italic('?') + ' desc search',
-          italic('ctrl+s') + ' save',
-          italic('esc') + ' clear/close',
-          italic('ctrl+c') + ' quit',
+          `${italic('↑↓')} navigate`,
+          `${italic('space')} toggle`,
+          `${italic('⏎')} expand/auth`,
+          `${italic('ctrl+a')} auth`,
+          `${italic('ctrl+r')} reconnect`,
+          ...(this.selectedServerHasFailureMessage() ? [`${italic('ctrl+y')} copy error`] : []),
+          `${italic('?')} desc search`,
+          `${italic('ctrl+s')} save`,
+          `${italic('esc')} clear/close`,
+          `${italic('ctrl+c')} quit`,
         ];
     const gap = '  ';
     const gapW = 2;
@@ -1035,7 +1035,7 @@ class McpPanel {
       lines.push(row(fg(t.hint, curLine)));
     }
 
-    lines.push(fg(t.border, '╰' + '─'.repeat(innerW) + '╯'));
+    lines.push(fg(t.border, `╰${'─'.repeat(innerW)}╯`));
 
     return lines;
   }
@@ -1192,7 +1192,7 @@ class McpPanel {
     const prefixLen = 7 + visibleWidth(toolName);
     const maxDescLen = Math.max(0, innerW - prefixLen - 8);
     const descStr =
-      maxDescLen > 5 && description ? fg(t.description, '- ' + truncateToWidth(description, maxDescLen, '...')) : '';
+      maxDescLen > 5 && description ? fg(t.description, `- ${truncateToWidth(description, maxDescLen, '...')}`) : '';
 
     return `  ${cursor} ${toggleIcon} ${nameStr} ${descStr}`;
   }

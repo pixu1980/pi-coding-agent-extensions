@@ -633,8 +633,7 @@ export function loadNpxCache(): NpxCache | null {
   }
 
   if (
-    npxMemoryCache &&
-    npxMemoryCache.identity &&
+    npxMemoryCache?.identity &&
     npxMemoryCache.identity.mtimeMs === identity.mtimeMs &&
     npxMemoryCache.identity.size === identity.size
   ) {

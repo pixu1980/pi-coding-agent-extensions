@@ -287,9 +287,9 @@ export class SessionSidebarComponent implements Focusable {
     this.filtered = this.sessions.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
-        (s.lastUserMessage && s.lastUserMessage.toLowerCase().includes(q)) ||
-        (s.model && s.model.toLowerCase().includes(q)) ||
-        (s.cwd && s.cwd.toLowerCase().includes(q))
+        s.lastUserMessage?.toLowerCase().includes(q) ||
+        s.model?.toLowerCase().includes(q) ||
+        s.cwd?.toLowerCase().includes(q)
     );
   }
 
@@ -510,8 +510,8 @@ export class FolderSidebarComponent implements Focusable {
     this.filtered = this.folders.filter(
       (f) =>
         f.folder.toLowerCase().includes(q) ||
-        (f.lastUserMessage && f.lastUserMessage.toLowerCase().includes(q)) ||
-        (f.latestModel && f.latestModel.toLowerCase().includes(q))
+        f.lastUserMessage?.toLowerCase().includes(q) ||
+        f.latestModel?.toLowerCase().includes(q)
     );
   }
 

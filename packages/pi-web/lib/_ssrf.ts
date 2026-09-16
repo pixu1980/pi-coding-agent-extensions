@@ -77,7 +77,7 @@ function parseIpv6(ip: string): bigint | null {
       return null;
     }
 
-    addr = addr.slice(0, lastColon + 1) + '0:0';
+    addr = `${addr.slice(0, lastColon + 1)}0:0`;
   }
 
   const parts = addr.split('::');

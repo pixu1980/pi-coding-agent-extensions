@@ -159,7 +159,7 @@ export class McpLifecycleManager {
 
       const connection = this.manager.getConnection(name);
 
-      return !connection || connection.status !== 'connected';
+      return connection?.status !== 'connected';
     });
 
     await parallelLimit(candidates, options.reconnectLimit, async ([name, definition]) => {

@@ -91,7 +91,7 @@ export function restorePages(entries: unknown[]): void {
   for (const entry of entries) {
     const candidate = entry as { customType?: string; data?: unknown } | null;
 
-    if (!candidate || candidate.customType !== 'pi-web-page') {
+    if (candidate?.customType !== 'pi-web-page') {
       continue;
     }
 

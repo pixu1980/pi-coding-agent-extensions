@@ -1102,7 +1102,7 @@ export async function executeCall(
     const candidates = Object.keys(state.config.mcpServers)
       .filter((name) => !isServerDisabled(state.config.mcpServers[name]))
       .map((name) => ({ name, prefix: getServerPrefix(name, prefixMode) }))
-      .filter((c) => c.prefix && toolName.startsWith(c.prefix + '_'))
+      .filter((c) => c.prefix && toolName.startsWith(`${c.prefix}_`))
       .sort((a, b) => b.prefix.length - a.prefix.length);
 
     for (const { name: configuredServer } of candidates) {
@@ -1224,7 +1224,7 @@ export async function executeCall(
     }
   }
 
-  if (!connection || connection.status !== 'connected') {
+  if (connection?.status !== 'connected') {
     const failedAgo = getFailureAgeSeconds(state, serverName);
 
     if (failedAgo !== null) {

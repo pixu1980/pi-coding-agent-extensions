@@ -456,7 +456,7 @@ export function createDirectToolExecutor(
 
     const connection = state.manager.getConnection(spec.serverName);
 
-    if (!connection || connection.status !== 'connected') {
+    if (connection?.status !== 'connected') {
       return {
         content: [{ type: 'text' as const, text: `MCP server "${spec.serverName}" not connected` }],
         details: { error: 'not_connected', server: spec.serverName },

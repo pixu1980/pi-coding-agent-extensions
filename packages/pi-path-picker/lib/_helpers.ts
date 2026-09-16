@@ -38,7 +38,7 @@ export function isSensitiveDir(dirPath: string): boolean {
  * Expand `~` at the start of a path to the home directory.
  */
 export function expandTilde(path: string): string {
-  if (path.startsWith('~' + sep) || path === '~') {
+  if (path.startsWith(`~${sep}`) || path === '~') {
     return join(homedir(), path.slice(1));
   }
 

@@ -186,7 +186,7 @@ function formatProjectPath(cwd: string, root: string | null, home: string): stri
   if (root.startsWith(home)) {
     const rootRel = path.relative(home, root);
 
-    result = '~' + (rootRel ? '/' + rootRel : '') + (rel && rel !== '.' ? '/' + rel : '');
+    result = `~${rootRel ? `/${rootRel}` : ''}${rel && rel !== '.' ? `/${rel}` : ''}`;
   }
 
   return result;

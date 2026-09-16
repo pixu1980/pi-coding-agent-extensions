@@ -428,7 +428,7 @@ export async function maybeStartUiSession(
       viewer = 'suppressed';
       windowOpen = false;
       state.ui?.notify(`MCP UI window suppressed (MCP_UI_VIEWER=${viewerPref}). Open manually: ${handle.url}`, 'info');
-      log.info('Suppressing MCP UI window (MCP_UI_VIEWER=' + viewerPref + ')', { url: handle.url });
+      log.info(`Suppressing MCP UI window (MCP_UI_VIEWER=${viewerPref})`, { url: handle.url });
     } else {
       const glimpseDetected = isGlimpseAvailable();
       const useGlimpse = viewerPref === 'glimpse' || (viewerPref !== 'browser' && glimpseDetected);

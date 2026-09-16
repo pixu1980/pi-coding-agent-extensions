@@ -994,7 +994,7 @@ export class McpServerManager {
   ): Promise<GetPromptResult> {
     const connection = this.connections.get(name);
 
-    if (!connection || connection.status !== 'connected') {
+    if (connection?.status !== 'connected') {
       throw new Error(`Server "${name}" is not connected`);
     }
 
@@ -1019,7 +1019,7 @@ export class McpServerManager {
 
     const connection = this.connections.get(name);
 
-    if (!connection || connection.status !== 'connected') {
+    if (connection?.status !== 'connected') {
       throw new Error(`Server "${name}" is not connected`);
     }
 
@@ -1182,7 +1182,7 @@ export class McpServerManager {
   decrementInFlight(name: string): void {
     const connection = this.connections.get(name);
 
-    if (connection && connection.inFlight) {
+    if (connection?.inFlight) {
       connection.inFlight--;
     }
   }
@@ -1190,7 +1190,7 @@ export class McpServerManager {
   isIdle(name: string, timeoutMs: number): boolean {
     const connection = this.connections.get(name);
 
-    if (!connection || connection.status !== 'connected') {
+    if (connection?.status !== 'connected') {
       return false;
     }
 

@@ -96,7 +96,7 @@ function globToRegex(pattern: string): RegExp {
       ch === ']' ||
       ch === '\\'
     ) {
-      regexStr += '\\' + ch;
+      regexStr += `\\${ch}`;
     } else {
       regexStr += ch;
     }
@@ -104,7 +104,7 @@ function globToRegex(pattern: string): RegExp {
     i++;
   }
 
-  return new RegExp('^' + regexStr + '$');
+  return new RegExp(`^${regexStr}$`);
 }
 
 /**
@@ -316,10 +316,10 @@ async function interactivePick(startDir: string): Promise<string | null> {
       // Title bar
       const dir = currentDir.replace(homedir(), '~');
 
-      lines.push('\x1b[36m📁 ' + dir + '\x1b[0m');
-      const hint = query ? '🔍 ' + query : 'Type to filter  ↑↓ navigate  ↵ select  ⭾ browse  ⎋ cancel';
+      lines.push(`\x1b[36m📁 ${dir}\x1b[0m`);
+      const hint = query ? `🔍 ${query}` : 'Type to filter  ↑↓ navigate  ↵ select  ⭾ browse  ⎋ cancel';
 
-      lines.push('\x1b[90m' + hint + '\x1b[0m');
+      lines.push(`\x1b[90m${hint}\x1b[0m`);
       lines.push('');
 
       // Items
@@ -333,18 +333,18 @@ async function interactivePick(startDir: string): Promise<string | null> {
           const suffix = idx === selectedIndex ? '\x1b[0m' : ' ';
           const icon = item.isDir ? '📁' : item.name.match(/\.(js|ts|jsx|tsx|json|md|css|html)$/i) ? '📄' : '📎';
 
-          lines.push(prefix + ' ' + icon + ' ' + item.name + suffix);
+          lines.push(`${prefix} ${icon} ${item.name}${suffix}`);
         }
       }
 
       // Footer with count
       if (total > 0) {
         lines.push('');
-        lines.push('\x1b[90m' + (selectedIndex + 1) + '/' + total + ' items\x1b[0m');
+        lines.push(`\x1b[90m${selectedIndex + 1}/${total} items\x1b[0m`);
       }
 
       // Clear and render
-      stdout.write('\x1b[2J\x1b[H' + lines.join('\n'));
+      stdout.write(`\x1b[2J\x1b[H${lines.join('\n')}`);
     }
 
     // ── Input handler ───────────────────────────────────────────

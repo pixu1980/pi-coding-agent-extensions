@@ -513,7 +513,7 @@ export function markKeepAliveAfterConnect(state: McpExtensionState, serverName: 
 export function updateServerMetadata(state: McpExtensionState, serverName: string): void {
   const connection = state.manager.getConnection(serverName);
 
-  if (!connection || connection.status !== 'connected') {
+  if (connection?.status !== 'connected') {
     return;
   }
 
@@ -562,7 +562,7 @@ export function updateMetadataCache(
 ): void {
   const connection = state.manager.getConnection(serverName);
 
-  if (!connection || connection.status !== 'connected') {
+  if (connection?.status !== 'connected') {
     return;
   }
 

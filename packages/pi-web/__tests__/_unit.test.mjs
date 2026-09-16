@@ -145,7 +145,7 @@ test('fetchPage reports unsupported content types', async () => {
 test('fetchPage aborts oversized responses', async () => {
   const srv = await startServer('127.0.0.1', (_req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('<html><body>' + 'x'.repeat(100_000) + '</body></html>');
+    res.end(`<html><body>${'x'.repeat(100_000)}</body></html>`);
   });
 
   try {

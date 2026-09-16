@@ -413,7 +413,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServerH
 
         const connection = options.manager.getConnection(options.serverName);
 
-        if (!connection || connection.status !== 'connected') {
+        if (connection?.status !== 'connected') {
           sendJson(res, 503, { ok: false, error: `Server "${options.serverName}" is not connected` });
 
           return;

@@ -20,31 +20,31 @@
         "noControlCharactersInRegex": "off",
         "noTemplateCurlyInString": "off",
         "noExplicitAny": "off",
-        "noAssignInExpressions": "off",
-        "noDuplicateObjectKeys": "off",
-        "noPrototypeBuiltins": "off",
-        "noGlobalIsNan": "off",
-        "noImplicitAnyLet": "off",
-        "noShadowRestrictedNames": "off"
+        "noAssignInExpressions": "error",
+        "noDuplicateObjectKeys": "error",
+        "noPrototypeBuiltins": "error",
+        "noGlobalIsNan": "error",
+        "noImplicitAnyLet": "error",
+        "noShadowRestrictedNames": "error"
       },
       "style": {
-        "useTemplate": "off",
+        "useTemplate": "error",
         "noNonNullAssertion": "off",
-        "useConst": "off",
-        "useImportType": "off"
+        "useConst": "error",
+        "useImportType": "error"
       },
       "complexity": {
-        "useOptionalChain": "off",
-        "useLiteralKeys": "off",
+        "useOptionalChain": "error",
+        "useLiteralKeys": "error",
         "noBannedTypes": "off",
-        "noUselessSwitchCase": "off"
+        "noUselessSwitchCase": "error"
       },
       "correctness": {
-        "noUnusedVariables": "off",
-        "noUnusedImports": "off",
-        "noUnusedFunctionParameters": "off",
-        "noUnusedPrivateClassMembers": "off",
-        "noUnsafeFinally": "off"
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "noUnusedFunctionParameters": "error",
+        "noUnusedPrivateClassMembers": "error",
+        "noUnsafeFinally": "error"
       }
     }
   }

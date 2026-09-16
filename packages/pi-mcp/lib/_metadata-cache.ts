@@ -124,8 +124,7 @@ export function loadMetadataCache(): MetadataCache | null {
 
   // Same identity as last real read -> serve from memory, zero file reads.
   if (
-    memoryCache &&
-    memoryCache.identity &&
+    memoryCache?.identity &&
     memoryCache.identity.mtimeMs === identity.mtimeMs &&
     memoryCache.identity.size === identity.size
   ) {

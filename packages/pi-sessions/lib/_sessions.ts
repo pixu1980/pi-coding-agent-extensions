@@ -133,7 +133,7 @@ export function autoNameSession(content: unknown): string {
     return 'Empty session';
   }
 
-  const truncated = text.length > MAX_NAME_LENGTH ? text.slice(0, MAX_NAME_LENGTH - 3) + '...' : text;
+  const truncated = text.length > MAX_NAME_LENGTH ? `${text.slice(0, MAX_NAME_LENGTH - 3)}...` : text;
 
   return truncated;
 }
@@ -442,7 +442,7 @@ export function formatDate(isoStr: string): string {
   try {
     // Normalize: if no timezone offset/Z, treat as UTC
     const normalized =
-      /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith('Z') && !isoStr.endsWith('+00:00') ? isoStr + 'Z' : isoStr;
+      /\d{2}:\d{2}$/.test(isoStr) && !isoStr.endsWith('Z') && !isoStr.endsWith('+00:00') ? `${isoStr}Z` : isoStr;
     const d = new Date(normalized);
 
     if (Number.isNaN(d.getTime())) {

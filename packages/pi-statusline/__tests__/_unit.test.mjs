@@ -158,8 +158,8 @@ test('validateTemplate: accepts known tokens', () => {
 test('validateTemplate: rejects unknown tokens with message', () => {
   const err = validateTemplate('{bogus}');
 
-  assert.ok(err && err.includes('bogus'));
-  assert.ok(err && err.includes('Valid:'));
+  assert.ok(err?.includes('bogus'));
+  assert.ok(err?.includes('Valid:'));
 });
 
 test('resolveTemplate: preset formats map to preset templates', () => {

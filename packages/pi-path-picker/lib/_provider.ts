@@ -117,7 +117,7 @@ export function createPathAutocompleteProvider(current: AutocompleteProvider, cw
 
       // Nessun token di percorso (o "~" senza slash) chiude eventuali menu
       // aperti, senza passare dal provider nativo.
-      if (!token || !token.path.includes('/')) {
+      if (!token?.path.includes('/')) {
         return null;
       }
 

@@ -76,7 +76,7 @@ export function createReasoningAutocompleteProvider(
       const after = currentLine.slice(cursorCol);
       const newLines = [...lines];
 
-      newLines[cursorLine] = before + item.value + ' ' + after;
+      newLines[cursorLine] = `${before + item.value} ${after}`;
 
       return {
         lines: newLines,

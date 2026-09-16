@@ -110,7 +110,7 @@ function getInitialPrompt(ctx: ExtensionContext): string {
 
         const text = texts.join(' ');
 
-        cachedInitialPrompt = text ? (text.length > 72 ? text.slice(0, 72) + '...' : text) : '';
+        cachedInitialPrompt = text ? (text.length > 72 ? `${text.slice(0, 72)}...` : text) : '';
 
         return cachedInitialPrompt;
       }
@@ -234,7 +234,7 @@ function createFooter(ctx: ExtensionContext) {
           const line = left + ' '.repeat(padLen) + right;
 
           if (estWidth(line) > width) {
-            return [truncateToWidth(leftRaw + '  ' + rightRaw, Math.max(1, width))];
+            return [truncateToWidth(`${leftRaw}  ${rightRaw}`, Math.max(1, width))];
           }
 
           return [line];

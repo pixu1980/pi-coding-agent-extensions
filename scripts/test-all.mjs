@@ -52,7 +52,7 @@ for (const pkg of packages) {
   });
 
   // extract the summary line for a compact report
-  const summary = (result.stdout + '\n' + result.stderr)
+  const summary = `${result.stdout}\n${result.stderr}`
     .split('\n')
     .filter((l) => /tests |pass |fail |all files/.test(l))
     .slice(0, 4)
@@ -66,7 +66,7 @@ for (const pkg of packages) {
     fail++;
     failures.push(pkg);
     if (!useCoverage) {
-      const tail = (result.stdout + '\n' + result.stderr).split('\n').slice(-25).join('\n');
+      const tail = `${result.stdout}\n${result.stderr}`.split('\n').slice(-25).join('\n');
       process.stdout.write(`    ── tail ──\n${tail}\n`);
     }
   }

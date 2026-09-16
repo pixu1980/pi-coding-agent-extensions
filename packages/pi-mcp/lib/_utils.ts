@@ -424,10 +424,10 @@ export function truncateAtWord(text: string, target: number): string {
   const lastSpace = truncated.lastIndexOf(' ');
 
   if (lastSpace > target * 0.6) {
-    return truncated.slice(0, lastSpace) + '...';
+    return `${truncated.slice(0, lastSpace)}...`;
   }
 
-  return truncated + '...';
+  return `${truncated}...`;
 }
 
 export function normalizeDirectToolInputSchema(schema: unknown): Record<string, unknown> {

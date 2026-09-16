@@ -99,7 +99,7 @@ export default function (pi: ExtensionAPI): void {
       return;
     }
 
-    const modelLabel = model.id.length > 20 ? model.id.slice(0, 17) + '...' : model.id;
+    const modelLabel = model.id.length > 20 ? `${model.id.slice(0, 17)}...` : model.id;
 
     if (!model.reasoning) {
       ctx.ui.setStatus(STATUS_KEY, formatEmojiText('⚪', modelLabel));

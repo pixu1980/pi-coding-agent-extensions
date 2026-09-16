@@ -35,7 +35,7 @@ reporter somewhere private to go.
 | ----- | ---- | ------- | -------------- |
 | 1.1 | Step 1 | OSS-01 | Six of eight published packages currently breach their own license terms. Highest legal exposure. |
 | 1.2 | Step 4 | OSS-04 | Half done. SECURITY.md and the README pointers are written, which is what Step 17 needs to state the exposure. The private reporting toggle is a repository setting only the maintainer can clear. |
-| 1.3 | Step 15 | OSS-15 | Attribution hygiene, and a precondition for any future sign-off requirement. |
+| 1.3 | Step 15 | OSS-15 | Done. The mailmap folds three historical identities into one, and the repository-local git identity was already canonical. |
 | 1.4 | Step 17 | OSS-17 | Records the accepted no-CI risk. Depends on 1.2 because its exposure statement lives in SECURITY.md. |
 
 ### Phase 2 - Contributor entry
@@ -202,11 +202,11 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **14.3**: Decide the fate of the wiki: populate it with the contribution and governance links, or disable it so it does not look like an abandoned documentation channel.
   - [ ] **14.4**: Evaluate enabling GitHub Discussions as the community venue for questions that are not bugs, given has_issues is True but no discussion area exists.
   - [ ] **14.5**: Gate: topics are non-empty, homepage resolves, and the wiki is either populated or disabled.
-- [ ] **Step 15 - OSS-15 (medium)**: Contributor attribution is inconsistent: a single contributor commits under three different email identities, which muddies authorship and would break any future sign-off requirement.
-  - [ ] **15.1**: Add a .mailmap mapping the work address and the GitHub noreply address onto one canonical identity, so git shortlog and contributor graphs report one person.
-  - [ ] **15.2**: Set the canonical user.name and user.email for the repository so new commits stop adding a third identity.
-  - [ ] **15.3**: Document the identity and sign-off expectation in CONTRIBUTING.md next to the inbound-license statement, so a future DCO decision has a clean base.
-  - [ ] **15.4**: Gate: git shortlog -sne reports exactly one contributor entry for the maintainer.
+- [x] **Step 15 - OSS-15 (medium)**: Contributor attribution was inconsistent: one person committed under three email identities, so git shortlog -sne listed them three times and any future sign-off requirement would have had no single identity to check.
+  - [x] **15.1**: Added .mailmap folding emiliano.pisu@webidoo.com and 75838944+pixu1980@users.noreply.github.com into Emiliano Pisu <pisuemiliano.1980@gmail.com>. GitHub's committer-side <noreply@github.com> is deliberately left out, because the web interface performed that commit and folding it would misattribute the action.
+  - [x] **15.2**: Verified rather than set: the repository-local user.name and user.email were already the canonical pair, and `git var GIT_AUTHOR_IDENT` confirms it, so new commits add no fourth identity. The global identity points at the work address, which is why the historical one-off commits exist, but the local setting overrides it for this repository.
+  - [ ] **15.3**: Documenting the identity and sign-off expectation belongs in CONTRIBUTING.md, which Step 2 creates. Carried there rather than written twice.
+  - [x] **15.4**: Gate met: git shortlog -sne reports a single entry covering all 251 commits, where without .mailmap it listed three. No test was added for this one: a guard that shells out to git would fail on a source tarball with no history, and the cost of a fragile test outweighs guarding a file that either folds the aliases or visibly does not.
 - [x] **Step 16 - OSS-16 (low)**: The release script reported misleading dry-run totals and 5 of 8 packages omitted an engines field, so the release output and the metadata disagreed with reality.
   - [x] **16.1**: Added a separate wouldRelease counter and extracted the summary into releaseSummaryLines in scripts/release-helpers.mjs, which prints the counter that matches the mode. test/release-helpers.test.mjs asserts both branches, so a dry run can no longer claim it released nothing.
   - [x] **16.2**: Gave all eight packages engines.node >=22.19.0. The sub-step proposed copying pi-cursor's >=22.13.0, and measuring that value showed it is wrong: @earendil-works/pi-coding-agent 0.85.1 declares `node: >=22.19.0` for itself and every package here peers on it, so >=22.13.0 admits a runtime pi cannot load into. pi-cursor was corrected along with the five that had no engines at all.

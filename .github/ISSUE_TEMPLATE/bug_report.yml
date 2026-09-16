@@ -1,0 +1,60 @@
+name: Bug report
+description: Something in one of the packages does not work as its README says it does.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report a security vulnerability here. [SECURITY.md](../../SECURITY.md) names the
+        private channel to use instead.
+  - type: input
+    id: package
+    attributes:
+      label: Package and version
+      description: Which package, and what does `npm view <name> version` report?
+      placeholder: "@pixu1980/pi-statusline 0.1.14"
+    validations:
+      required: true
+  - type: input
+    id: pi-version
+    attributes:
+      label: pi version
+      description: The version of the pi coding agent you are running.
+      placeholder: "0.85.1"
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      description: The output of `node --version`. Every package here requires 22.19.0 or newer.
+      placeholder: "v22.19.0"
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: What did you run
+      description: The command, or the sequence of actions, that led to the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected to happen
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output or logs
+      description: Paste the relevant output. Remove anything private first.
+    validations:
+      required: false

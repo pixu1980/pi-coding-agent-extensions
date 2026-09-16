@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest a change to one of the packages.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: package
+    attributes:
+      label: Package
+      description: Which package is this about?
+      placeholder: "@pixu1980/pi-path-picker"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem you are hitting
+      description: Describe the situation rather than the solution where you can. It is easier to agree on a problem than on an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like to happen
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What else you considered
+      description: Including doing nothing, if that is an option you weighed.
+    validations:
+      required: false

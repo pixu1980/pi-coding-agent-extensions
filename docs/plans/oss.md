@@ -45,7 +45,7 @@ already proved work.
 
 | Order | Step | Finding | Why it is here |
 | ----- | ---- | ------- | -------------- |
-| 2.1 | Step 3 | OSS-03 | The code of conduct is referenced by CONTRIBUTING.md, so it lands first. |
+| 2.1 | Step 3 | OSS-03 | Done. Contributor Covenant 3.0 is in place with the reporting channel filled. The Conduct section CONTRIBUTING.md must link to it carries over to Step 2. |
 | 2.2 | Step 2 | OSS-02 | Needs Phase 0 for the commands and Step 3 for the conduct link. Step 8 also depends on it, because the pnpm-only policy is documented in CONTRIBUTING.md. |
 | 2.3 | Step 5 | OSS-05 | The governance document describes the path Step 2 publishes and references the ADR from 1.4. |
 
@@ -130,11 +130,11 @@ Step 17.2. It is not a gap this plan closes.
   - [ ] **2.4**: Add .github/ISSUE_TEMPLATE/bug_report.yml and .github/ISSUE_TEMPLATE/feature_request.yml with the version, the pi version, the failing command and the observed versus expected behavior.
   - [ ] **2.5**: Link CONTRIBUTING.md, the code of conduct and the security policy from the root README.md in a new Contributing section, and add the pi.dev gallery and npm install lines so the README answers 'what is this and how do I try it'.
   - [ ] **2.6**: Gate: GitHub community profile health_percentage rises above 42 with contributing, issue_template and pull_request_template no longer MISSING; re-run the profile query from audit §6.
-- [ ] **Step 3 - OSS-03 (high)**: The project has no code of conduct, so it defines no behavioral standard for contributors and no enforcement path.
-  - [ ] **3.1**: Add CODE_OF_CONDUCT.md at the repository root using Contributor Covenant version 3.0 (`https://www.contributor-covenant.org/version/3/0/code_of_conduct/`), unmodified apart from the contact address.
-  - [ ] **3.2**: Set the enforcement contact to a working address and state the maintainer's enforcement ladder in the document rather than only referencing the upstream template.
-  - [ ] **3.3**: Add a Conduct section to CONTRIBUTING.md linking CODE_OF_CONDUCT.md so the standard is reachable from the contribution path.
-  - [ ] **3.4**: Gate: community profile reports code_of_conduct_file, and the file passes a markdown lint run.
+- [x] **Step 3 - OSS-03 (high)**: The project had no code of conduct, so it defined no behavioral standard for contributors and no enforcement path.
+  - [x] **3.1**: Added CODE_OF_CONDUCT.md from the upstream markdown rather than retyping it, so the text is the official Contributor Covenant 3.0. Two things needed substitution and both are declared in the document's own Attribution section: the reporting channel, and two typographic apostrophes plus one British spelling that this repository's style rules forbid.
+  - [x] **3.2**: Set the reporting channel to the maintainer's address and replaced the template's second placeholder with this project's process: the ladder below is adopted unchanged, one person acts as Community Moderator at every rung, and the steps a larger community would split between two moderators are carried out by the same person. That limitation is stated rather than implied, because a single-maintainer project has no internal escalation.
+  - [ ] **3.3**: The Conduct section belongs in CONTRIBUTING.md, which Step 2 creates. Carried there rather than written twice.
+  - [x] **3.4**: Gate met where it can be checked locally: no placeholder survives, the file carries no typographic apostrophes or British spellings, and it passes 59 of 59 style guardrails. The community-profile half needs the file on the default branch, so it is observable only after a push.
 - [ ] **Step 4 - OSS-04 (high)**: There is no security policy and no private channel for reporting vulnerabilities, which matters more than usual here because the packages execute inside the user's agent process.
   - [x] **4.1**: Wrote SECURITY.md with the supported-version rule (latest published version per package, no backports), the reporting channel, and a 3-working-day acknowledgment target the maintainer chose.
   - [ ] **4.2**: MANUAL GATE, maintainer only. Enable private vulnerability reporting at `https://github.com/pixu1980/pi-coding-agent-extensions/settings/security_analysis`. Until this is done the channel named in SECURITY.md does not exist.

@@ -66,6 +66,8 @@ pnpm release:dry
 Contributions are welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md),
 which covers the local setup, the four gates you are expected to run, the commit
 convention the changelogs are generated from, and the contribution terms.
+[GOVERNANCE.md](./GOVERNANCE.md) says who decides what, how a decision becomes a
+record in `docs/adr/`, and what this model costs.
 
 Everyone taking part is expected to follow the
 [Code of Conduct](./CODE_OF_CONDUCT.md).

@@ -1,0 +1,54 @@
+# DISCLOSURE - pi-remote (@pixu1980/pi-remote)
+
+## Purpose
+
+pi-remote lets the user drive the pi coding agent from a phone browser via an
+install-free PWA: pairing via QR/token, prompt exchange over a WebSocket relay,
+and wake-up notifications via Web Push.
+
+## Dual-Use Capabilities
+
+1. **Remote code-execution surface**: whoever holds a paired phone session can
+   send prompts to the agent running on the paired machine, with the agent's
+   full tool access. Pairing tokens are therefore single-use, short-lived
+   (default 60 s) and bound to a per-directory room id; paired peers must be
+   revocable (Phase 1+) and listed for review.
+2. **Network egress to a relay**: the extension opens a TLS WebSocket to a
+   relay (default: remote_pi's public relay; self-host supported). The relay
+   operator is trusted for routing/metadata exactly as documented in
+   remote_pi's PROTOCOL.md — pi-remote does not claim end-to-end encryption
+   beyond the relay's TLS + Ed25519 connection auth.
+3. **Web Push subscriptions**: push endpoints live on vendor infrastructure
+   (Apple/Google/Mozilla). Wake-up payloads intentionally carry no message
+   content — only a room hint — so push vendors never see prompts or answers.
+   The subscription itself (`p256dh` + `auth` secret) travels the relay inside
+   `ct` (base64, same trust as the channel): a malicious relay could forge
+   wake-up nudges, but never read content — content only flows over the
+   authenticated relay WebSocket when the user opens the PWA. Dead
+   subscriptions (404/410) are dropped automatically.
+
+## Legitimate Intended Use
+
+- Checking agent progress and answering clarification questions from the phone.
+- Receiving a "turn finished / input needed" nudge without installing a
+  store app.
+
+## Mitigations
+
+- Single-use pairing tokens with clamped TTL (10–600 s) and manual-token
+  fallback shown only in the local terminal. Tokens are invalidated on use,
+  on a new `/pi-remote pair`, and on `/pi-remote stop`.
+- **A paired device is a lasting grant**: `/pi-remote devices` lists them and
+  `/pi-remote revoke <id-or-name>` drops the peer, its push subscription and
+  any live channel (the phone receives a `bye` and clears its local session).
+- Append-only audit trail at `~/.pi/pi-remote/audit.jsonl` (0600): pairing,
+  rejection, revoke, relay and push lifecycle. Peer ids are truncated to 8
+  chars; tokens and message text are never logged.
+- Machine identity lives in `~/.pi/pi-remote/identity.json` (mode 0600),
+  not the OS keyring: simpler and dependency-free, but anyone who can read
+  the user's files can impersonate the machine to the relay. Full-disk
+  encryption and usual file hygiene apply; a keyring backend may follow.
+- Per-directory room ids so one phone can pair N projects without cross-talk.
+- Content-free push payloads; real content only flows over the authenticated
+  relay WebSocket, fetched when the user opens the PWA.
+- No runtime dependencies in Phase 0 (zero supply-chain surface beyond pi).

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>pi-remote</title>
+  <meta name="description" content="Drive your pi coding agent from the phone browser. No App Store required.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="pi-remote">
+  <meta name="theme-color" content="#0b0f14">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      background: #0b0f14;
+      color: #e6edf3;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+    main { width: min(94vw, 30rem); padding: 1rem 0 3rem; }
+    h1 { font-size: 1.4rem; margin: 0 0 0.25rem; }
+    h2 { font-size: 1.05rem; margin: 0 0 0.3rem; }
+    p { color: #9aa7b4; line-height: 1.5; }
+    section {
+      background: #11161d;
+      border: 1px solid #232c36;
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    label { display: block; font-size: 0.85rem; color: #9aa7b4; margin: 0.6rem 0 0.25rem; }
+    fieldset { border: 1px solid #232c36; border-radius: 0.6rem; margin: 0.6rem 0; padding: 0.6rem; }
+    fieldset label { display: flex; gap: 0.5rem; align-items: baseline; margin: 0.35rem 0; color: #e6edf3; }
+    legend { font-size: 0.9rem; padding: 0 0.3rem; }
+    input, button, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 1rem;
+      border-radius: 0.6rem;
+      padding: 0.7rem 0.8rem;
+    }
+    input, textarea {
+      background: #0b0f14;
+      color: #e6edf3;
+      border: 1px solid #2b3542;
+    }
+    input[type="checkbox"], input[type="radio"] { width: auto; }
+    fieldset input[type="text"], fieldset input:not([type]) { margin-top: 0.4rem; }
+    button {
+      margin-top: 0.9rem;
+      border: 0;
+      background: #2f81f7;
+      color: #fff;
+      font-weight: 600;
+    }
+    button[disabled] { opacity: 0.55; }
+    button.secondary { background: transparent; border: 1px solid #2b3542; }
+    #status { min-height: 1.4em; font-size: 0.9rem; }
+    #log {
+      list-style: none;
+      margin: 0.6rem 0 0;
+      padding: 0;
+      max-height: 46vh;
+      overflow-y: auto;
+      font-size: 0.9rem;
+    }
+    #log li { padding: 0.45rem 0.3rem; border-top: 1px solid #1c242e; }
+    #log li .text { white-space: pre-wrap; word-break: break-word; }
+    #log li.pending { opacity: 0.55; }
+    #log li.user { border-left: 3px solid #2f81f7; }
+    #log li.agent { border-left: 3px solid #3fb950; }
+    #log li.tool { border-left: 3px solid #9aa7b4; font-size: 0.82rem; color: #9aa7b4; }
+    #log li.tool.error { border-left-color: #f85149; color: #f85149; }
+    #log li.sys { border-left: 3px solid #f85149; color: #f85149; }
+    #log pre {
+      margin: 0.3rem 0 0;
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #9aa7b4;
+    }
+    #composer-row { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+    #composer { flex: 1; resize: none; }
+    #send { width: auto; margin-top: 0; padding-left: 1.2rem; padding-right: 1.2rem; }
+    #ask-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 10;
+    }
+    #ask-modal[hidden] { display: none; }
+    #ask-sheet {
+      background: #11161d;
+      border: 1px solid #2b3542;
+      border-radius: 1rem 1rem 0 0;
+      width: min(94vw, 30rem);
+      max-height: 86vh;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    #toast {
+      position: fixed;
+      left: 50%;
+      bottom: 1rem;
+      transform: translateX(-50%);
+      background: #f85149;
+      color: #fff;
+      border-radius: 0.6rem;
+      padding: 0.6rem 1rem;
+      max-width: 92vw;
+      z-index: 20;
+    }
+    #toast[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>pi-remote</h1>
+    <p id="status">Starting…</p>
+
+    <section id="pair-section" aria-label="Pairing">
+      <h2>Pair this phone</h2>
+      <p id="pair-blurb">Paste the manual token printed by <code>/pi-remote pair</code>, or open the pair URL directly.</p>
+      <label for="token">Pairing token</label>
+      <input id="token" name="token" autocomplete="off" spellcheck="false" placeholder="paste token">
+      <label for="device">Device name</label>
+      <input id="device" name="device" autocomplete="off" placeholder="My Phone" value="My Phone">
+      <label for="relay">Relay (advanced)</label>
+      <input id="relay" name="relay" autocomplete="off" spellcheck="false" placeholder="wss://…">
+      <button id="pair" type="button">Pair</button>
+      <button id="notify" type="button" class="secondary">Enable notifications</button>
+    </section>
+
+    <section id="chat-section" aria-label="Session" hidden>
+      <h2>Session</h2>
+      <ul id="log"></ul>
+      <div id="composer-row">
+        <textarea id="composer" rows="2" placeholder="Ask pi anything…"></textarea>
+        <button id="send" type="button">Send</button>
+      </div>
+    </section>
+
+    <div id="ask-modal" hidden role="dialog" aria-modal="true" aria-labelledby="ask-title">
+      <div id="ask-sheet">
+        <h2 id="ask-title">Clarification</h2>
+        <div id="ask-body"></div>
+        <div id="ask-actions"></div>
+      </div>
+    </div>
+
+    <div id="toast" hidden role="alert"></div>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

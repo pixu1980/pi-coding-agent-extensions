@@ -1,0 +1,80 @@
+{
+  "name": "@pixu1980/pi-remote",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Web-based remote control for the pi coding agent - drive pi from your phone browser via an install-free PWA with notifications, no App Store required",
+  "type": "module",
+  "author": "Emiliano 'pixu1980' Pisu",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pixu1980/pi-coding-agent-extensions.git",
+    "directory": "packages/pi-remote"
+  },
+  "homepage": "https://github.com/pixu1980/pi-coding-agent-extensions/tree/main/packages/pi-remote#readme",
+  "bugs": {
+    "url": "https://github.com/pixu1980/pi-coding-agent-extensions/issues"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "remote",
+    "remote-control",
+    "pwa",
+    "webapp",
+    "notifications",
+    "web-push",
+    "qr-pairing",
+    "websocket"
+  ],
+  "contentPolicy": "dual-use",
+  "files": [
+    "index.ts",
+    "lib/**",
+    "web/**",
+    "docs/**",
+    "README.md",
+    "LICENSE",
+    "DISCLOSURE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "test": "node --import tsx --test __tests__/index.test.mjs",
+    "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs",
+    "typecheck": "tsc --noEmit --strict --target es2022 --module nodenext --moduleResolution nodenext --skipLibCheck --allowImportingTsExtensions index.ts",
+    "release": "node ../../scripts/release.mjs",
+    "release:dry": "node ../../scripts/release.mjs --dry-run"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": ">=0.85.1",
+    "@earendil-works/pi-tui": ">=0.85.1"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "0.85.1",
+    "@earendil-works/pi-tui": "0.85.1",
+    "@types/node": "26.6.0",
+    "commit-and-tag-version": "13.2.1",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  }
+}

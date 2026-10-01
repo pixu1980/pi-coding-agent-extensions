@@ -6,22 +6,26 @@ this directory are the source of truth; this index is generated from them by
 
 ## Index
 
-| #                                                                                              | Title                                                                                     | Date       | Status   | Tags                                                    |
-| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ---------- | -------- | ------------------------------------------------------- |
-| [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md)                    | Commit the app bridge browser bundle, built by a pinned script                            | 2026-09-16 | accepted | build, pi-mcp, bundle, supply-chain, reproducibility    |
-| [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md)                         | Publish locally without CI and accept the provenance gap                                  | 2026-09-16 | accepted | release, supply-chain, npm, ci, policy, oss, provenance |
-| [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md)        | Remove the dependency cooldown and consume the newest dependency versions                 | 2026-09-15 | accepted | dependencies, supply-chain, npm, pnpm, policy, oss      |
-| [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) | Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files     | 2026-09-15 | accepted | licensing, compliance, npm, packaging, oss, forks       |
-| [010](010-keep-a-free-plan-model-discovery-failure-off-the-startup-banner.md)                  | Keep a Free-plan model discovery failure off the startup banner                           | 2026-09-15 | accepted | pi-cursor, cursor-sdk, models, diagnostics              |
-| [009](009-publish-the-local-cursor-model-catalog-to-the-sdk-instead-of-relying-on-the-clou.md) | Publish the local Cursor model catalog to the SDK instead of relying on the Cloud catalog | 2026-09-15 | accepted | pi-cursor, cursor-sdk, models, environment-variables    |
-| [008](008-make-the-pi-sessions-listing-cache-filesystem-free-with-explicit-invalidation.md)    | Make the pi-sessions listing cache filesystem-free with explicit invalidation             | 2026-09-15 | accepted | performance, caching, pi-sessions, invalidation         |
-| [007](007-lazy-startup-graph-verified-by-bench-in-pi-mcp.md)                                   | Lazy startup graph verified by bench in pi-mcp                                            | 2026-09-15 | accepted | architecture, performance, pi-mcp, startup              |
-| [006](006-bounded-concurrent-reconnect-and-coalesced-panel-renders.md)                         | Bounded concurrent reconnect and coalesced panel renders                                  | 2026-09-15 | accepted | architecture, performance, pi-mcp, backpressure         |
-| [005](005-cache-counters-and-explicit-invalidation-contracts.md)                               | Cache counters and explicit invalidation contracts                                        | 2026-09-15 | accepted | architecture, performance, caching, observability       |
-| [004](004-bounded-session-discovery-in-pi-sessions.md)                                         | Bounded session discovery in pi-sessions                                                  | 2026-09-15 | accepted | architecture, performance, pi-sessions                  |
-| [003](003-read-through-metadata-cache-for-pi-mcp.md)                                           | Read-through metadata cache for pi-mcp                                                    | 2026-09-15 | accepted | architecture, performance, pi-mcp, caching              |
-| [002](002-async-secret-command-resolution-in-pi-mcp.md)                                        | Async secret command resolution in pi-mcp                                                 | 2026-09-15 | accepted | architecture, performance, pi-mcp                       |
-| [001](001-stale-while-revalidate-for-statusline-render-path-caches.md)                         | Stale-while-revalidate for statusline render-path caches                                  | 2026-09-14 | accepted | architecture, performance, pi-statusline                |
+| #                                                                                              | Title                                                                                            | Date       | Status   | Tags                                                             |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------- | -------- | ---------------------------------------------------------------- |
+| [018](018-keep-pi-mcp-unpublished-with-three-independent-stops-not-one-manifest-field.md)      | Keep pi-mcp unpublished with three independent stops, not one manifest field                     | 2026-10-01 | accepted | pi-mcp, deprecation, release, npm, packaging, testing            |
+| [017](017-deprecate-pi-mcp-in-favor-of-pi-s-built-in-mcp-support.md)                           | Deprecate pi-mcp in favor of pi's built-in MCP support                                           | 2026-10-01 | accepted | pi-mcp, mcp, deprecation, release, packaging                     |
+| [016](016-use-a-wildcard-peer-range-for-every-host-provided-pi-package-and-pin-the-host-in.md) | Use a wildcard peer range for every host-provided pi package and pin the host in devDependencies | 2026-10-01 | accepted | dependencies, packaging, pi, peer-dependencies, typebox, testing |
+| [015](015-declare-host-provided-pi-packages-as-peers-never-as-dependencies.md)                 | Declare host-provided pi packages as peers, never as dependencies                                | 2026-10-01 | accepted | dependencies, packaging, pi, typebox, peer-dependencies          |
+| [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md)                    | Commit the app bridge browser bundle, built by a pinned script                                   | 2026-09-16 | accepted | build, pi-mcp, bundle, supply-chain, reproducibility             |
+| [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md)                         | Publish locally without CI and accept the provenance gap                                         | 2026-09-16 | accepted | release, supply-chain, npm, ci, policy, oss, provenance          |
+| [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md)        | Remove the dependency cooldown and consume the newest dependency versions                        | 2026-09-15 | accepted | dependencies, supply-chain, npm, pnpm, policy, oss               |
+| [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) | Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files            | 2026-09-15 | accepted | licensing, compliance, npm, packaging, oss, forks                |
+| [010](010-keep-a-free-plan-model-discovery-failure-off-the-startup-banner.md)                  | Keep a Free-plan model discovery failure off the startup banner                                  | 2026-09-15 | accepted | pi-cursor, cursor-sdk, models, diagnostics                       |
+| [009](009-publish-the-local-cursor-model-catalog-to-the-sdk-instead-of-relying-on-the-clou.md) | Publish the local Cursor model catalog to the SDK instead of relying on the Cloud catalog        | 2026-09-15 | accepted | pi-cursor, cursor-sdk, models, environment-variables             |
+| [008](008-make-the-pi-sessions-listing-cache-filesystem-free-with-explicit-invalidation.md)    | Make the pi-sessions listing cache filesystem-free with explicit invalidation                    | 2026-09-15 | accepted | performance, caching, pi-sessions, invalidation                  |
+| [007](007-lazy-startup-graph-verified-by-bench-in-pi-mcp.md)                                   | Lazy startup graph verified by bench in pi-mcp                                                   | 2026-09-15 | accepted | architecture, performance, pi-mcp, startup                       |
+| [006](006-bounded-concurrent-reconnect-and-coalesced-panel-renders.md)                         | Bounded concurrent reconnect and coalesced panel renders                                         | 2026-09-15 | accepted | architecture, performance, pi-mcp, backpressure                  |
+| [005](005-cache-counters-and-explicit-invalidation-contracts.md)                               | Cache counters and explicit invalidation contracts                                               | 2026-09-15 | accepted | architecture, performance, caching, observability                |
+| [004](004-bounded-session-discovery-in-pi-sessions.md)                                         | Bounded session discovery in pi-sessions                                                         | 2026-09-15 | accepted | architecture, performance, pi-sessions                           |
+| [003](003-read-through-metadata-cache-for-pi-mcp.md)                                           | Read-through metadata cache for pi-mcp                                                           | 2026-09-15 | accepted | architecture, performance, pi-mcp, caching                       |
+| [002](002-async-secret-command-resolution-in-pi-mcp.md)                                        | Async secret command resolution in pi-mcp                                                        | 2026-09-15 | accepted | architecture, performance, pi-mcp                                |
+| [001](001-stale-while-revalidate-for-statusline-render-path-caches.md)                         | Stale-while-revalidate for statusline render-path caches                                         | 2026-09-14 | accepted | architecture, performance, pi-statusline                         |
 
 ## What each decision says
 
@@ -30,6 +34,10 @@ file. Where a line stops short the rest is in the ADR.
 
 | ADR                                                                                            | Decision                                                                                                                                                                                                                        | Consequence                                                                                                                                                                                                                     |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [018](018-keep-pi-mcp-unpublished-with-three-independent-stops-not-one-manifest-field.md)      | Keep pi-mcp unpublished through three stops that fail independently: the manifest carries both `private: true` and a non-empty `deprecated` message; `scripts/release.mjs` skips the package on either key before the...        | Buys: three independent stops. release.mjs, the only publish path in this repository, skips the package on `private` before it reaches the publish step; the registry flag tells every consumer, in the install output, that... |
+| [017](017-deprecate-pi-mcp-in-favor-of-pi-s-built-in-mcp-support.md)                           | Mark pi-mcp deprecated and make the deprecation durable.                                                                                                                                                                        | Buys: the built-in mcp extension and its /mcp command load again for anyone who had pi-mcp installed, pi stops maintaining a shadow of a core feature, and the release loop can no longer republish the fork by accident.       |
+| [016](016-use-a-wildcard-peer-range-for-every-host-provided-pi-package-and-pin-the-host-in.md) | Every host-provided package is declared in peerDependencies with a "*" range, matching pi's own guidance, and the host is pinned in devDependencies at the installed version, 0.99.1, so local typecheck and the package...     | Buys: the peer range stops making a claim the repository cannot support, the tested host is visible and reproducible, and the two facts - what may load, and what was verified - live where each belongs.                       |
+| [015](015-declare-host-provided-pi-packages-as-peers-never-as-dependencies.md)                 | Split the two cases by whether pi itself supplies the module.                                                                                                                                                                   | Buys: pi stops reporting the extension warning, the extension loader maps typebox to its single bundled copy at runtime, and no duplicate typebox classes, registries or initialization work can be created by a physical...    |
 | [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md)                    | Commit the bundle, and build it with a script that is part of the repository.                                                                                                                                                   | Buys: the file served to the UI always corresponds to the dependency version the package pins, and that correspondence is enforced rather than hoped for.                                                                       |
 | [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md)                         | Keep publishing locally with no CI, and stop treating the provenance gap as a gap to be closed.                                                                                                                                 | Buys: one person can cut a release without a runner, a secret store or a third-party action in the release path, which removes the class of attack that targets CI workflows and the tokens they hold.                          |
 | [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md)        | Remove the cooldown.                                                                                                                                                                                                            | Buys: the configuration stops fighting the working method.                                                                                                                                                                      |
@@ -73,11 +81,28 @@ theme it carries, and the early ADRs that predate the tag field are listed last.
 
 ### pi-mcp
 
+- [018](018-keep-pi-mcp-unpublished-with-three-independent-stops-not-one-manifest-field.md) Keep pi-mcp unpublished with three independent stops, not one manifest field
+- [017](017-deprecate-pi-mcp-in-favor-of-pi-s-built-in-mcp-support.md) Deprecate pi-mcp in favor of pi's built-in MCP support
 - [014](014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md) Commit the app bridge browser bundle, built by a pinned script
 - [007](007-lazy-startup-graph-verified-by-bench-in-pi-mcp.md) Lazy startup graph verified by bench in pi-mcp
 - [006](006-bounded-concurrent-reconnect-and-coalesced-panel-renders.md) Bounded concurrent reconnect and coalesced panel renders
 - [003](003-read-through-metadata-cache-for-pi-mcp.md) Read-through metadata cache for pi-mcp
 - [002](002-async-secret-command-resolution-in-pi-mcp.md) Async secret command resolution in pi-mcp
+
+### packaging
+
+- [018](018-keep-pi-mcp-unpublished-with-three-independent-stops-not-one-manifest-field.md) Keep pi-mcp unpublished with three independent stops, not one manifest field
+- [017](017-deprecate-pi-mcp-in-favor-of-pi-s-built-in-mcp-support.md) Deprecate pi-mcp in favor of pi's built-in MCP support
+- [016](016-use-a-wildcard-peer-range-for-every-host-provided-pi-package-and-pin-the-host-in.md) Use a wildcard peer range for every host-provided pi package and pin the host in devDependencies
+- [015](015-declare-host-provided-pi-packages-as-peers-never-as-dependencies.md) Declare host-provided pi packages as peers, never as dependencies
+- [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files
+
+### npm
+
+- [018](018-keep-pi-mcp-unpublished-with-three-independent-stops-not-one-manifest-field.md) Keep pi-mcp unpublished with three independent stops, not one manifest field
+- [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md) Publish locally without CI and accept the provenance gap
+- [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md) Remove the dependency cooldown and consume the newest dependency versions
+- [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files
 
 ### caching
 
@@ -85,17 +110,23 @@ theme it carries, and the early ADRs that predate the tag field are listed last.
 - [005](005-cache-counters-and-explicit-invalidation-contracts.md) Cache counters and explicit invalidation contracts
 - [003](003-read-through-metadata-cache-for-pi-mcp.md) Read-through metadata cache for pi-mcp
 
-### npm
+### dependencies
 
-- [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md) Publish locally without CI and accept the provenance gap
+- [016](016-use-a-wildcard-peer-range-for-every-host-provided-pi-package-and-pin-the-host-in.md) Use a wildcard peer range for every host-provided pi package and pin the host in devDependencies
+- [015](015-declare-host-provided-pi-packages-as-peers-never-as-dependencies.md) Declare host-provided pi packages as peers, never as dependencies
 - [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md) Remove the dependency cooldown and consume the newest dependency versions
-- [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files
 
 ### oss
 
 - [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md) Publish locally without CI and accept the provenance gap
 - [012](012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md) Remove the dependency cooldown and consume the newest dependency versions
 - [011](011-keep-a-fork-s-upstream-copyright-notice-instead-of-homogenizing-package-license-.md) Keep a fork's upstream copyright notice instead of homogenizing package LICENSE files
+
+### release
+
+- [018](018-keep-pi-mcp-unpublished-with-three-independent-stops-not-one-manifest-field.md) Keep pi-mcp unpublished with three independent stops, not one manifest field
+- [017](017-deprecate-pi-mcp-in-favor-of-pi-s-built-in-mcp-support.md) Deprecate pi-mcp in favor of pi's built-in MCP support
+- [013](013-publish-locally-without-ci-and-accept-the-provenance-gap.md) Publish locally without CI and accept the provenance gap
 
 ### supply-chain
 

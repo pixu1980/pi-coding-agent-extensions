@@ -136,10 +136,12 @@ export function createMockPi(overrides = {}) {
   const commands = new Map(); // name -> def
   const tools = new Map(); // name -> def
   const flags = new Map(); // name -> def
+  const entryRenderers = new Map(); // entry type -> renderer
   const calls = {
     on: [],
     registerCommand: [],
     registerTool: [],
+    registerEntryRenderer: [],
     setThinkingLevel: [],
     setSessionName: [],
     setActiveTools: [],
@@ -174,6 +176,11 @@ export function createMockPi(overrides = {}) {
     registerTool(tool) {
       calls.registerTool.push(tool);
       if (tool?.name) tools.set(tool.name, tool);
+    },
+    // ── Entry renderers ──
+    registerEntryRenderer(type, renderer) {
+      calls.registerEntryRenderer.push([type, renderer]);
+      entryRenderers.set(type, renderer);
     },
     getTool(name) {
       return tools.get(name);
@@ -281,5 +288,5 @@ export function createMockPi(overrides = {}) {
   };
 
   Object.assign(pi, overrides);
-  return { pi, emit, runCommand, handlers, commands, tools, flags, calls, state };
+  return { pi, emit, runCommand, handlers, commands, tools, flags, entryRenderers, calls, state };
 }

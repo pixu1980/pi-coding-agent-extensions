@@ -89,6 +89,13 @@ test('publishes packages locally from the release process', () => {
   assert.doesNotMatch(source, /GitHub Actions/);
 });
 
+test('skips a deprecated package instead of republishing it', () => {
+  const source = readFileSync(`${ROOT}/scripts/release.mjs`, 'utf8');
+
+  assert.match(source, /if \(pkgJson\.deprecated\)/, 'release.mjs must branch on a package deprecation');
+  assert.match(source, /deprecated, skipped/, 'the branch must skip the package, not merely log it');
+});
+
 test('a dry run reports how many packages it would release', () => {
   const summary = releaseSummaryLines({
     released: 0,

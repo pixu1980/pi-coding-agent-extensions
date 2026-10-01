@@ -28,13 +28,16 @@ The run refuses to start unless all of these hold, in this order:
    removed it, so the newest dependency versions install immediately and a
    release is never scheduled around a delay.
 
-One more thing belongs on that list when the release touches pi-mcp.
-`packages/pi-mcp/lib/_app-bridge.bundle.js` is generated, not hand-written: it is
-rebuilt from the pinned `@modelcontextprotocol/ext-apps` version by
-`pnpm build:app-bridge`. The suite fails while the committed file is stale, so a
-dependency bump that skipped the rebuild blocks the release instead of shipping
-a bundle built from a different version than the manifest names. The decision is
-recorded in [ADR 014](./docs/adr/014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md).
+`packages/pi-mcp` used to carry one more requirement. Its
+`lib/_app-bridge.bundle.js` is generated, not hand-written: it is rebuilt from
+the pinned `@modelcontextprotocol/ext-apps` version by `pnpm build:app-bridge`,
+and the suite fails while the committed file is stale. That requirement is now
+moot: `pi-mcp` is deprecated, because pi 0.99.0 made MCP support part of the core
+agent and the package's own `/mcp` command displaces the built-in `mcp` extension
+([ADR 017](./docs/adr/017-deprecate-pi-mcp-in-favor-of-pi-s-built-in-mcp-support.md)).
+The release loop skips it, so it is never republished and the bundle never has to
+be rebuilt for a release again. The bundle and the script stay in the tree as the
+record of [ADR 014](./docs/adr/014-commit-the-app-bridge-browser-bundle-built-by-a-pinned-script.md).
 
 ## The procedure
 
@@ -46,12 +49,14 @@ pnpm release:dry
 pnpm release
 ```
 
-`scripts/release.mjs` walks every non-private package under `packages/` and, for
-each one, compares its directory against its last release tag, which is
-`<package-name>@<current-version>`. Anything that changed counts as
-release-worthy **except** `CHANGELOG.md`, which the tool regenerates every time
-and which can be rewritten without the package itself gaining anything. If a
-tag does not exist yet, that package is treated as an initial release.
+`scripts/release.mjs` walks every package under `packages/` that is neither
+private nor deprecated and, for each one, compares its directory against its last
+release tag, which is `<package-name>@<current-version>`. Anything that changed
+counts as release-worthy **except** `CHANGELOG.md`, which the tool regenerates
+every time and which can be rewritten without the package itself gaining
+anything. If a tag does not exist yet, that package is treated as an initial
+release. A deprecated package is skipped in the same place a private one is, so a
+manifest that carries the `deprecated` reason cannot be republished by accident.
 
 For each changed package, in order:
 
@@ -74,7 +79,7 @@ Semver, decided by the commit types since the last tag:
 - `feat` moves the minor number and renders as Features; `fix` moves the patch
   number and renders as Bug Fixes.
 - Eight `perf` commits sit in the history and no Performance Improvements section
-exists in any of the eight changelogs, so do not rely on `perf` to be visible in a
+exists in any of the ten changelogs, so do not rely on `perf` to be visible in a
 release note.
 - Anything else, including `docs`, `chore`, `refactor` and `style`, moves
   nothing on its own and does not appear. That is

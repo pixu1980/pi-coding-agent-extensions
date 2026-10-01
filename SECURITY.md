@@ -1,6 +1,6 @@
 # Security Policy
 
-This repository publishes eight `@pixu1980/pi-*` packages for the
+This repository publishes ten `@pixu1980/pi-*` packages for the
 [pi coding agent](https://pi.dev). They load into the pi process, so they run
 with the privileges you gave pi and they can reach whatever pi can reach.
 
@@ -38,18 +38,24 @@ wrong does not.
 
 ## Trust boundary
 
-Three of the eight packages are declared `dual-use` in their `package.json`
-because they are built to reach outside the process. Their `DISCLOSURE` files
-state what they can do and are the authoritative description.
+Three of the eight supported packages are declared `dual-use` in their
+`package.json` because they are built to reach outside the process. Their
+`DISCLOSURE` files state what they can do and are the authoritative description.
+`@pixu1980/pi-mcp` is dual-use too but deprecated, and pi no longer installs it
+by default.
 
 ### Network and process reach
 
-- **`@pixu1980/pi-mcp`** is the widest surface. It spawns MCP servers as child
+- **`@pixu1980/pi-mcp`** (deprecated; superseded by pi's built-in MCP support,
+  see [ADR 017](./docs/adr/017-deprecate-pi-mcp-in-favor-of-pi-s-built-in-mcp-support.md))
+  is the widest surface. It spawns MCP servers as child
   processes that inherit the agent's environment, connects to remote HTTP and
   SSE endpoints including user-supplied URLs, runs a local HTTP callback server
   for OAuth, reads and writes OAuth tokens through the operating system keyring
   (`@napi-rs/keyring`), opens URLs in your browser, and relays tool calls from
-  the model to every connected server.
+  the model to every connected server. It is kept for the record only: it is
+  skipped by the release loop and no new versions are published, so it receives
+  no further security fixes. Use the built-in support instead.
 - **`@pixu1980/pi-cursor`** carries your Cursor API key and sends it to
   `api2.cursor.sh` and `api.cursor.com` and nowhere else. It ships no HTTP client
   of its own, and source-level tests fail if any file under `lib/` gains
@@ -61,6 +67,11 @@ state what they can do and are the authoritative description.
   you allowlist them, pages are parsed with `linkedom` and never rendered, so
   script in a fetched page cannot execute, and every request carries a byte cap
   and a timeout.
+- **`@pixu1980/pi-remote`** opens a TLS WebSocket to a relay, pairs phone
+  browsers through single-use short-lived tokens, and stores machine identity
+  and an audit trail under `~/.pi/pi-remote/` (`0600`). Web Push payloads carry
+  a room hint and no content, so the push vendors never see a prompt or an
+  answer.
 
 The other five packages read pi's own session, settings and configuration files
 and write to pi's state. They do not open sockets.
@@ -69,7 +80,7 @@ and write to pi's state. They do not open sockets.
 
 Know what you are trusting when you install:
 
-- **No package carries a provenance attestation.** All eight were published from
+- **No package carries a provenance attestation.** All nine were published from
   a developer machine with a personal npm credential, not from CI, so npm cannot
   show you a signed link between the published tarball and this repository. A
   consumer who requires provenance should not install these packages.
@@ -88,7 +99,8 @@ Know what you are trusting when you install:
 Credential handling is per package. `@pixu1980/pi-cursor` documents its
 guarantees field by field in its `DISCLOSURE`, including that it writes no
 credential anywhere and that every string reaching the transcript, an error
-message or stderr passes through `scrubSecrets` first. `@pixu1980/pi-mcp` stores
-OAuth tokens in the operating system keyring rather than on disk. If you find a
+message or stderr passes through `scrubSecrets` first. `@pixu1980/pi-mcp`, while
+it was supported, stored OAuth tokens in the operating system keyring rather than
+on disk; the deprecated package is unsupported and receives no fixes. If you find a
 package here logging, transmitting or persisting a secret it should not, that is
 in scope and worth reporting.

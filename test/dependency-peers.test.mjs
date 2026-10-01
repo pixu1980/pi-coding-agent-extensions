@@ -91,8 +91,10 @@ test('every package declares the non-optional peers its dependencies need', () =
 
 // Packages the host provides: pi is @earendil-works/pi-coding-agent, so it is
 // already loaded in the process that runs an extension, and pi resolves these
-// itself. Nothing else may be assumed present.
-const hostProvided = [/^@earendil-works\//];
+// itself. Nothing else may be assumed present. The list mirrors pi's own
+// HOST_PROVIDED_EXTENSION_PACKAGES set, which the host uses to warn about a
+// manifest that ships its own copy.
+const hostProvided = [/^@earendil-works\//, /^@sinclair\/typebox$/, /^typebox$/];
 
 /**
  * Every bare specifier a package's own source imports at runtime.
@@ -184,7 +186,46 @@ test('every bare specifier a package imports is declared as a dependency', () =>
     offenders,
     [],
     'pi installs extensions with --legacy-peer-deps, so a peerDependency is never installed.\n' +
-      'Anything an extension imports at runtime has to be a real dependency, or an extension\n' +
-      `can fail to load while working on the maintainer's machine, where pnpm filled the gap:\n${offenders.join('\n')}`
+      'Anything an extension imports at runtime has to be a real dependency unless the host\n' +
+      `provides it, or an extension can fail to load while working on the maintainer's machine,\nwhere pnpm filled the gap:\n${offenders.join('\n')}`
+  );
+});
+
+// pi's extension loader maps these modules to its own bundled copy, through jiti
+// aliases in the built Node.js runtime and through virtual modules in the
+// compiled binary. A physical copy in `dependencies` can bypass that mapping and
+// create duplicate classes, registries and initialization work, so the host
+// emits an extension warning. The host inspects only `dependencies`, so this
+// assertion does the same and leaves a devDependency alone.
+test('no package declares a host-provided package as a dependency', () => {
+  const offenders = [];
+
+  for (const entry of readdirSync(packagesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const manifestPath = join(packagesDir, entry.name, 'package.json');
+
+    if (!existsSync(manifestPath)) {
+      continue;
+    }
+
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    const declared = Object.keys(manifest.dependencies ?? {}).filter((name) =>
+      hostProvided.some((pattern) => pattern.test(name))
+    );
+
+    for (const name of declared) {
+      offenders.push(`${manifest.name} declares host-provided ${name} as a dependency`);
+    }
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    'the host supplies these modules and warns when a manifest also ships a copy.\n' +
+      'Declare each in peerDependencies with a "*" range instead:\n' +
+      offenders.join('\n')
   );
 });

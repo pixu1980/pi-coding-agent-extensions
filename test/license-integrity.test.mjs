@@ -11,11 +11,11 @@ const packageDirs = readdirSync(packagesDir, { withFileTypes: true })
   .map((entry) => entry.name)
   .sort();
 
-// pi-mcp is a fork of pi-mcp-adapter, so its LICENSE keeps the upstream
+// pi-mcp is a fork of pi-mcp-adapter, so its LICENSE file keeps the upstream
 // copyright holder rather than this repository's own. Every other package is
-// original work and must ship the root LICENSE byte for byte. Overwriting the
-// fork's notice would drop a copyright line the license requires us to keep,
-// so the fork is pinned here instead.
+// original work and must ship the root LICENSE byte for byte. Overwriting a
+// fork's notice would drop a copyright line the license requires us to keep, so
+// each fork is pinned here instead.
 const forkCopyrights = new Map([['pi-mcp', 'Copyright (c) 2026 Nico Bailon']]);
 
 const rootLicense = readFileSync(join(root, 'LICENSE'), 'utf8');

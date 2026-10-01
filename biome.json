@@ -1,51 +1,51 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
-  "files": {
-    "includes": [
-      "packages/**/*.ts",
-      "packages/**/*.mjs",
-      "scripts/**/*.mjs",
-      "test/*.mjs",
-      "!packages/pi-mcp/lib/_app-bridge.bundle.js"
-    ]
-  },
-  "formatter": {
-    "enabled": false
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true,
-      "suspicious": {
-        "noControlCharactersInRegex": "off",
-        "noTemplateCurlyInString": "off",
-        "noExplicitAny": "off",
-        "noAssignInExpressions": "error",
-        "noDuplicateObjectKeys": "error",
-        "noPrototypeBuiltins": "error",
-        "noGlobalIsNan": "error",
-        "noImplicitAnyLet": "error",
-        "noShadowRestrictedNames": "error"
-      },
-      "style": {
-        "useTemplate": "error",
-        "noNonNullAssertion": "off",
-        "useConst": "error",
-        "useImportType": "error"
-      },
-      "complexity": {
-        "useOptionalChain": "error",
-        "useLiteralKeys": "error",
-        "noBannedTypes": "off",
-        "noUselessSwitchCase": "error"
-      },
-      "correctness": {
-        "noUnusedVariables": "error",
-        "noUnusedImports": "error",
-        "noUnusedFunctionParameters": "error",
-        "noUnusedPrivateClassMembers": "error",
-        "noUnsafeFinally": "error"
-      }
-    }
-  }
+	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+	"files": {
+		"includes": [
+			"packages/**/*.ts",
+			"packages/**/*.mjs",
+			"scripts/**/*.mjs",
+			"test/*.mjs",
+			"!packages/pi-mcp/lib/_app-bridge.bundle.js"
+		]
+	},
+	"formatter": {
+		"enabled": false
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"suspicious": {
+				"noControlCharactersInRegex": "off",
+				"noTemplateCurlyInString": "off",
+				"noExplicitAny": "off",
+				"noAssignInExpressions": "error",
+				"noDuplicateObjectKeys": "error",
+				"noPrototypeBuiltins": "error",
+				"noGlobalIsNan": "error",
+				"noImplicitAnyLet": "error",
+				"noShadowRestrictedNames": "error"
+			},
+			"style": {
+				"useTemplate": "error",
+				"noNonNullAssertion": "off",
+				"useConst": "error",
+				"useImportType": "error"
+			},
+			"complexity": {
+				"useOptionalChain": "error",
+				"useLiteralKeys": "error",
+				"noBannedTypes": "off",
+				"noUselessSwitchCase": "error"
+			},
+			"correctness": {
+				"noUnusedVariables": "error",
+				"noUnusedImports": "error",
+				"noUnusedFunctionParameters": "error",
+				"noUnusedPrivateClassMembers": "error",
+				"noUnsafeFinally": "error"
+			}
+		}
+	}
 }

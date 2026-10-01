@@ -4,6 +4,23 @@
 
 # @pixu1980/pi-mcp
 
+> [!WARNING]
+> **Deprecated.** Pi ships MCP support in the core agent: servers are configured in
+> `mcp.json`, managed with the built-in `/mcp` command and `pi mcp add|remove|list|login|logout`,
+> and reached by the model through the built-in `mcp` extension and codemode. Installing this
+> package replaces that built-in extension — it registers its own `/mcp` command, so pi reports
+> that the built-in `mcp` extension was not loaded — and it is no longer maintained.
+>
+> Remove it and use the built-in support instead:
+>
+> ```bash
+> pi remove npm:@pixu1980/pi-mcp
+> pi mcp add <name> ...   # see docs/mcp.md
+> ```
+>
+> The source is kept here only as a historical record of the fork. It is skipped by the release
+> process and no new versions are published.
+
 Use MCP servers with [Pi](https://github.com/badlogic/pi-mono/) without burning your context window.
 
 > **Inspired by [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) by Nico Bailon.**

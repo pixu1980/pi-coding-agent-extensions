@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./lib/banner.svg" alt="pi-remote - pi in your pocket" width="1100">
+</p>
+
 # pi-remote
 
 Drive the [pi coding agent](https://pi.dev) from your phone browser. No App

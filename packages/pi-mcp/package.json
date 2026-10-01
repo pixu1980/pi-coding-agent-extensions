@@ -1,8 +1,8 @@
 {
   "name": "@pixu1980/pi-mcp",
   "version": "0.1.17",
-  "private": false,
-  "description": "[dual-use] MCP (Model Context Protocol) adapter for Pi coding agent - fork of pi-mcp-adapter with configurable tool advisory threshold",
+  "private": true,
+  "description": "[deprecated] [dual-use] MCP (Model Context Protocol) adapter for Pi coding agent - superseded by pi's built-in MCP support and the /mcp command; fork of pi-mcp-adapter with configurable tool advisory threshold",
   "type": "module",
   "types": "./index.ts",
   "exports": {
@@ -84,13 +84,13 @@
     "recheck": "4.5.0",
     "smol-toml": "1.8.0",
     "strip-json-comments": "5.0.3",
-    "typebox": "1.3.31",
     "zod": "4.6.5"
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": ">=0.85.1",
-    "@earendil-works/pi-coding-agent": ">=0.85.1",
-    "@earendil-works/pi-tui": ">=0.85.1",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*",
     "zod": "4.6.5"
   },
   "peerDependenciesMeta": {
@@ -108,9 +108,9 @@
     }
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "0.85.1",
-    "@earendil-works/pi-coding-agent": "0.85.1",
-    "@earendil-works/pi-tui": "0.85.1",
+    "@earendil-works/pi-ai": "0.99.1",
+    "@earendil-works/pi-coding-agent": "0.99.1",
+    "@earendil-works/pi-tui": "0.99.1",
     "@modelcontextprotocol/conformance": "0.1.16",
     "@types/bun": "1.4.2",
     "@types/node": "26.6.0",
@@ -119,5 +119,6 @@
     "typebox": "1.3.31",
     "typescript": "7.0.2",
     "vitest": "5.0.1"
-  }
+  },
+  "deprecated": "Superseded by pi's built-in MCP support and the /mcp command. Install nothing; use the built-in extension."
 }

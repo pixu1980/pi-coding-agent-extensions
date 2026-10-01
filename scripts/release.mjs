@@ -129,6 +129,15 @@ for (const pkg of packages) {
     continue;
   }
 
+  // A deprecated package stays on npm so an existing install keeps resolving,
+  // but it is never republished: the deprecation notice is a registry flag set
+  // with `npm deprecate`, and a fresh version would need it applied again.
+  if (pkgJson.deprecated) {
+    console.log(`⏭  ${pkgJson.name}: deprecated, skipped`);
+    skipped++;
+    continue;
+  }
+
   // ── Dual-use validation (npm contentPolicy) ──
   if (pkgJson.contentPolicy === 'dual-use') {
     const disclosurePath = join(pkgPath, 'DISCLOSURE');

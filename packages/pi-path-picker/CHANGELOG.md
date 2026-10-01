@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.28](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.27...@pixu1980/pi-path-picker@0.1.28) (2026-10-01)
+
+### Features
+
+* **deps:** declare every host-provided pi package as a wildcard peer ([a461bfe](https://github.com/pixu1980/pi-coding-agent-extensions/commit/a461bfeb82f5957f5d9189c326237ea83065e8d6))
+* **pi-remote:** add pi-remote extension (phases 0-4) ([b355b0b](https://github.com/pixu1980/pi-coding-agent-extensions/commit/b355b0bcf55bfe0a2789c99aaf1e7026345699ff))
+
 ## [0.1.27](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.26...@pixu1980/pi-path-picker@0.1.27) (2026-09-16)
 
 ### Bug Fixes

@@ -9,11 +9,11 @@ importers:
   .:
     devDependencies:
       '@earendil-works/pi-ai':
-        specifier: 0.99.1
-        version: 0.99.1(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)
+        specifier: ^1.6.0
+        version: 1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0)
       '@earendil-works/pi-coding-agent':
-        specifier: 0.99.1
-        version: 0.99.1(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(ws@8.23.0)
+        specifier: ^1.6.0
+        version: 1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(ws@8.23.0)
       '@types/node':
         specifier: 26.6.0
         version: 26.6.0
@@ -29,8 +29,8 @@ importers:
 
 packages:
 
-  '@anthropic-ai/sdk@0.124.0':
-    resolution: {integrity: sha512-cN5O8i9UVxHeOQAzj/XjshWXG8KiibJDw9OGpH2Z/eR3n/RBxdoLxDJOcfqAJWvjaMDFfHTBADU04hWRJVkDyA==}
+  '@anthropic-ai/sdk@0.129.0':
+    resolution: {integrity: sha512-MH7LB20kNpGLUpPTe2OG5XvL/KhX8HUO9XyBaFjgFk6TLS4Xjt0VPIuMKywe7POKKPslX+QxSlVok9e+8kG5Nw==}
     hasBin: true
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
@@ -62,8 +62,8 @@ packages:
     resolution: {integrity: sha512-sSq1PxdXT1kqR11/dRvE5AC2dEWMbYJCXzRU03Ulu4stu6vv08zju8uUNhVdqiIX+OrMIcEHHT1maLrUZDBGDA==}
     engines: {node: '>=20.0.0'}
 
-  '@aws-sdk/credential-provider-node@3.972.99':
-    resolution: {integrity: sha512-AgS2qV8P9XmT4M44LfGcFtKbbt/yLgBydETKxPvqN9y7gMnKYv8GY+QfH7JsNvu6eQgDl600uAjvzC6K7ilkJQ==}
+  '@aws-sdk/credential-provider-node@3.972.82':
+    resolution: {integrity: sha512-znDkEOGXB8W3kG1LJUKP3foBZY/9qLM0eil/DxWXSp37XsdsRLQHE/d/OaCGGVgKpA6znR38h/+INk8do1FjiA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/credential-provider-process@3.972.86':
@@ -142,43 +142,38 @@ packages:
     resolution: {integrity: sha512-mHyyEL0eIEqJ6+aF24+AdZRo4bu4W5GdUiCiCx5X7kfDY51ye8GQJ264uOINObrRSKxtSRCOWPpl9hbOy4UzxQ==}
     engines: {node: '>=22'}
 
-  '@earendil-works/chord@0.99.2':
-    resolution: {integrity: sha512-2dJWiNsOJm/ioBl1fhpJmw0hIjFUhM0CAteEnVkiVG0Kg4LimR7Asq8PfjclEvrbCPsDntzy7rGKhTZObI9TZw==}
+  '@earendil-works/pi-agent-core@1.6.1':
+    resolution: {integrity: sha512-1pkZKTaO1sSY0xVw/W45ULLQRg0rOOt6oJdeTG06upAeIq1UGHA0o+MR9UN6efPi7yW48uVinlFId7fwQilxvg==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-agent-core@0.99.2':
-    resolution: {integrity: sha512-VX0QMcg8HKBsv1bYP2NwmutBYa44OrwmtqR6Dq7QC3Ln8X/IlpHhUxB5L1JgnXNUUkTm8Wg/HZhzS797NBDMCQ==}
-    engines: {node: '>=22.19.0'}
-
-  '@earendil-works/pi-ai@0.99.1':
-    resolution: {integrity: sha512-4nV9JKc94iPX8bwdGPc2nTuVPKIPsffhnp3WoN9NYCNqbtoOF8LhYcIs/+Sn/alroqJK/5QRu6/Z6Ck+n0hyBA==}
+  '@earendil-works/pi-ai@1.6.1':
+    resolution: {integrity: sha512-EyorgVyA2s4MxNl7YOapzOpdxrc8HUgxHEIOo8QRMK35P7PCOsSiWzMLf6ixKl3/obkg7I3wGJWHq+FdbUz43g==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
-  '@earendil-works/pi-ai@0.99.2':
-    resolution: {integrity: sha512-9RFOEdY+ZTJ1AI+UuAFs4RM0tF2Tje/R/CEv9gWTJHt0iTu8XHZs64U/EIZxNSllFmec/4HfwsOxYj1qQek9bg==}
+  '@earendil-works/pi-codemode@1.6.1':
+    resolution: {integrity: sha512-xogcFe38Ek/9cabCz6sP52FjUKtuNDwLmqeM1aQiwOF5rg7jZ//FRpnMeYyhvRyod2UYhhf/ojfg6rRdXi0peQ==}
+    engines: {node: '>=22.19.0'}
+
+  '@earendil-works/pi-coding-agent@1.6.1':
+    resolution: {integrity: sha512-+VSb95N4PB+G7TLceg7wkbJT31BEeIBnUT9500g9a1rOsCx78CUw1YFGtLcRhS6jj8pdfm0fFwrakrMLu6lVAQ==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
-  '@earendil-works/pi-codemode@0.99.2':
-    resolution: {integrity: sha512-PVxNGu4l7LI92MvwUbaY3trjznU1Mlp2OMGwHwCWzLsjG7/lDa8xf6ei+Gws7VCt+Ri1tO+nFVl9KV2EeX7HWg==}
+  '@earendil-works/pi-mcp@1.6.1':
+    resolution: {integrity: sha512-qGdAuqMsXjvOURevlc5alxPO1tRthTumFiSHU+QtNfCQpFIEMaec3RZC3mdjqLxRTKHjPBkJXzYPBGdB8bf1Zg==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-coding-agent@0.99.1':
-    resolution: {integrity: sha512-cWUrTOqA5M73cOYMgsh9PlhDrsBhavd+n5kVY6F7BGbGl1RjqCteVCoeVMVqhngoGACVDyw1tbLjajL8l9jrHg==}
-    engines: {node: '>=22.19.0'}
-    hasBin: true
-
-  '@earendil-works/pi-mcp@0.99.2':
-    resolution: {integrity: sha512-ISk6OIsiUzmULF+sUilLnENGKo9/gVDxZG2CTEq8f4dbp70AXOr/hMiwOjtcrlX6xBd4UMUsIz4EPTOlU6U+HA==}
+  '@earendil-works/pi-schema@1.6.1':
+    resolution: {integrity: sha512-Q/6W4IiDdIQUochCuvXFpglTByNTFTuMYvMqXjcRiOnxOl/3mQYLAZpZTpBSRWiS4WgeV7NyH/8dQp6ipYZeNg==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-telemetry@0.99.2':
-    resolution: {integrity: sha512-WThYU4XM6jjjzH4FzLdreN7QAPS9SDdokL0W0Ldheg1ssCIJkfpK7PgebFm7/PoQub7OiXx+SRF6B/oF7z7lXA==}
+  '@earendil-works/pi-telemetry@1.6.1':
+    resolution: {integrity: sha512-3gyjVQlVrPwEq7ZCea8++prMwUkuNXM3v/mzTJ9knJAhqrYLxSVAjYzA1iC3KLq8ismmSQIcnFp++qTwQwNToA==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-tui@0.99.2':
-    resolution: {integrity: sha512-IOcNnd390NCIwBEKeOiBK/bvaR7Z+vEsvB5TtKsFdsY/vAZE6qRHbQqt6jpTefTiKPfQlwG8eS1BU42DeG2v4w==}
+  '@earendil-works/pi-tui@1.6.1':
+    resolution: {integrity: sha512-6WQPbhuoQKCIiu5Jp4S/cFdeqdm4SbAXlgCytsY/4ycR1sqHY4nB8xPTfGUucn61hVnN7hkOzI1CWNmE8UDQ3A==}
     engines: {node: '>=22.19.0'}
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -337,14 +332,17 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@google/genai@2.21.0':
-    resolution: {integrity: sha512-+PDtco2/Z0ONdzCGekCoCT+O1VJS9xJQNN4XzQpXG/t3El/SWWMkCWlFRO1KmivOHPa4Q0VjUYu1HBKCZ/v33Q==}
-    engines: {node: '>=20.0.0'}
+  '@google/genai@3.6.1':
+    resolution: {integrity: sha512-DQIkZkl+VoZc+RUSaJ41vRuywjQDpP0t/oUf5/ddQhNW6JsPjVULW2EgHmuJ1mrr6ACtrmUdPlqtNXF1yfKySg==}
+    engines: {node: '>=22.0.0'}
     peerDependencies:
       '@modelcontextprotocol/sdk': ^1.25.2
     peerDependenciesMeta:
       '@modelcontextprotocol/sdk':
         optional: true
+
+  '@isaacs/nonrecursive-glob-match@1.1.0':
+    resolution: {integrity: sha512-GPm/Dbvk5RLmhRnxXIa7nTpK0xtl4E0wj0MslsuNiJ1FIROU+2+9lgUC/dgF7Ey4QCWhfEsgxilMRMCdHPfDfw==}
 
   '@nodable/entities@3.1.0':
     resolution: {integrity: sha512-LsS/DjHr+uDM647Gru/cA8+J3a3HfhttwCKLyuoyN7yXTFCxKBtSgMQBvrW9yNPa2/zDRUNuGPaH5QUFoa4arQ==}
@@ -594,8 +592,8 @@ packages:
   brace-expansion@1.1.22:
     resolution: {integrity: sha512-CKLDTuSsN0+r1ThM0WkzzBI7dnPI6xEGfa/JnVYIK9JNBA1N1NyPwXVHor//NKD/y3sDxp764sZdLhFK7pH8XQ==}
 
-  brace-expansion@5.1.0:
-    resolution: {integrity: sha512-aa11Dv491GKnYqxaul3aRJ0szew7yMJMfZPnqD44NjGrZXoj62l41OEDDpdpC4eE2P88vBFfLuSyRhpG91NUvg==}
+  brace-expansion@5.0.12:
+    resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
     engines: {node: 20 || >=22}
 
   buffer-equal-constant-time@1.0.1:
@@ -783,10 +781,6 @@ packages:
   graceful-fs@4.2.12:
     resolution: {integrity: sha512-iuyGF2E4oafQfPsRrG2wtY2ILupMhvtdrhzrxB+0VcjsPpSPttpfYdjnGFGsTi5MaJFjI1jOKHPQ6UTbTj9TAw==}
 
-  grok-mermaid@0.2.3:
-    resolution: {integrity: sha512-/4KopAbsjvuRP9MdPtlDjOHUmUVEohOX73JNcsWpzAtFxh+bq5+Dhb6gzvRieLDwIPQIR3/vy8V1NNTuz4Zsmg==}
-    engines: {node: '>=18'}
-
   highlight.js@10.7.3:
     resolution: {integrity: sha512-tzcUFauisWKNHaRkN4Wjl/ZA07gENAjFl3J/c480dprkGTg5EQstgaNFqBfUqCq54kZRIEcreTsAgF/m2quD7A==}
 
@@ -848,17 +842,27 @@ packages:
   long@5.3.2:
     resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
 
+  lovely-mermaid@0.3.3:
+    resolution: {integrity: sha512-EMLJS934qwt2MLO/a5o+T/89HGbuXZPwmCpHIhHO+DVrm+y5tHlEHgpZzlC2o4yW/rFPHRFO9xSMafzqH4wH5A==}
+    engines: {node: '>=18'}
+
   lru-cache@11.5.3:
     resolution: {integrity: sha512-U4N8FgzmWxc8k1VH8Kr6lQg18U7Fjvby6wXHVRX/ZZ7IwWbRMgrRbP0Wrb5q5NVinryp4SQampHKdvtecItxUg==}
     engines: {node: 20 || >=22}
+
+  marked-cjk-friendly@0.1.2:
+    resolution: {integrity: sha512-GUj8HjiEbur9yhgUo52FBgKizggF1QtT6gVdrYdWW6ZB4lVVjgS3EyyXPyfyRD0V4ghGRPlO7MO80rgSWbm0eA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      marked: '>=15.0.0'
 
   marked@18.0.11:
     resolution: {integrity: sha512-HnslJfsZkRPBDJRHvVtAaWlZHEpSu7u8LgQuJCELjRKuWR+hpq4A7sLq3p8HaI9ypVoXDXxV34CsQJEe1+J5Aw==}
     engines: {node: '>= 20'}
     hasBin: true
 
-  minimatch@10.2.6:
-    resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
+  minimatch@11.0.3:
+    resolution: {integrity: sha512-iny/40PEGkNJQ5/Pv6z3nm6FbRAby32GeZRjCUJk2WnNDbgPSTcdI+DDvLqsgBdD4cD5sMtMheqPPnehCCa8Nw==}
     engines: {node: 18 || 20 || >=22}
 
   minimatch@3.1.5:
@@ -876,13 +880,14 @@ packages:
     resolution: {integrity: sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
-  openai@7.19.0:
-    resolution: {integrity: sha512-MX2s3u2L5racTO0CC/SWpCOasJQBCJrqLKXK+l82cAhdeF8mPMBEe/gxMm0ZFa2xpKpOFLRjxv5afYEZbBXmbQ==}
+  openai@7.59.0:
+    resolution: {integrity: sha512-wPYKJkLPFEdNJ2tThSg4jE1Ptsv4X3u8g8LIvu0Qz/UIhsKeCzl73rl48PtQsDVrJL/ku0liXOsbyd2TsRsPJw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
       '@smithy/hash-node': '>=4.3.0 <5'
       '@smithy/signature-v4': '>=5.4.0 <6'
+      google-auth-library: '>=9.15.1 <12'
       undici: '>=5 <9'
       ws: ^8.21.0
       zod: ^3.25 || ^4.0
@@ -892,6 +897,8 @@ packages:
       '@smithy/hash-node':
         optional: true
       '@smithy/signature-v4':
+        optional: true
+      google-auth-library:
         optional: true
       undici:
         optional: true
@@ -1034,8 +1041,8 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@8.10.2:
-    resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
+  undici@8.12.4:
+    resolution: {integrity: sha512-8Mx+uNKKER2bA4AdtedkqRbwUCIJFr2nJckXRe5yrDqzePqwLP7VNcctN8/XdmDSbF7mS+jJKIszlL+vbam1VA==}
     engines: {node: '>=22.19.0'}
 
   verkit@0.5.0:
@@ -1103,7 +1110,7 @@ packages:
 
 snapshots:
 
-  '@anthropic-ai/sdk@0.124.0':
+  '@anthropic-ai/sdk@0.129.0':
     dependencies:
       json-schema-to-ts: 3.1.1
       standardwebhooks: 1.3.0
@@ -1111,7 +1118,7 @@ snapshots:
   '@aws-sdk/client-bedrock-runtime@3.1127.0':
     dependencies:
       '@aws-sdk/core': 3.981.2
-      '@aws-sdk/credential-provider-node': 3.972.99
+      '@aws-sdk/credential-provider-node': 3.972.82
       '@aws-sdk/eventstream-handler-node': 3.972.43
       '@aws-sdk/middleware-eventstream': 3.972.39
       '@aws-sdk/middleware-websocket': 3.972.68
@@ -1177,7 +1184,7 @@ snapshots:
       '@smithy/types': 4.20.0
       tslib: 2.9.1
 
-  '@aws-sdk/credential-provider-node@3.972.99':
+  '@aws-sdk/credential-provider-node@3.972.82':
     dependencies:
       '@aws-sdk/credential-provider-env': 3.972.86
       '@aws-sdk/credential-provider-http': 3.972.88
@@ -1305,25 +1312,16 @@ snapshots:
 
   '@conventional-changelog/template@1.4.1': {}
 
-  '@earendil-works/chord@0.99.2':
+  '@earendil-works/pi-agent-core@1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0)':
     dependencies:
-      esbuild: 0.28.2
-
-  '@earendil-works/pi-agent-core@0.99.2(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)':
-    dependencies:
-      '@earendil-works/chord': 0.99.2
-      '@earendil-works/pi-ai': 0.99.2(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)
-      '@earendil-works/pi-telemetry': 0.99.2
-      diff: 8.0.4
-      ignore: 7.0.8
-      typebox: 1.3.27
-      yaml: 2.9.0
+      '@earendil-works/pi-ai': 1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0)
+      '@earendil-works/pi-schema': 1.6.1
     transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
       - '@modelcontextprotocol/sdk'
       - '@smithy/hash-node'
       - '@smithy/signature-v4'
       - bufferutil
+      - google-auth-library
       - kerberos
       - supports-color
       - undici
@@ -1331,24 +1329,25 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@0.99.1(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)':
+  '@earendil-works/pi-ai@1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0)':
     dependencies:
-      '@anthropic-ai/sdk': 0.124.0
+      '@anthropic-ai/sdk': 0.129.0
       '@aws-sdk/client-bedrock-runtime': 3.1127.0
-      '@earendil-works/pi-telemetry': 0.99.2
-      '@google/genai': 2.21.0
+      '@aws-sdk/credential-provider-node': 3.972.82
+      '@earendil-works/pi-schema': 1.6.1
+      '@earendil-works/pi-telemetry': 1.6.1
+      '@google/genai': 3.6.1
       '@smithy/node-http-handler': 4.12.1
       http-proxy-agent: 9.1.0
       https-proxy-agent: 9.1.0
-      openai: 7.19.0(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)
+      openai: 7.59.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0)
       partial-json: 0.1.7
-      typebox: 1.3.27
     transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
       - '@modelcontextprotocol/sdk'
       - '@smithy/hash-node'
       - '@smithy/signature-v4'
       - bufferutil
+      - google-auth-library
       - kerberos
       - supports-color
       - undici
@@ -1356,81 +1355,59 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@0.99.2(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)':
-    dependencies:
-      '@anthropic-ai/sdk': 0.124.0
-      '@aws-sdk/client-bedrock-runtime': 3.1127.0
-      '@earendil-works/pi-telemetry': 0.99.2
-      '@google/genai': 2.21.0
-      '@smithy/node-http-handler': 4.12.1
-      http-proxy-agent: 9.1.0
-      https-proxy-agent: 9.1.0
-      openai: 7.19.0(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)
-      partial-json: 0.1.7
-      typebox: 1.3.27
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
-      - '@modelcontextprotocol/sdk'
-      - '@smithy/hash-node'
-      - '@smithy/signature-v4'
-      - bufferutil
-      - kerberos
-      - supports-color
-      - undici
-      - utf-8-validate
-      - ws
-      - zod
-
-  '@earendil-works/pi-codemode@0.99.2':
+  '@earendil-works/pi-codemode@1.6.1':
     dependencies:
       quickjs-wasi: 3.6.2
 
-  '@earendil-works/pi-coding-agent@0.99.1(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(ws@8.23.0)':
+  '@earendil-works/pi-coding-agent@1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(ws@8.23.0)':
     dependencies:
-      '@earendil-works/chord': 0.99.2
-      '@earendil-works/pi-agent-core': 0.99.2(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)
-      '@earendil-works/pi-ai': 0.99.1(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0)
-      '@earendil-works/pi-codemode': 0.99.2
-      '@earendil-works/pi-mcp': 0.99.2
-      '@earendil-works/pi-tui': 0.99.2
+      '@earendil-works/pi-agent-core': 1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0)
+      '@earendil-works/pi-ai': 1.6.1(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0)
+      '@earendil-works/pi-codemode': 1.6.1
+      '@earendil-works/pi-mcp': 1.6.1
+      '@earendil-works/pi-tui': 1.6.1
       '@silvia-odwyer/photon-node': 0.3.4
+      brace-expansion: 5.0.12
       chalk: 6.0.0
       cross-spawn: 7.0.6
       diff: 8.0.4
-      grok-mermaid: 0.2.3
       highlight.js: 10.7.3
       hosted-git-info: 9.0.3
       ignore: 7.0.8
       jiti: 2.7.0
-      minimatch: 10.2.6
+      lovely-mermaid: 0.3.3
+      minimatch: 11.0.3
       proper-lockfile: 4.1.2
       quickjs-wasi: 3.6.2
       semver: 7.8.5
       typebox: 1.3.27
-      undici: 8.10.2
+      undici: 8.12.4
       yaml: 2.9.0
     transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
       - '@modelcontextprotocol/sdk'
       - '@smithy/hash-node'
       - '@smithy/signature-v4'
       - bufferutil
+      - google-auth-library
       - kerberos
       - supports-color
       - utf-8-validate
       - ws
       - zod
 
-  '@earendil-works/pi-mcp@0.99.2':
+  '@earendil-works/pi-mcp@1.6.1':
     dependencies:
       cross-spawn: 7.0.6
 
-  '@earendil-works/pi-telemetry@0.99.2': {}
+  '@earendil-works/pi-schema@1.6.1': {}
 
-  '@earendil-works/pi-tui@0.99.2':
+  '@earendil-works/pi-telemetry@1.6.1': {}
+
+  '@earendil-works/pi-tui@1.6.1':
     dependencies:
       get-east-asian-width: 1.6.0
       marked: 18.0.11
+      marked-cjk-friendly: 0.1.2(marked@18.0.11)
 
   '@esbuild/aix-ppc64@0.28.2':
     optional: true
@@ -1510,7 +1487,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@google/genai@2.21.0':
+  '@google/genai@3.6.1':
     dependencies:
       google-auth-library: 10.9.1
       p-retry: 4.6.2
@@ -1520,6 +1497,8 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  '@isaacs/nonrecursive-glob-match@1.1.0': {}
 
   '@nodable/entities@3.1.0': {}
 
@@ -1694,7 +1673,7 @@ snapshots:
       balanced-match: 1.0.2
       concat-map: 0.0.1
 
-  brace-expansion@5.1.0:
+  brace-expansion@5.0.12:
     dependencies:
       balanced-match: 4.0.4
 
@@ -1928,8 +1907,6 @@ snapshots:
 
   graceful-fs@4.2.12: {}
 
-  grok-mermaid@0.2.3: {}
-
   highlight.js@10.7.3: {}
 
   hosted-git-info@9.0.3:
@@ -2002,13 +1979,20 @@ snapshots:
 
   long@5.3.2: {}
 
+  lovely-mermaid@0.3.3: {}
+
   lru-cache@11.5.3: {}
+
+  marked-cjk-friendly@0.1.2(marked@18.0.11):
+    dependencies:
+      marked: 18.0.11
 
   marked@18.0.11: {}
 
-  minimatch@10.2.6:
+  minimatch@11.0.3:
     dependencies:
-      brace-expansion: 5.1.0
+      '@isaacs/nonrecursive-glob-match': 1.1.0
+      brace-expansion: 5.0.12
 
   minimatch@3.1.5:
     dependencies:
@@ -2024,11 +2008,12 @@ snapshots:
       fetch-blob: 3.2.0
       formdata-polyfill: 4.0.10
 
-  openai@7.19.0(@aws-sdk/credential-provider-node@3.972.99)(@smithy/signature-v4@5.7.5)(undici@8.10.2)(ws@8.23.0):
+  openai@7.59.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.5)(google-auth-library@10.9.1)(undici@8.12.4)(ws@8.23.0):
     optionalDependencies:
-      '@aws-sdk/credential-provider-node': 3.972.99
+      '@aws-sdk/credential-provider-node': 3.972.82
       '@smithy/signature-v4': 5.7.5
-      undici: 8.10.2
+      google-auth-library: 10.9.1
+      undici: 8.12.4
       ws: 8.23.0
 
   p-limit@2.3.0:
@@ -2164,7 +2149,7 @@ snapshots:
 
   undici-types@8.9.0: {}
 
-  undici@8.10.2: {}
+  undici@8.12.4: {}
 
   verkit@0.5.0: {}
 

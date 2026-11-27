@@ -32,7 +32,8 @@
     "test": "node --import tsx --test __tests__/index.test.mjs",
     "bench": "node --import tsx bench/startup.bench.mjs",
     "test:watch": "node --import tsx --test --watch __tests__/index.test.mjs",
-    "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs"
+    "test:coverage": "node --import tsx --test --experimental-test-coverage __tests__/index.test.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
@@ -108,11 +109,12 @@
     }
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "0.99.1",
-    "@earendil-works/pi-coding-agent": "0.99.1",
-    "@earendil-works/pi-tui": "0.99.1",
+    "@earendil-works/pi-ai": "^1.6.0",
+    "@earendil-works/pi-coding-agent": "^1.6.0",
+    "@earendil-works/pi-tui": "^1.6.0",
     "@modelcontextprotocol/conformance": "0.1.16",
     "@types/bun": "1.4.2",
+    "@types/cross-spawn": "6.0.6",
     "@types/node": "26.6.0",
     "@types/open": "6.2.1",
     "tsx": "4.23.13",

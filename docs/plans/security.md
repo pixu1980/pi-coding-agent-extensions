@@ -80,7 +80,7 @@ Seven high advisories reach users through `@cursor/sdk` 1.0.31.
 
 The package cannot be released. Its traces also land in the user's project.
 
-- [ ] **WS3-T1 - Advisory in the package README.**
+- [x] **WS3-T1 - Advisory in the package README.**
   - [x] **WS3-T1.1** Add a section to `packages/pi-mcp/README.md`.
         Name the critical and high advisories from audit §4. Name the built-in MCP support as the
         replacement.
@@ -105,14 +105,18 @@ Measured in audit §10: 16 weekly downloads, one maintainer, 0.1.1 inside the 72
   - [x] **WS4-T1.3** Keep the two git tags. They are history, and a tag is not a package.
   - [x] **WS4-T1.4** Gate: `pnpm test` at the root exits 0 and no live path references remain
         outside `CHANGELOG.md` files and `docs/`.
-- [ ] **WS4-T2 - Remove it from the registry** (maintainer only, needs 2FA)
-  - [ ] **WS4-T2.1** Confirm the eligibility again right before the command. Check
+- [x] **WS4-T2 - Remove it from the registry** (maintainer only, needs 2FA)
+  - [x] **WS4-T2.1** Confirm the eligibility again right before the command. Check
         `api.npmjs.org/downloads/point/last-week/@pixu1980/pi-remote` stays under 300.
-  - [ ] **WS4-T2.2** Run `npm unpublish @pixu1980/pi-remote --force`.
-  - [ ] **WS4-T2.3** If npm refuses, run `npm deprecate @pixu1980/pi-remote "Removed: no
+        Moot: the downloads endpoint answers "package not found", so there is nothing to measure.
+  - [x] **WS4-T2.2** Run `npm unpublish @pixu1980/pi-remote --force`.
+        Already done before this run: the registry answers 404 for the packument. Do not rerun it.
+  - [x] **WS4-T2.3** If npm refuses, run `npm deprecate @pixu1980/pi-remote "Removed: no
         end-to-end encryption; self-host the relay or use pi without it"`.
-  - [ ] **WS4-T2.4** Gate: `npm view @pixu1980/pi-remote versions` fails, or the deprecation
-        message is visible.
+        Not reached: there is no version left to deprecate.
+  - [x] **WS4-T2.4** Gate: `npm view @pixu1980/pi-remote versions` fails, or the deprecation
+        message is visible. Passes: the command exits 1 with E404. `@pixu1980/pi-mcp` also
+        already shows its deprecation notice, so the deprecate entry above needs no run either.
 
 ## WS5 - Documents and release (SEC-03, SEC-04, SEC-05, SEC-06)
 
@@ -127,8 +131,15 @@ Runs after WS2, WS3 and WS4, because every count below changes with them.
 - [ ] **WS5-T3 - Release the pi-cursor fix**
   - [x] **WS5-T3.1** Update `CONTRIBUTING.md` and `RELEASING.md` where they state the package
         count.
-  - [ ] **WS5-T3.2** Run the four gates, then `pnpm release:dry`.
+  - [x] **WS5-T3.2** Run the four gates, then `pnpm release:dry`. Done with five gates, because
+        `typecheck:all` joined the list after this plan was written: `pnpm test` 45/45,
+        `pnpm test:all` 9/9, `pnpm typecheck:all` 9/9, `pnpm lint` clean, `pnpm format:check`
+        clean. `pnpm release:dry` exits 0.
   - [ ] **WS5-T3.3** Release with `pnpm release` and confirm the advisory count dropped on npm.
+        Two preconditions the step did not name. The tree must be clean, and `pnpm release`
+        refuses before it starts otherwise, so the session's commits have to land first. The
+        scope is wider than this step says: the host pin touched every manifest and lockfile, so
+        the dry run reports `would release: 8`, not the three packages the finding expected.
 - [x] **WS5-T4 - Gate**
   - [x] **WS5-T4.1** `pnpm test`, `pnpm lint`, `pnpm format:check` all exit 0.
   - [x] **WS5-T4.2** `grep -rn "nine" README.md SECURITY.md CONTRIBUTING.md` returns no stale
@@ -138,18 +149,20 @@ Runs after WS2, WS3 and WS4, because every count below changes with them.
 
 These are the only steps left. Each one needs the npm one-time password.
 
+`@pixu1980/pi-remote` and the `pi-mcp` deprecation are already done: the registry answers 404 for
+the first, and the second already renders its notice. Both left the table.
+
 | Step | Where | Action |
 | ---- | ----- | ------ |
-| WS4-T2.2 | npm, 2FA | `npm unpublish @pixu1980/pi-remote --force`. |
-| WS3-T1 extra | npm, 2FA | `npm deprecate @pixu1980/pi-mcp "<advisory message>"`. |
-| WS5-T3.3 | npm, 2FA | `pnpm release`, which publishes pi-cursor, pi-web and pi-statusline. |
+| WS5-T3.3 | npm, 2FA | `pnpm release`, which publishes the packages whose files changed. |
 
 ## Outcome of the execution run
 
 Five findings closed in the tree: SEC-01, SEC-02, SEC-07, SEC-05 and SEC-03. The root suite and
 every package suite pass, and both `pnpm audit --prod` runs report no known vulnerabilities. SEC-06
-lost its code and kept its registry entry. SEC-04 kept its registry entry too. Both wait for the
-one-time password.
+lost its code and, by the time this ran, its registry entry as well: `@pixu1980/pi-remote` answers
+404. SEC-04 keeps its registry entry on purpose and already renders its deprecation notice, so
+neither waits for the one-time password any more. The release in WS5-T3 does.
 
 ## Deliberately not in this plan
 

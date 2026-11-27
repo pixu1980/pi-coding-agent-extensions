@@ -72,9 +72,9 @@
     "@earendil-works/pi-ai": "^1.6.0",
     "@earendil-works/pi-coding-agent": "^1.6.0",
     "@earendil-works/pi-tui": "^1.6.0",
-    "@types/node": "26.6.0",
-    "commit-and-tag-version": "13.2.1",
-    "tsx": "4.23.13",
+    "@types/node": "26.6.6",
+    "commit-and-tag-version": "13.4.0",
+    "tsx": "4.23.15",
     "typescript": "7.0.2"
   }
 }

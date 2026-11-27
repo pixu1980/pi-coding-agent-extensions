@@ -22,22 +22,22 @@ importers:
     devDependencies:
       '@earendil-works/pi-ai':
         specifier: ^1.6.0
-        version: 1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
+        version: 1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
       '@earendil-works/pi-coding-agent':
         specifier: ^1.6.0
-        version: 1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(ws@8.21.3)(zod@4.6.7)
+        version: 1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(ws@8.21.3)(zod@4.6.7)
       '@earendil-works/pi-tui':
         specifier: ^1.6.0
-        version: 1.6.1
+        version: 1.6.0
       '@types/node':
-        specifier: 26.6.0
-        version: 26.6.0
+        specifier: 26.6.6
+        version: 26.6.6
       commit-and-tag-version:
-        specifier: 13.2.1
-        version: 13.2.1(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2)
+        specifier: 13.4.0
+        version: 13.4.0(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2)
       tsx:
-        specifier: 4.23.13
-        version: 4.23.13
+        specifier: 4.23.15
+        version: 4.23.15
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -149,9 +149,17 @@ packages:
       conventional-commits-parser:
         optional: true
 
-  '@conventional-changelog/template@1.2.1':
-    resolution: {integrity: sha512-TzlTVpKPjaqW6qOYjQcYUDuGsLCNsvFHVBXkYGTAnf5V37jCWrE5haKNXzz0WZUtVHjrpV76L1buANjwXMfT8w==}
+  '@conventional-changelog/git-client@3.2.0':
+    resolution: {integrity: sha512-sD/E0vzpkoDz/dqM1Hhv0ihC4KBw6RXjefeO8SG1XrX+wGkMxe1pKeedkKDPCtr2JjuhbuS9aJNgOvnT8hbeBw==}
     engines: {node: '>=22'}
+    peerDependencies:
+      conventional-commits-filter: ^6.0.1
+      conventional-commits-parser: ^7.1.3
+    peerDependenciesMeta:
+      conventional-commits-filter:
+        optional: true
+      conventional-commits-parser:
+        optional: true
 
   '@conventional-changelog/template@1.4.0':
     resolution: {integrity: sha512-aalGyl7dbB5PArRebDIX43ZvBlXrYm9uWzGJ26t+4SzJVPsOuvfILGGbw5X4yX7i50YEmJ8zvbiWnqH/AAnZqg==}
@@ -193,38 +201,38 @@ packages:
     peerDependencies:
       zod: '>=4.6.6'
 
-  '@earendil-works/pi-agent-core@1.6.1':
-    resolution: {integrity: sha512-1pkZKTaO1sSY0xVw/W45ULLQRg0rOOt6oJdeTG06upAeIq1UGHA0o+MR9UN6efPi7yW48uVinlFId7fwQilxvg==}
+  '@earendil-works/pi-agent-core@1.6.0':
+    resolution: {integrity: sha512-IU/x+2XtE4KIdIkEndZssdLPbIUR38Btj+Q7vjIIXIK7GSamLtDH5jOw/dzBWAvWFAgZ2dslF5sPc6GcGOnS+w==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-ai@1.6.1':
-    resolution: {integrity: sha512-EyorgVyA2s4MxNl7YOapzOpdxrc8HUgxHEIOo8QRMK35P7PCOsSiWzMLf6ixKl3/obkg7I3wGJWHq+FdbUz43g==}
-    engines: {node: '>=22.19.0'}
-    hasBin: true
-
-  '@earendil-works/pi-codemode@1.6.1':
-    resolution: {integrity: sha512-xogcFe38Ek/9cabCz6sP52FjUKtuNDwLmqeM1aQiwOF5rg7jZ//FRpnMeYyhvRyod2UYhhf/ojfg6rRdXi0peQ==}
-    engines: {node: '>=22.19.0'}
-
-  '@earendil-works/pi-coding-agent@1.6.1':
-    resolution: {integrity: sha512-+VSb95N4PB+G7TLceg7wkbJT31BEeIBnUT9500g9a1rOsCx78CUw1YFGtLcRhS6jj8pdfm0fFwrakrMLu6lVAQ==}
+  '@earendil-works/pi-ai@1.6.0':
+    resolution: {integrity: sha512-9hL+eygFDEiFp//cydeUfmFsKmEqpmvsNPb10Y1W8+m5K9O+sx1hMStfu6nukrBD5sl6mP4RykCYBBNEgsVLfw==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
-  '@earendil-works/pi-mcp@1.6.1':
-    resolution: {integrity: sha512-qGdAuqMsXjvOURevlc5alxPO1tRthTumFiSHU+QtNfCQpFIEMaec3RZC3mdjqLxRTKHjPBkJXzYPBGdB8bf1Zg==}
+  '@earendil-works/pi-codemode@1.6.0':
+    resolution: {integrity: sha512-GAgAy7iJCVbeiuqq2dTIuNj3aXTMUeTF8Nu8LZs72e8ueGGDU5L3/D8VxzTHALIpQ1/q8u1tfmB3iYS2Nopchw==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-schema@1.6.1':
-    resolution: {integrity: sha512-Q/6W4IiDdIQUochCuvXFpglTByNTFTuMYvMqXjcRiOnxOl/3mQYLAZpZTpBSRWiS4WgeV7NyH/8dQp6ipYZeNg==}
+  '@earendil-works/pi-coding-agent@1.6.0':
+    resolution: {integrity: sha512-zX1BVEsshx7A2MRuQ6jfr3RJGWw4Wn+vLq5ZfmlvS1RskhRmByaSZVXH/zcwRrWHO7qPgs98pNCbPOEti/t0fQ==}
+    engines: {node: '>=22.19.0'}
+    hasBin: true
+
+  '@earendil-works/pi-mcp@1.6.0':
+    resolution: {integrity: sha512-dhqAR6MP8Fp3b8LEcBFOyxMZpGSozUAdzF0Dbl7OvojsjZrQsDV3ZKn85WRbwjHb4WjQUCVBsIZXwoyQxXeunw==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-telemetry@1.6.1':
-    resolution: {integrity: sha512-3gyjVQlVrPwEq7ZCea8++prMwUkuNXM3v/mzTJ9knJAhqrYLxSVAjYzA1iC3KLq8ismmSQIcnFp++qTwQwNToA==}
+  '@earendil-works/pi-schema@1.6.0':
+    resolution: {integrity: sha512-jD0VRCUcFzWQ5zN82pOuoHNN42/3pu4E5krtpiKknvPq4g2m+fuO38lj+xnZhuVpYcd2G0qlmr8lE6ZMzkad7Q==}
     engines: {node: '>=22.19.0'}
 
-  '@earendil-works/pi-tui@1.6.1':
-    resolution: {integrity: sha512-6WQPbhuoQKCIiu5Jp4S/cFdeqdm4SbAXlgCytsY/4ycR1sqHY4nB8xPTfGUucn61hVnN7hkOzI1CWNmE8UDQ3A==}
+  '@earendil-works/pi-telemetry@1.6.0':
+    resolution: {integrity: sha512-MNL0TvtpgoSfX7mBLSVgzxTW6yvT8VLEpHvbWnZsIp92FtqVvx+4q9DxWZdX8KvcQqBs0GseAgVnLdVFinjN9Q==}
+    engines: {node: '>=22.19.0'}
+
+  '@earendil-works/pi-tui@1.6.0':
+    resolution: {integrity: sha512-nVtWZ4rYr3KHDla3skGAWG5XoITEUJCoEx1AsWv1yKxV7+v86ulD2hxVn/P+COI6jsoeQmj3orqHbCHZwAUsUg==}
     engines: {node: '>=22.19.0'}
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -383,9 +391,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@google/genai@3.6.1':
-    resolution: {integrity: sha512-DQIkZkl+VoZc+RUSaJ41vRuywjQDpP0t/oUf5/ddQhNW6JsPjVULW2EgHmuJ1mrr6ACtrmUdPlqtNXF1yfKySg==}
-    engines: {node: '>=22.0.0'}
+  '@google/genai@2.32.0':
+    resolution: {integrity: sha512-60c79uXpR0a47bmGqDxbXEBuQUalNmwo5mx5kqb91jIW4FoqpsLSt86DeVhRhtH5+s/16Wqxt3sXzFQn2U1OHQ==}
+    engines: {node: '>=20.0.0'}
     peerDependencies:
       '@modelcontextprotocol/sdk': ^1.25.2
     peerDependenciesMeta:
@@ -395,8 +403,8 @@ packages:
   '@isaacs/nonrecursive-glob-match@1.1.0':
     resolution: {integrity: sha512-GPm/Dbvk5RLmhRnxXIa7nTpK0xtl4E0wj0MslsuNiJ1FIROU+2+9lgUC/dgF7Ey4QCWhfEsgxilMRMCdHPfDfw==}
 
-  '@nodable/entities@3.0.0':
-    resolution: {integrity: sha512-8L9xFeTYKhm49xfIypoe2W5wV1m/3Z58kT+7kR9A8OyFxcPduI4VmxaUMQyKYrRjUoLLSXv6EKKID5Tvj9cUVw==}
+  '@nodable/entities@3.1.0':
+    resolution: {integrity: sha512-LsS/DjHr+uDM647Gru/cA8+J3a3HfhttwCKLyuoyN7yXTFCxKBtSgMQBvrW9yNPa2/zDRUNuGPaH5QUFoa4arQ==}
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -480,8 +488,8 @@ packages:
   '@statsig/js-client@3.31.0':
     resolution: {integrity: sha512-LFa5E0LjT6sTfZv3sNGoyRLSZ1078+agdgOA+Vm1ecjG+KbSOfBLTW7hMwimrJ29slRwbYDzbtKaPJo/R37N2g==}
 
-  '@types/node@26.6.0':
-    resolution: {integrity: sha512-FWWQhDlKSnEJVe+CTJCQL8Fol7s1MKo3Ud0fjryxoOoH+hwMIPxol0MguYrLi2I0VvIFwOU2DwdWET2+px15qg==}
+  '@types/node@26.6.6':
+    resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
 
   '@types/retry@0.12.0':
     resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
@@ -659,6 +667,10 @@ packages:
     resolution: {integrity: sha512-2uNTXIuTTxk7ciZgAU1BQcgnchcG0xXnrs6jzkQfj9SsRa9M2s5zE8WT96hS6KmG4MzWHSrvH43DF1m4XRkrFg==}
     engines: {node: '>=22'}
 
+  chalk@6.0.1:
+    resolution: {integrity: sha512-/Ce6KNm3vIbWdMlNna6RVIZ/ICQxnJxCicet5LBKK9ZffBkqzDw0xh9EiKSljdRtiIQ1S1z4YgcscUUGzNCWrA==}
+    engines: {node: '>=22'}
+
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
@@ -670,8 +682,8 @@ packages:
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
 
-  commit-and-tag-version@13.2.1:
-    resolution: {integrity: sha512-E9PldGnNugkmHvMrbuAVnMJQo8jLtpKah9KSLN8ktrH/95co5qpm1LKBlSZb6R/vN+NwoT44gVmPTNnSlq5keg==}
+  commit-and-tag-version@13.4.0:
+    resolution: {integrity: sha512-u1WJiv0//3uBO2JhWiX0cTrXG791s7kFEYMQrvAHHAxR3zyDlHMu+/AnU89GPZihipOFEfohBHC8MaFWI3EcQw==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -681,8 +693,8 @@ packages:
   conventional-changelog-config-spec@2.1.0:
     resolution: {integrity: sha512-IpVePh16EbbB02V+UA+HQnnPIohgXvJRxHcS5+Uwk4AT5LjzCZJm5sp/yqs5C6KZJ1jMsV4paEV13BN1pvDuxQ==}
 
-  conventional-changelog-conventionalcommits@10.2.1:
-    resolution: {integrity: sha512-n4Kr1HFMTf3iMbES0TMxKIcYtUUv4rKqyQQp2JwfOEfFCOfGT3Tq4mCyJ8S9/YPyWhydjfKrrvnyl+gCjA+mJQ==}
+  conventional-changelog-conventionalcommits@10.4.0:
+    resolution: {integrity: sha512-Rriac6ZrAlVm6cy9Bz4NSp+WMHpwNXoPIYex+HjCgduAVUSbnew29DQjQw0C4g9u3HtSYzGiGY+pdBXAZo+4aA==}
     engines: {node: '>=22'}
 
   conventional-changelog-preset-loader@6.0.1:
@@ -694,8 +706,8 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
-  conventional-changelog@8.1.0:
-    resolution: {integrity: sha512-idt1JK+3+Nt7gqH/d/sEYWdDeR+5XPov/jssmFN6XxmYSRlonTWSDWhWUPkmm0zbwYjtVdt+4My5aiPkKyvocw==}
+  conventional-changelog@8.1.3:
+    resolution: {integrity: sha512-fOMwLCxm46znJKPB08jLxl1FD8SOZOQHktlzCVhvhhVUfq0KgQSryoYXsRRHs1aRlZPR1/QK5wztnY8sBNC2AA==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -761,21 +773,17 @@ packages:
     resolution: {integrity: sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==}
     engines: {node: '>=6'}
 
-  escape-string-regexp@1.0.5:
-    resolution: {integrity: sha512-vbRorB5FUQWvla16U8R/qgaFIya2qGzwDrNmCZuYKrbdSUMG6I1ZCGQRefkRVhuOkIGVne7BQ35DSfo1qvJqFg==}
-    engines: {node: '>=0.8.0'}
-
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
 
   fast-sha256@1.3.0:
     resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
 
-  fast-xml-builder@1.3.1:
-    resolution: {integrity: sha512-pIM/1n3ntFXKYrUZwW7QCK0gAW7XY+wzj1YMIV3tLDvPj/V+zTGJK5e3/4WJfwj0qWw2ElNXiTixda/R+3YSug==}
+  fast-xml-builder@1.3.2:
+    resolution: {integrity: sha512-OX91VSlShLPDgRZV7tk/YQ4l8tT75QziF5Ixg8g4PFbCVPjuTWwN+yQfAxLJ0dufJpprdOd6HlM74Jhd39TcBQ==}
 
-  fast-xml-parser@5.11.1:
-    resolution: {integrity: sha512-TBw6K/fxoQGGjCmZDw9w/ZwP3uDcnTM4YH/g+PFRWr8sbe5idXtxNN6vITh4+1ruCZaho6uBFurElsA7F0zzgw==}
+  fast-xml-parser@5.12.1:
+    resolution: {integrity: sha512-wR8dO/fx+z8C5exuem1e7BKOWvjsuzvjS/tvA/Xu3Z1zQqJGcXrPzXbcAiaMgp2KjreEROcTkmnnisrcmJ2hYQ==}
     hasBin: true
 
   fd-package-json@2.0.0:
@@ -785,9 +793,9 @@ packages:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
 
-  figures@3.2.0:
-    resolution: {integrity: sha512-yaduQFRKLXYOGgEn6AZau90j3ggSOyiqXU0F9JZfeXYhNa+Jk4X+s45A2zg5jns87GAFa34BBm2kXw4XpNcbdg==}
-    engines: {node: '>=8'}
+  figures@6.1.0:
+    resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
+    engines: {node: '>=18'}
 
   find-up@3.0.0:
     resolution: {integrity: sha512-1yD6RmLI1XBfxugvORwlck6f75tYL+iR0jqwsOrOxMZyGYqUuDhJ0l4AXdO1iX/FTs9cBAMEk1gWSEx1kSbylg==}
@@ -860,8 +868,12 @@ packages:
     resolution: {integrity: sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==}
     engines: {node: '>=8'}
 
-  is-unsafe@2.0.2:
-    resolution: {integrity: sha512-HgbIHPBH0KHHCcjLfGsCvhtPTVxjaAZlXjwdz7/GQC40SjSe4sfQsar8J5VFo8JOSbarkpV0OLG95bbaNd9aAQ==}
+  is-unicode-supported@2.1.0:
+    resolution: {integrity: sha512-mE00Gnza5EEB3Ds0HfMyllZzbBrmLOX3vfWoj9A9PEnTfratQ/BcaJOuMhnkhjXvb2+FkY3VuHqtAGpTPmglFQ==}
+    engines: {node: '>=18'}
+
+  is-unsafe@2.0.3:
+    resolution: {integrity: sha512-ZBllczCCO267vgdFb6Tq3pv+LhHaCiGMdr+ZsuL+OopruAg7S+3ZDs1vD0RPC0uSrkjzbraxaGjtX1YBxjPeFQ==}
 
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
@@ -1063,8 +1075,8 @@ packages:
     resolution: {integrity: sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==}
     engines: {node: '>=8'}
 
-  strnum@2.4.2:
-    resolution: {integrity: sha512-rDG3Ah4TV0k1hWvLSzkZtMmLN9+eS+h3knq4MP6A42Y3Yh5qGNnOUs1jJkoSr8FG5dsL28c7KgkIBzSEykqtuw==}
+  strnum@2.5.1:
+    resolution: {integrity: sha512-UM4nTLWzQiDBseVxUGxN0wJzIk0UU89Qi7pKXz9qISo+lhviJikTuikBsK/oFRlpvYHvSdz0TVoLyQ+sEpYwxA==}
 
   ts-algebra@2.0.0:
     resolution: {integrity: sha512-FPAhNPFMrkwz76P7cdjdmiShwMynZYN6SgOujD1urY4oNm80Ou9oMdmbR45LotcKOXoy7wSmHkRFE6Mxbrhefw==}
@@ -1072,8 +1084,8 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
-  tsx@4.23.13:
-    resolution: {integrity: sha512-BL5MGkRln6aDYhb0xbQlEAGw743BaZYWdbWtdJOBriYJboKgUUYCadFp2/FpBBZquBC/ezNBn7wMMPx7FDZUDw==}
+  tsx@4.23.15:
+    resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -1091,6 +1103,10 @@ packages:
   undici@8.10.2:
     resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
     engines: {node: '>=22.19.0'}
+
+  verkit@0.5.0:
+    resolution: {integrity: sha512-u4J1hr6Y+C/hit34GwL3eIcUf3wngT8TlYUjK7tk0jxydKLAq3sYvifjdTDA6U3KCKRcQCQDGf/srjxfZF3l7g==}
+    engines: {node: '>=18.12.0'}
 
   walk-up-path@4.0.0:
     resolution: {integrity: sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==}
@@ -1356,7 +1372,14 @@ snapshots:
       conventional-commits-filter: 6.0.1
       conventional-commits-parser: 7.1.2
 
-  '@conventional-changelog/template@1.2.1': {}
+  '@conventional-changelog/git-client@3.2.0(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2)':
+    dependencies:
+      '@simple-libs/child-process-utils': 2.0.0
+      '@simple-libs/stream-utils': 2.0.0
+      verkit: 0.5.0
+    optionalDependencies:
+      conventional-commits-filter: 6.0.1
+      conventional-commits-parser: 7.1.2
 
   '@conventional-changelog/template@1.4.0': {}
 
@@ -1386,11 +1409,12 @@ snapshots:
       '@cursor/sdk-linux-x64': 1.5.2
       '@cursor/sdk-win32-x64': 1.5.2
 
-  '@earendil-works/pi-agent-core@1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)':
+  '@earendil-works/pi-agent-core@1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)':
     dependencies:
-      '@earendil-works/pi-ai': 1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
-      '@earendil-works/pi-schema': 1.6.1
+      '@earendil-works/pi-ai': 1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
+      '@earendil-works/pi-schema': 1.6.0
     transitivePeerDependencies:
+      - '@aws-sdk/credential-provider-node'
       - '@modelcontextprotocol/sdk'
       - '@smithy/hash-node'
       - '@smithy/signature-v4'
@@ -1403,20 +1427,20 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-ai@1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)':
+  '@earendil-works/pi-ai@1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)':
     dependencies:
       '@anthropic-ai/sdk': 0.129.0(zod@4.6.7)
       '@aws-sdk/client-bedrock-runtime': 3.1127.0
-      '@aws-sdk/credential-provider-node': 3.972.82
-      '@earendil-works/pi-schema': 1.6.1
-      '@earendil-works/pi-telemetry': 1.6.1
-      '@google/genai': 3.6.1
+      '@earendil-works/pi-schema': 1.6.0
+      '@earendil-works/pi-telemetry': 1.6.0
+      '@google/genai': 2.32.0
       '@smithy/node-http-handler': 4.12.1
       http-proxy-agent: 9.1.0
       https-proxy-agent: 9.1.0
       openai: 7.59.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
       partial-json: 0.1.7
     transitivePeerDependencies:
+      - '@aws-sdk/credential-provider-node'
       - '@modelcontextprotocol/sdk'
       - '@smithy/hash-node'
       - '@smithy/signature-v4'
@@ -1429,17 +1453,17 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-codemode@1.6.1':
+  '@earendil-works/pi-codemode@1.6.0':
     dependencies:
       quickjs-wasi: 3.6.2
 
-  '@earendil-works/pi-coding-agent@1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(ws@8.21.3)(zod@4.6.7)':
+  '@earendil-works/pi-coding-agent@1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(ws@8.21.3)(zod@4.6.7)':
     dependencies:
-      '@earendil-works/pi-agent-core': 1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
-      '@earendil-works/pi-ai': 1.6.1(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
-      '@earendil-works/pi-codemode': 1.6.1
-      '@earendil-works/pi-mcp': 1.6.1
-      '@earendil-works/pi-tui': 1.6.1
+      '@earendil-works/pi-agent-core': 1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
+      '@earendil-works/pi-ai': 1.6.0(@aws-sdk/credential-provider-node@3.972.82)(@smithy/signature-v4@5.7.3)(google-auth-library@10.9.1)(undici@8.10.2)(ws@8.21.3)(zod@4.6.7)
+      '@earendil-works/pi-codemode': 1.6.0
+      '@earendil-works/pi-mcp': 1.6.0
+      '@earendil-works/pi-tui': 1.6.0
       '@silvia-odwyer/photon-node': 0.3.4
       brace-expansion: 5.0.12
       chalk: 6.0.0
@@ -1458,6 +1482,7 @@ snapshots:
       undici: 8.10.2
       yaml: 2.9.0
     transitivePeerDependencies:
+      - '@aws-sdk/credential-provider-node'
       - '@modelcontextprotocol/sdk'
       - '@smithy/hash-node'
       - '@smithy/signature-v4'
@@ -1469,15 +1494,15 @@ snapshots:
       - ws
       - zod
 
-  '@earendil-works/pi-mcp@1.6.1':
+  '@earendil-works/pi-mcp@1.6.0':
     dependencies:
       cross-spawn: 7.0.6
 
-  '@earendil-works/pi-schema@1.6.1': {}
+  '@earendil-works/pi-schema@1.6.0': {}
 
-  '@earendil-works/pi-telemetry@1.6.1': {}
+  '@earendil-works/pi-telemetry@1.6.0': {}
 
-  '@earendil-works/pi-tui@1.6.1':
+  '@earendil-works/pi-tui@1.6.0':
     dependencies:
       get-east-asian-width: 1.6.0
       marked: 18.0.11
@@ -1561,7 +1586,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@google/genai@3.6.1':
+  '@google/genai@2.32.0':
     dependencies:
       google-auth-library: 10.9.1
       p-retry: 4.6.2
@@ -1574,7 +1599,7 @@ snapshots:
 
   '@isaacs/nonrecursive-glob-match@1.1.0': {}
 
-  '@nodable/entities@3.0.0': {}
+  '@nodable/entities@3.1.0': {}
 
   '@protobufjs/aspromise@1.1.2': {}
 
@@ -1652,7 +1677,7 @@ snapshots:
     dependencies:
       '@statsig/client-core': 3.31.0
 
-  '@types/node@26.6.0':
+  '@types/node@26.6.6':
     dependencies:
       undici-types: 8.9.0
 
@@ -1755,6 +1780,8 @@ snapshots:
 
   chalk@6.0.0: {}
 
+  chalk@6.0.1: {}
+
   cliui@8.0.1:
     dependencies:
       string-width: 4.2.3
@@ -1767,20 +1794,20 @@ snapshots:
 
   color-name@1.1.4: {}
 
-  commit-and-tag-version@13.2.1(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2):
+  commit-and-tag-version@13.4.0(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2):
     dependencies:
       '@conventional-changelog/git-client': 3.1.0(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2)
-      '@conventional-changelog/template': 1.2.1
-      chalk: 6.0.0
-      conventional-changelog: 8.1.0(conventional-commits-filter@6.0.1)
+      '@conventional-changelog/template': 1.4.0
+      chalk: 6.0.1
+      conventional-changelog: 8.1.3
       conventional-changelog-config-spec: 2.1.0
-      conventional-changelog-conventionalcommits: 10.2.1
+      conventional-changelog-conventionalcommits: 10.4.0
       conventional-recommended-bump: 12.1.0
       detect-indent: 7.0.2
       detect-newline: 3.1.0
       dotgitignore: 2.1.0
-      fast-xml-parser: 5.11.1
-      figures: 3.2.0
+      fast-xml-parser: 5.12.1
+      figures: 6.1.0
       find-up: 5.0.0
       semver: 7.8.5
       yaml: 2.9.1
@@ -1793,7 +1820,7 @@ snapshots:
 
   conventional-changelog-config-spec@2.1.0: {}
 
-  conventional-changelog-conventionalcommits@10.2.1:
+  conventional-changelog-conventionalcommits@10.4.0:
     dependencies:
       '@conventional-changelog/template': 1.4.0
 
@@ -1807,18 +1834,17 @@ snapshots:
       conventional-commits-filter: 6.0.1
       semver: 7.8.5
 
-  conventional-changelog@8.1.0(conventional-commits-filter@6.0.1):
+  conventional-changelog@8.1.3:
     dependencies:
-      '@conventional-changelog/git-client': 3.1.0(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2)
+      '@conventional-changelog/git-client': 3.2.0(conventional-commits-filter@6.0.1)(conventional-commits-parser@7.1.2)
       '@simple-libs/hosted-git-info': 2.0.0
       '@simple-libs/normalize-package-data': 1.0.0
       argue-cli: 3.2.0
       conventional-changelog-preset-loader: 6.0.1
       conventional-changelog-writer: 9.2.1
+      conventional-commits-filter: 6.0.1
       conventional-commits-parser: 7.1.2
       fd-package-json: 2.0.0
-    transitivePeerDependencies:
-      - conventional-commits-filter
 
   conventional-commits-filter@6.0.1: {}
 
@@ -1895,24 +1921,22 @@ snapshots:
 
   escalade@3.2.0: {}
 
-  escape-string-regexp@1.0.5: {}
-
   extend@3.0.2: {}
 
   fast-sha256@1.3.0: {}
 
-  fast-xml-builder@1.3.1:
+  fast-xml-builder@1.3.2:
     dependencies:
       path-expression-matcher: 1.6.2
       xml-naming: 0.3.0
 
-  fast-xml-parser@5.11.1:
+  fast-xml-parser@5.12.1:
     dependencies:
-      '@nodable/entities': 3.0.0
-      fast-xml-builder: 1.3.1
-      is-unsafe: 2.0.2
+      '@nodable/entities': 3.1.0
+      fast-xml-builder: 1.3.2
+      is-unsafe: 2.0.3
       path-expression-matcher: 1.6.2
-      strnum: 2.4.2
+      strnum: 2.5.1
       xml-naming: 0.3.0
 
   fd-package-json@2.0.0:
@@ -1924,9 +1948,9 @@ snapshots:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
 
-  figures@3.2.0:
+  figures@6.1.0:
     dependencies:
-      escape-string-regexp: 1.0.5
+      is-unicode-supported: 2.1.0
 
   find-up@3.0.0:
     dependencies:
@@ -2014,7 +2038,9 @@ snapshots:
 
   is-fullwidth-code-point@3.0.0: {}
 
-  is-unsafe@2.0.2: {}
+  is-unicode-supported@2.1.0: {}
+
+  is-unsafe@2.0.3: {}
 
   isexe@2.0.0: {}
 
@@ -2139,7 +2165,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.2
-      '@types/node': 26.6.0
+      '@types/node': 26.6.6
       long: 5.3.2
 
   proxy-agent-negotiate@1.1.0: {}
@@ -2179,7 +2205,7 @@ snapshots:
     dependencies:
       ansi-regex: 5.0.1
 
-  strnum@2.4.2:
+  strnum@2.5.1:
     dependencies:
       anynum: 1.0.1
 
@@ -2187,7 +2213,7 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsx@4.23.13:
+  tsx@4.23.15:
     dependencies:
       esbuild: 0.28.2
     optionalDependencies:
@@ -2221,6 +2247,8 @@ snapshots:
   undici-types@8.9.0: {}
 
   undici@8.10.2: {}
+
+  verkit@0.5.0: {}
 
   walk-up-path@4.0.0: {}
 

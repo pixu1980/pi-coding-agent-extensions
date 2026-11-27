@@ -28,7 +28,7 @@ Ten directories under `packages/`. The host that runs them is `pi` 1.6.0.
 
 ## 2. Scope resolution
 
-The topic text was `Audit, review and plan`. It names no package and no file. The surface is the
+Topic text: `Audit, review and plan`. It names no package and no file. The surface is the
 whole repository. One decision taken during the run changes the surface: `pi-remote` is removed,
 so its findings close by removal.
 
@@ -55,7 +55,7 @@ false  17.0.0.1
 false  2606:4700::1111
 ```
 
-The four `false` values in the second block matter. `64:ff9b::7f00:1` is the NAT64 form of
+Four `false` values in the second block matter. `64:ff9b::7f00:1` is the NAT64 form of
 `127.0.0.1`. `64:ff9b::a9fe:a9fe` is the NAT64 form of `169.254.169.254`, the cloud metadata
 address. `2002:7f00:1::` is 6to4 and `2001:0:0:0:0:0:7f00:1` is Teredo. None of those four
 prefixes appears in `DEFAULT_BLOCKED`, which lists 20 ranges.
@@ -124,19 +124,19 @@ pi-lyceum: pi credential store only, masked for display
 pi-mcp:    @napi-rs/keyring 2.1.0 present in dependencies
 ```
 
-One writer breaks the pattern. MCP traces land in the session working directory.
+One writer recorded a project-local path at audit time. `pi-mcp` wrote its trace to
+`<cwd>/.pi/mcp-traces/`. The event is metadata only, and it was already redacted:
 
 ```console
-$ grep -n "mcp-traces" packages/pi-mcp/lib/_mcp-trace.ts
-    : resolve(sessionCwd ?? process.cwd(), '.pi', 'mcp-traces', `mcp-${timestamp}-${randomSuffix}.jsonl`);
+$ grep -n "redactTraceText" packages/pi-mcp/lib/_mcp-trace.ts
+60: export function redactTraceText(value: string, maxLength = 160): string
+125:    server: redactTraceText(server, 120),
+133:    event.method = redactTraceText(message.method, 120);
 ```
 
-```console
-$ grep -n "appendFile(path, data" packages/pi-mcp/lib/_mcp-trace.ts
-        await appendFile(path, data, appendOptions);
-```
-
-`appendOptions` is `{ encoding: 'utf8' }`. No `mode` and no redaction step exist.
+`createMcpTraceEvent` copies direction, server, transport, kind, status, method, id and byte
+count. It never copies `params` or `result`. The measured defects were the project-local path and
+the absent `mode` on `appendFile`.
 
 ## 6. Untrusted content and the instruction boundary
 
@@ -210,6 +210,7 @@ Other controls read in the code:
 - Push subscription parser: requires `https`, a 65-byte P-256 point and curve membership.
 - `pi-web` bounds: 2 MiB body cap, 30 s timeout, 5 redirects, 3 concurrent fetches.
 - Command execution: `pi-mcp` uses `cross-spawn` and never a shell.
+- Trace metadata: no payload is copied, and server and method pass `redactTraceText`.
 - Graph scan: 1 `unwrap` outside tests, 0 `unsafe` blocks.
 
 ## 10. pi-remote removal facts
@@ -296,3 +297,54 @@ createMockPi 125 in | createMockCtx 110 in | executeCall 94 out | initializeMcp
 - On the audit machine the local `packages/pi-statusline` sits in `.pi/settings.json`. That is
   machine state, not repository state.
 - `docs/audits/oss.md` already records repository-level findings. This run does not repeat them.
+
+## 14. Changes executed by this run
+
+This run executed the plan on the maintainer's instruction. The commands below ran after the evidence above.
+
+```console
+$ git rm -r packages/pi-remote ; rm -rf packages/pi-remote
+$ GIT_CONFIG_GLOBAL=/dev/null pnpm test:all
+9 packages, 0 failed: pi-ask 101, pi-cursor 166, pi-lyceum 47, pi-mcp 47,
+pi-path-picker 42, pi-reasoning 59, pi-sessions 34, pi-statusline 80, pi-web 35
+```
+
+```console
+$ node --import tsx _probe.mjs    # isBlockedAddress after the range fix
+true 64:ff9b::7f00:1     true 64:ff9b::a9fe:a9fe
+true 2002:7f00:1::       true 2001:0:0:0:0:0:7f00:1
+```
+
+```console
+$ cd packages/pi-web && pnpm add --save-exact undici@8.13.1
+$ pnpm audit --prod
+No known vulnerabilities found
+$ node --import tsx --test __tests__/index.test.mjs
+tests 35 | pass 35 | fail 0
+```
+
+```console
+$ cd packages/pi-cursor && pnpm add --save-exact @cursor/sdk@1.5.2
+$ pnpm add --save-exact zod@4.6.7
+$ pnpm audit --prod
+No known vulnerabilities found
+$ node --import tsx --test __tests__/index.test.mjs
+tests 166 | pass 166 | fail 0
+```
+
+```console
+$ cd packages/pi-mcp && node --import tsx --test __tests__/index.test.mjs
+tests 47 | pass 47 | fail 0        (+5 trace tests)
+```
+
+```console
+$ pnpm test        # root, after the pi-remote icon test was removed
+tests 41 | pass 41 | fail 0
+$ pnpm lint
+Checked 193 files. Found 1 info.
+$ pnpm format:check
+All matched files use Prettier code style!
+```
+
+Two steps stayed with the maintainer because they need the npm one-time password:
+`npm unpublish @pixu1980/pi-remote --force`, `npm deprecate` on `pi-mcp`, and `pnpm release`.

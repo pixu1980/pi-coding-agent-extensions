@@ -37,13 +37,19 @@ those numbers.
 
 | Finding | Severity | Status | Evidence | Summary |
 | ------- | -------- | ------ | -------- | ------- |
-| SEC-01 | high | open | audit §3: four transition addresses return `false` from the guard. | NAT64, 6to4 and Teredo reach loopback and metadata. |
-| SEC-02 | high | open | audit §3: `validateTargetHost` runs, then `fetch` resolves again. | The address checked is not the address dialed. |
-| SEC-03 | high | open | audit §4: 7 high advisories through `@cursor/sdk` 1.0.31. | A published package carries a TLS bypass. |
-| SEC-04 | high | open | audit §4: 1 critical and 12 high advisories in pi-mcp. | The installed adapter cannot be fixed by release. |
-| SEC-05 | medium | open | audit §5: traces in `<cwd>/.pi/mcp-traces`, default mode, no redaction. | Tool arguments can land world-readable in a repo. |
-| SEC-06 | medium | open | audit §7, §8, §10: third-party relay, no E2E, no inbound cap, raw errors. | Decided: delete the package and unpublish it. |
-| SEC-07 | low | open | audit §6: three fetch guidelines, none names untrusted data. | Fetched text has no instruction boundary. |
+| SEC-01 | high | resolved | audit §14: the four prefixes now return `true`, with a table test. | NAT64, 6to4 and Teredo no longer reach loopback. |
+| SEC-02 | high | resolved | audit §14: `createPinnedLookup` feeds an undici `Agent` per hop, with tests. | The connection dials the approved address only. |
+| SEC-03 | high | resolved | audit §14: SDK 1.5.2, `zod` declared, overrides in place, audit clean, 166 tests. | The TLS bypass and the rest left the tree. |
+| SEC-04 | high | open | audit §14: README and SECURITY.md carry the advisory. The npm message cannot change without a publish. | Only the registry-side notice is missing. |
+| SEC-05 | medium | resolved | audit §5 and §14: traces moved to the agent directory, `0o600` on create and append, 5 tests. | Traces left the project and are owner-only. |
+| SEC-06 | medium | open | audit §14: the package and its icon test are gone, root suite green. Unpublish needs the npm OTP. | The tree is clean. The registry entry is not. |
+| SEC-07 | low | resolved | audit §14: the tool declares the data boundary, the README repeats it, a test asserts it. | Fetched text has a stated boundary. |
+
+## Execution note
+
+The maintainer asked for the plan to run immediately. Five of the seven findings closed in this
+run. SEC-04 and SEC-06 keep their status because the missing half is a registry write. That write
+needs the npm one-time password: `npm deprecate` on `pi-mcp` and `npm unpublish @pixu1980/pi-remote`.
 
 ## Accepted risks
 

@@ -10,7 +10,7 @@
 import { CustomEditor } from '@earendil-works/pi-coding-agent';
 import type { KeybindingsManager } from '@earendil-works/pi-coding-agent';
 import type { EditorTheme, TUI } from '@earendil-works/pi-tui';
-import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
+import { sliceByColumn, stripTerminalSequences, truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
 
 /** Closing glyphs of the mirrored block: one space, then the two dashes that end the border. */
 const TRAILING_GLYPHS = ' ──';
@@ -34,6 +34,48 @@ const ELLIPSIS = '…';
 export interface TopBorderOptions {
   /** Colours the added glyphs, so they match the editor's own border. */
   color: (text: string) => string;
+}
+
+/**
+ * Clip a session title to a column budget without leaving an escape inside it.
+ *
+ * A reset inside the coloured block ends the border colour early, which paints
+ * the ellipsis and the closing dashes in the default colour. The title is also
+ * stripped of terminal sequences: a session name comes from `/name` and must not
+ * be able to style the border.
+ *
+ * @param title - Raw session name.
+ * @param budget - Columns available, ellipsis included.
+ * @returns A plain string no wider than `budget`.
+ */
+export function clipTitle(title: string, budget: number): string {
+  const plain = stripTerminalSequences(title).trim();
+
+  if (budget <= 0) {
+    return '';
+  }
+
+  if (visibleWidth(plain) <= budget) {
+    return plain;
+  }
+
+  const ellipsisWidth = visibleWidth(ELLIPSIS);
+
+  if (budget <= ellipsisWidth) {
+    return ELLIPSIS;
+  }
+
+  // A wide glyph in the last column is dropped rather than split, so shrink
+  // until the slice plus the ellipsis really fits the budget.
+  let room = budget - ellipsisWidth;
+  let text = sliceByColumn(plain, 0, room);
+
+  while (room > 0 && visibleWidth(text) + ellipsisWidth > budget) {
+    room -= ellipsisWidth;
+    text = sliceByColumn(plain, 0, room);
+  }
+
+  return `${text}${ELLIPSIS}`;
 }
 
 /**
@@ -62,11 +104,13 @@ export function decorateTopBorder(
     return borderLine;
   }
 
-  const shown = visibleWidth(name) > nameBudget ? truncateToWidth(name, nameBudget, ELLIPSIS) : name;
+  const shown = clipTitle(name, nameBudget);
   const blockWidth = visibleWidth(shown) + BLOCK_OVERHEAD;
   const head = truncateToWidth(borderLine, width - blockWidth, '');
+  const decorated = `${head}${options.color(` ${shown}${TRAILING_GLYPHS}`)}`;
 
-  return `${head}${options.color(` ${shown}${TRAILING_GLYPHS}`)}`;
+  // Never hand the editor a line wider than the frame it asked for.
+  return visibleWidth(decorated) <= width ? decorated : borderLine;
 }
 
 /** Options for {@link createSessionNameEditor}. */
@@ -106,9 +150,15 @@ export function createSessionNameEditor(
     protected renderTopBorder(width: number, hiddenLineCount: number): string {
       const line = super.renderTopBorder(width, hiddenLineCount);
 
-      return decorateTopBorder(line, options.getSessionName(), width, {
-        color: (text) => this.borderColor(text),
-      });
+      try {
+        return decorateTopBorder(line, options.getSessionName(), width, {
+          color: (text) => this.borderColor(text),
+        });
+      } catch {
+        // A decoration must never break the editor frame: an exception here
+        // stops the TUI render loop, and the screen stays stale until a key.
+        return line;
+      }
     }
   };
 }

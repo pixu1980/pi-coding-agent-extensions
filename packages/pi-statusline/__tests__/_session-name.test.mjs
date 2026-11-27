@@ -11,7 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { visibleWidth } from '@earendil-works/pi-tui';
-import { decorateTopBorder, createSessionNameEditor } from '../lib/_session-name.ts';
+import { clipTitle, decorateTopBorder, createSessionNameEditor } from '../lib/_session-name.ts';
 import statuslineExtension from '../index.ts';
 import { createMockPi, createMockCtx, makeModel } from '../../../test/harness.mjs';
 
@@ -240,4 +240,53 @@ test('session_shutdown: a late rename does not repaint a dead TUI', async () => 
   await emit('session_info_changed', { name: 'Late rename' }, ctx);
 
   assert.equal(renders.requests, 0, 'no repaint after shutdown');
+});
+
+// ── Regression: colour survives truncation ───────────────────────
+
+test('a truncated name keeps the ellipsis and the closing dashes coloured', () => {
+  const line = decorateTopBorder(plainBorder(40), 'a very long session name that cannot fit', 40, COLORS);
+  const block = line.slice(line.lastIndexOf('\x1b[2m'));
+
+  assert.equal(
+    /^\x1b\[2m [^\x1b]*… ──\x1b\[22m$/.test(block),
+    true,
+    `the block must carry one colour span: ${JSON.stringify(block)}`
+  );
+  assert.equal(visibleWidth(line), 40);
+});
+
+test('a session name cannot inject terminal sequences into the border', () => {
+  const line = decorateTopBorder(plainBorder(60), 'evil \x1b[31mred\x1b[39m name', 60, COLORS);
+
+  assert.ok(!line.includes('\x1b[31m'), 'the title must not open a colour of its own');
+  assert.ok(strip(line).includes('evil'), 'the readable part survives');
+});
+
+test('clipTitle respects the budget and never splits a wide glyph', () => {
+  assert.equal(clipTitle('short', 20), 'short');
+  assert.equal(clipTitle('abcdef', 4), 'abc…');
+  assert.equal(clipTitle('abcdef', 1), '…');
+  assert.equal(clipTitle('abcdef', 0), '');
+  const wide = clipTitle('プロジェクトの名前', 6);
+
+  assert.ok(visibleWidth(wide) <= 6, 'a wide-glyph slice never exceeds the budget');
+  assert.ok(wide.endsWith('…'), 'the ellipsis is the last cell');
+  assert.ok(!wide.includes('\uFFFD'), 'no glyph is split in half');
+});
+
+// ── Regression: a resize cannot throw or overflow ────────────────
+
+test('every width from 1 to 160 renders one line inside the frame', () => {
+  const Editor = createSessionNameEditor({ getSessionName: () => 'progetto プロジェクト nome 🚀' });
+  const { tui } = makeTui();
+  const editor = new Editor(tui, editorTheme, {});
+
+  for (let width = 1; width <= 160; width += 1) {
+    const lines = editor.render(width);
+
+    for (const line of lines) {
+      assert.ok(visibleWidth(line) <= width, `width ${width}: a line is ${visibleWidth(line)} columns wide`);
+    }
+  }
 });

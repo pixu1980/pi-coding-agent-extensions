@@ -233,16 +233,38 @@ function createFooter(ctx: ExtensionContext) {
           const rightRaw = `(${provider}) ${modelName} • ${effort}`;
           const right = theme.fg('dim', rightRaw);
 
+          const maxWidth = Math.max(1, width);
           const leftW = estWidth(left);
           const rightW = estWidth(right);
-          const padLen = Math.max(1, width - leftW - rightW);
-          const line = left + ' '.repeat(padLen) + right;
 
-          if (estWidth(line) > width) {
-            return [truncateToWidth(`${leftRaw}  ${rightRaw}`, Math.max(1, width))];
+          // Cutting a coloured string keeps its colour; cutting the plain text
+          // dropped it, and the whole line turned default white. The left block
+          // keeps its place first, then the model block takes what is left.
+          if (leftW + rightW + 1 <= maxWidth) {
+            return [left + ' '.repeat(Math.max(1, maxWidth - leftW - rightW)) + right];
           }
 
-          return [line];
+          // truncateToWidth closes the colour before its ellipsis, so the dots
+          // came out default-coloured. Append them inside the same colour.
+          const clipRight = (room: number): string => {
+            if (rightW <= room) {
+              return right;
+            }
+
+            const dots = '...';
+
+            if (room <= dots.length) {
+              return truncateToWidth(right, Math.max(1, room));
+            }
+
+            return `${truncateToWidth(right, room - dots.length, '')}${theme.fg('dim', dots)}`;
+          };
+
+          if (leftW + 1 < maxWidth) {
+            return [left + ' ' + clipRight(maxWidth - leftW - 1)];
+          }
+
+          return [clipRight(maxWidth)];
         } catch {
           return ['pi-statusline'];
         }
@@ -260,9 +282,14 @@ export default function (pi: ExtensionAPI): void {
       'pi-statusline',
       (_tui, _theme) => ({
         render(width: number): string[] {
-          const line = formatLine(ctx, width);
+          const maxWidth = Math.max(1, width);
 
-          return [truncateToWidth(line, Math.max(1, width))];
+          try {
+            return [truncateToWidth(formatLine(ctx, maxWidth), maxWidth)];
+          } catch {
+            // A status line is decoration: a plain label beats a frozen frame.
+            return [truncateToWidth('pi-statusline', maxWidth)];
+          }
         },
         invalidate() {
           cachedTmpl = null;

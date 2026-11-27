@@ -317,3 +317,74 @@ test('/statusline settings: opens the settings panel via ctx.ui.custom', async (
 
   assert.ok(lines.some((l) => l.includes('Statusline Settings')));
 });
+
+// ── Regression: narrow widths, resize and colour ─────────────────
+
+const stripSgr = (text) => text.replaceAll(/\x1b\[[0-9;]*m/g, '');
+
+/** A theme stub that emits real SGR, so colour loss is observable. */
+function sgrTheme() {
+  return {
+    fg: (_name, text) => `\x1b[2m${text}\x1b[22m`,
+    bg: (_name, text) => text,
+    bold: (text) => `\x1b[1m${text}\x1b[22m`,
+    dim: (text) => `\x1b[2m${text}\x1b[22m`,
+  };
+}
+
+async function footerAndWidget() {
+  const { pi, emit } = createMockPi();
+
+  statuslineExtension(pi);
+  const ctx = createMockCtx({ model: makeModel('lyceum', 'DeepSeek V4.1 Flash') });
+
+  await emit('session_start', {}, ctx);
+
+  const tui = { requestRender() {}, terminal: { rows: 30, columns: 120 } };
+  const footerFactory = ctx.ui._uiCalls.find(([c]) => c === 'setFooter')[1];
+  const widgetFactory = ctx.ui._uiCalls.find(([c]) => c === 'setWidget')[2];
+
+  return {
+    footer: footerFactory(tui, sgrTheme(), { onBranchChange: () => () => {} }),
+    widget: widgetFactory(tui, sgrTheme()),
+  };
+}
+
+test('footer keeps its colour when the line has to be cut', async () => {
+  const { footer } = await footerAndWidget();
+
+  for (const width of [120, 60, 40, 20, 10, 5, 4, 1]) {
+    const line = footer.render(width)[0];
+
+    if (width >= 4) {
+      assert.ok(line.startsWith('\x1b[2m'), `width ${width}: the line must stay coloured`);
+    }
+
+    assert.ok(visibleWidth(line) <= width, `width ${width}: the line must fit`);
+  }
+});
+
+test('footer keeps the model block when the frame is too narrow for both halves', async () => {
+  const { footer } = await footerAndWidget();
+  const line = stripSgr(footer.render(30)[0]);
+
+  assert.ok(line.includes('(lyceum)'), 'the model block is the half that survives');
+  assert.ok(!line.includes('MCP'), 'the MCP half is the one dropped');
+});
+
+test('widget and footer survive every width from 1 to 160', async () => {
+  const { footer, widget } = await footerAndWidget();
+
+  for (let width = 1; width <= 160; width += 1) {
+    for (const [label, component] of [
+      ['footer', footer],
+      ['widget', widget],
+    ]) {
+      const lines = component.render(width);
+
+      for (const line of lines) {
+        assert.ok(visibleWidth(line) <= width, `${label} at ${width}: a line is ${visibleWidth(line)} wide`);
+      }
+    }
+  }
+});

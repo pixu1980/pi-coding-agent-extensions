@@ -64,6 +64,9 @@ function makeTempRepo() {
   execSync("git init -q -b main", { cwd: dir });
   execSync("git config user.email test@example.com", { cwd: dir });
   execSync("git config user.name Tester", { cwd: dir });
+  // Hermetic fixture: a global core.hooksPath would reject the "init"
+  // message below, so point the temp repo at a hooks directory that is absent.
+  execSync("git config core.hooksPath .git/no-hooks", { cwd: dir });
   writeFileSync(join(dir, "file.txt"), "hello\n");
   execSync("git add . && git commit -qm init", { cwd: dir });
 

@@ -138,6 +138,10 @@ function makeFixtureRepo(t) {
   run('git init -b main');
   run('git config user.email test@example.com');
   run('git config user.name test');
+  // The fixture commits messages that are deliberately not Conventional
+  // Commits, so a maintainer's global core.hooksPath would reject them here.
+  // Point the temp repo at a hooks directory that does not exist.
+  run('git config core.hooksPath .git/no-hooks');
 
   mkdirSync(join(dir, 'packages/a'), { recursive: true });
   mkdirSync(join(dir, 'packages/b'), { recursive: true });

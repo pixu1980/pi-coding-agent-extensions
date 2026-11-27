@@ -420,11 +420,10 @@ function withTempGitRepo(fn) {
   execSync('git init -q -b main', { cwd: dir });
   execSync('git config user.email test@example.com', { cwd: dir });
   execSync('git config user.name Tester', { cwd: dir });
-  // Hermetic fixtures: a global core.hooksPath would reject the "init"
-  // message below, so point the temp repo at a hooks directory that is absent.
-  execSync('git config core.hooksPath .git/no-hooks', { cwd: dir });
   writeFileSync(join(dir, 'file.txt'), 'hello\n');
-  execSync('git add . && git commit -qm init', { cwd: dir });
+  // Hermetic fixture commit: -c core.hooksPath= runs no hook at all, so a
+  // contributor's global commit-msg or pre-commit hook cannot fail the test.
+  execSync('git add . && git -c core.hooksPath= commit -qm "test: fixture"', { cwd: dir });
   process.chdir(dir);
 
   try {

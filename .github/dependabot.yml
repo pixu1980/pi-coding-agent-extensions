@@ -1,0 +1,83 @@
+# Dependency updates for the eight published packages.
+#
+# Each directory under packages/ is a standalone pnpm project with its own
+# lockfile, so Dependabot needs one entry per directory: a bump in one package
+# cannot be resolved from another. The protocol behind the review is in
+# CONTRIBUTING.md.
+#
+# packages/pi-mcp is deliberately absent. It is deprecated and withheld from the
+# registry (ADR 017, ADR 018), so a dependency bump there can never ship: the one
+# pull request it produced was closed for that reason.
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-ask'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-cursor'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-lyceum'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-path-picker'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-reasoning'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-sessions'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-statusline'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'npm'
+    directory: '/packages/pi-web'
+    schedule:
+      interval: 'weekly'
+    groups:
+      npm_and_yarn:
+        patterns:
+          - '*'

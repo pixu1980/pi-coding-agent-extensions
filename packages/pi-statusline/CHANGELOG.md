@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.1](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.2.0...@pixu1980/pi-statusline@0.2.1) (2026-11-27)
+
+### Bug Fixes
+
+* **pi-lyceum:** resolve the completions API the loader can map ([47d98d2](https://github.com/pixu1980/pi-coding-agent-extensions/commit/47d98d2f042364e6f9a3bbc834ec872089767d90))
+* **pi-statusline:** keep border and footer colour on narrow widths ([69a19ab](https://github.com/pixu1980/pi-coding-agent-extensions/commit/69a19ab8c0acb64050f6e6bff339cbee9f48fb82))
+* **pi-statusline:** use a template literal in the footer clip path ([571665d](https://github.com/pixu1980/pi-coding-agent-extensions/commit/571665dad3722846d4021c9c3a7c0ec55ac6f437))
+
 ## [0.2.0](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-statusline@0.1.17...@pixu1980/pi-statusline@0.2.0) (2026-11-27)
 
 ### ⚠ BREAKING CHANGES

@@ -73,26 +73,26 @@
     "access": "public"
   },
   "dependencies": {
-    "@modelcontextprotocol/client": "2.0.0",
+    "@modelcontextprotocol/client": "2.3.0",
     "@modelcontextprotocol/core": "2.0.0",
     "@modelcontextprotocol/ext-apps": "2.0.0",
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.0",
     "@napi-rs/keyring": "2.1.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "cross-spawn": "7.0.6",
     "open": "11.0.4",
     "recheck": "4.5.0",
-    "smol-toml": "1.8.0",
+    "smol-toml": "1.9.0",
     "strip-json-comments": "5.0.3",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*",
     "typebox": "*",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "peerDependenciesMeta": {
     "@earendil-works/pi-ai": {

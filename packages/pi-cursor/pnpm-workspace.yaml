@@ -6,6 +6,13 @@ allowBuilds:
   esbuild: false
   protobufjs: false
 
+# Advisory overrides for what @cursor/sdk leaves behind. Each one is the first
+# version that clears the advisory the security audit reported.
+overrides:
+  undici: '>=6.29.1'
+  zod: '>=4.6.6'
+  '@fastify/busboy': '>=3.2.1'
+
 # pnpm 11 reads the dependency cooldown from this file, not from .npmrc, and
 # defaults it to 1440 minutes. ADR 012 removed the cooldown, so it is set to
 # zero here, in every project, because the root does not reach the packages.

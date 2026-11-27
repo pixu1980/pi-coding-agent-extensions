@@ -1,9 +1,15 @@
 /**
  * Core fetch pipeline: URL -> validated -> fetched (with timeout, byte cap,
  * manual redirects re-validated per hop) -> Markdown (or plain text).
+ *
+ * The connection uses the addresses the SSRF guard approved, through a pinned
+ * `lookup`. Validating and then letting the client resolve again leaves a
+ * window where a second DNS answer reaches a private address.
  */
+import { Agent, fetch as undiciFetch } from 'undici';
+import type { Response as UndiciResponse } from 'undici';
 import { generateId, Semaphore } from './_utils.ts';
-import { validateTargetHost } from './_ssrf.ts';
+import { createPinnedLookup, validateTargetHost } from './_ssrf.ts';
 import { htmlToMarkdown } from './_html-to-markdown.ts';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -102,7 +108,11 @@ function decoderFor(contentTypeHeader: string | null): TextDecoder {
   }
 }
 
-async function readBodyCapped(res: Response, maxBytes: number, contentTypeHeader: string | null): Promise<string> {
+async function readBodyCapped(
+  res: UndiciResponse,
+  maxBytes: number,
+  contentTypeHeader: string | null
+): Promise<string> {
   if (!res.body) {
     return '';
   }
@@ -137,7 +147,7 @@ async function readBodyCapped(res: Response, maxBytes: number, contentTypeHeader
   return decoder.decode(Buffer.concat(chunks));
 }
 
-async function drain(res: Response): Promise<void> {
+async function drain(res: UndiciResponse): Promise<void> {
   try {
     await res.body?.cancel();
   } catch {
@@ -178,100 +188,108 @@ export async function fetchPage(url: string, options: FetchOptions = {}): Promis
       return errPage(id, currentUrl, validation.reason ?? 'Address blocked', fetchedAt);
     }
 
-    let res: Response;
+    // One agent per hop: it answers with the approved addresses and nothing else.
+    const agent = new Agent({ connect: { lookup: createPinnedLookup(validation.addresses) } });
 
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      let res: UndiciResponse;
 
       try {
-        res = await fetch(currentUrl, {
-          redirect: 'manual',
-          signal: controller.signal,
-          headers: {
-            'user-agent': userAgent,
-            accept: 'text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.8,*/*;q=0.5',
-            'accept-language': 'en-US,en;q=0.9',
-          },
-        });
-      } finally {
-        clearTimeout(timer);
-      }
-    } catch (err) {
-      const reason = isAbortError(err)
-        ? `Request timed out after ${timeoutMs}ms`
-        : `Network error: ${errorMessage(err)}`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-      return errPage(id, currentUrl, reason, fetchedAt);
-    }
+        try {
+          res = await undiciFetch(currentUrl, {
+            dispatcher: agent,
+            redirect: 'manual',
+            signal: controller.signal,
+            headers: {
+              'user-agent': userAgent,
+              accept: 'text/html,application/xhtml+xml,text/plain;q=0.9,text/markdown;q=0.8,*/*;q=0.5',
+              'accept-language': 'en-US,en;q=0.9',
+            },
+          });
+        } finally {
+          clearTimeout(timer);
+        }
+      } catch (err) {
+        const reason = isAbortError(err)
+          ? `Request timed out after ${timeoutMs}ms`
+          : `Network error: ${errorMessage(err)}`;
 
-    const status = res.status;
-
-    if (status === 301 || status === 302 || status === 303 || status === 307 || status === 308) {
-      const location = res.headers.get('location');
-
-      await drain(res);
-
-      if (!location) {
-        return errPage(id, currentUrl, `Redirect (${status}) without Location header`, fetchedAt);
+        return errPage(id, currentUrl, reason, fetchedAt);
       }
 
-      currentUrl = new URL(location, currentUrl).toString();
-      continue;
+      const status = res.status;
+
+      if (status === 301 || status === 302 || status === 303 || status === 307 || status === 308) {
+        const location = res.headers.get('location');
+
+        await drain(res);
+
+        if (!location) {
+          return errPage(id, currentUrl, `Redirect (${status}) without Location header`, fetchedAt);
+        }
+
+        currentUrl = new URL(location, currentUrl).toString();
+        continue;
+      }
+
+      if (status >= 400) {
+        await drain(res);
+
+        return errPage(id, currentUrl, `HTTP ${status} ${res.statusText}`, fetchedAt);
+      }
+
+      const contentTypeHeader = res.headers.get('content-type');
+      const contentType = (contentTypeHeader ?? 'application/octet-stream').split(';')[0].trim().toLowerCase();
+      const isHtml = contentType === 'text/html' || contentType === 'application/xhtml+xml';
+      const isText =
+        contentType.startsWith('text/') ||
+        contentType === 'application/json' ||
+        contentType === 'application/xml' ||
+        contentType === 'application/javascript' ||
+        contentType === 'application/x-javascript';
+
+      if (!isHtml && !isText) {
+        await drain(res);
+
+        return errPage(id, currentUrl, `Unsupported content type: ${contentType}`, fetchedAt);
+      }
+
+      let body: string;
+
+      try {
+        body = await readBodyCapped(res, maxResponseBytes, contentTypeHeader);
+      } catch (err) {
+        const reason = isAbortError(err)
+          ? `Request timed out after ${timeoutMs}ms`
+          : errorMessage(err).toLowerCase().includes('too large')
+            ? `Response too large (exceeds ${maxResponseBytes} bytes limit)`
+            : `Read error: ${errorMessage(err)}`;
+
+        return errPage(id, currentUrl, reason, fetchedAt);
+      }
+
+      const bytesRead = Buffer.byteLength(body);
+      let title = '';
+      let content = body;
+      let lowQuality = false;
+
+      if (isHtml) {
+        const result = htmlToMarkdown(body, raw);
+
+        title = result.title;
+        content = result.markdown;
+        lowQuality = result.lowQuality;
+      } else {
+        title = extractTextTitle(body, currentUrl);
+      }
+
+      return { id, url: currentUrl, title, content, contentType, error: null, lowQuality, fetchedAt, bytesRead };
+    } finally {
+      agent.destroy();
     }
-
-    if (status >= 400) {
-      await drain(res);
-
-      return errPage(id, currentUrl, `HTTP ${status} ${res.statusText}`, fetchedAt);
-    }
-
-    const contentTypeHeader = res.headers.get('content-type');
-    const contentType = (contentTypeHeader ?? 'application/octet-stream').split(';')[0].trim().toLowerCase();
-    const isHtml = contentType === 'text/html' || contentType === 'application/xhtml+xml';
-    const isText =
-      contentType.startsWith('text/') ||
-      contentType === 'application/json' ||
-      contentType === 'application/xml' ||
-      contentType === 'application/javascript' ||
-      contentType === 'application/x-javascript';
-
-    if (!isHtml && !isText) {
-      await drain(res);
-
-      return errPage(id, currentUrl, `Unsupported content type: ${contentType}`, fetchedAt);
-    }
-
-    let body: string;
-
-    try {
-      body = await readBodyCapped(res, maxResponseBytes, contentTypeHeader);
-    } catch (err) {
-      const reason = isAbortError(err)
-        ? `Request timed out after ${timeoutMs}ms`
-        : errorMessage(err).toLowerCase().includes('too large')
-          ? `Response too large (exceeds ${maxResponseBytes} bytes limit)`
-          : `Read error: ${errorMessage(err)}`;
-
-      return errPage(id, currentUrl, reason, fetchedAt);
-    }
-
-    const bytesRead = Buffer.byteLength(body);
-    let title = '';
-    let content = body;
-    let lowQuality = false;
-
-    if (isHtml) {
-      const result = htmlToMarkdown(body, raw);
-
-      title = result.title;
-      content = result.markdown;
-      lowQuality = result.lowQuality;
-    } else {
-      title = extractTextTitle(body, currentUrl);
-    }
-
-    return { id, url: currentUrl, title, content, contentType, error: null, lowQuality, fetchedAt, bytesRead };
   }
 
   return errPage(id, currentUrl, `Too many redirects (max ${maxRedirects})`, fetchedAt);

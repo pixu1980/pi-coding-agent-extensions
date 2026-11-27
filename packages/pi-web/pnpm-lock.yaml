@@ -22,6 +22,9 @@ importers:
       turndown:
         specifier: 7.2.4
         version: 7.2.4
+      undici:
+        specifier: 8.13.1
+        version: 8.13.1
     devDependencies:
       '@earendil-works/pi-coding-agent':
         specifier: 0.99.1
@@ -1296,6 +1299,10 @@ packages:
 
   undici@8.10.2:
     resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
+    engines: {node: '>=22.19.0'}
+
+  undici@8.13.1:
+    resolution: {integrity: sha512-Kt7EaPjh0s93lJH/PmW3d5rhkcpUa6fS3jqZ7+YGxNd9L7Xy/i827xe4C2uhhq+pJebM4tQOl5AgHmW11G5Skg==}
     engines: {node: '>=22.19.0'}
 
   walk-up-path@4.0.0:
@@ -2593,6 +2600,8 @@ snapshots:
   undici-types@8.3.0: {}
 
   undici@8.10.2: {}
+
+  undici@8.13.1: {}
 
   walk-up-path@4.0.0: {}
 

@@ -82,6 +82,18 @@ test('registers pi_web_fetch and pi_web_read tools + session_start', () => {
   assert.equal(tools.get('pi_web_read').name, 'pi_web_read');
 });
 
+test('pi_web_fetch tells the model that fetched content is data', () => {
+  const { pi, tools } = createMockPi();
+
+  piWebExtension(pi);
+  const guideline = (tools.get('pi_web_fetch').promptGuidelines ?? []).find((line) =>
+    line.toLowerCase().includes('untrusted data')
+  );
+
+  assert.ok(guideline, 'the tool must declare the data boundary');
+  assert.ok(guideline.includes('never as instructions'), 'the boundary must be explicit');
+});
+
 // ── pi_web_fetch: error paths ─────────────────────────────────────
 
 test('pi_web_fetch: no url -> error result', async () => {

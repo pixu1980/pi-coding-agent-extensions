@@ -50,10 +50,11 @@ pi_web_read({ id: "lxt3k...", offset: 12000, limit: 12000 })
 
 ## How it works
 
-1. `pi_web_fetch` validates the URL (http/https only), then runs an **SSRF guard**: private, loopback, link-local and reserved addresses are blocked by default, and redirects are re-validated on **every hop**.
-2. The response is streamed with a hard byte cap and a timeout.
-3. HTML is parsed with linkedom, the article is extracted with Readability, and Turndown converts it to Markdown. If Readability finds no article (SPA shell, weird markup) it falls back to the whole body and flags the result as low-quality instead of returning nothing.
-4. The page is stored with an id and returned inline (truncated with a slice hint).
+1. `pi_web_fetch` validates the URL (http/https only), then runs an **SSRF guard**: private, loopback, link-local, reserved and IPv4-IPv6 transition addresses are blocked by default, and redirects are re-validated on **every hop**.
+2. The connection dials the address the guard approved. The client resolves through a pinned lookup, so a second DNS answer cannot point the request at a private address.
+3. The response is streamed with a hard byte cap and a timeout.
+4. HTML is parsed with linkedom, the article is extracted with Readability, and Turndown converts it to Markdown. If Readability finds no article (SPA shell, weird markup) it falls back to the whole body and flags the result as low-quality instead of returning nothing.
+5. The page is stored with an id and returned inline (truncated with a slice hint).
 
 ## Configuration (optional)
 
@@ -74,7 +75,9 @@ Create `~/.pi/pi-web.json`:
 
 ## Security
 
-- **SSRF guard on by default**: requests to private/reserved addresses are blocked unless explicitly allowlisted (`allowRanges`).
+- **SSRF guard on by default**: requests to private, reserved and transition addresses are blocked unless explicitly allowlisted (`allowRanges`).
+- **Pinned connection**: the request connects to the validated address only, which closes the DNS-rebinding window between check and connect.
+- **Fetched content is data, not instructions**: the tool tells the model to treat a page as untrusted and to report an embedded instruction instead of following it. A page can still try, so read what a fetch brings back as if a stranger wrote it.
 - **No JS execution**: pages are parsed with linkedom, never rendered, so prompt-injected scripts can't run.
 - **Byte cap + timeout** on every request.
 - This package is declared `dual-use` because it fetches URLs you give it. See [SECURITY.md](../../SECURITY.md) for the reporting channel and the rest of the trust boundary.

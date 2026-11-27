@@ -37,6 +37,13 @@ const DEFAULT_BLOCKED: string[] = [
   'fe80::/10',
   'ff00::/8',
   '::ffff:0:0/96',
+  // IPv6 -> IPv4 transition prefixes. Each one carries an IPv4 destination,
+  // so an unblocked prefix reaches loopback and cloud metadata on a network
+  // that translates them (NAT64/DNS64, 6to4, Teredo).
+  '64:ff9b::/96',
+  '64:ff9b:1::/48',
+  '2002::/16',
+  '2001::/32',
 ];
 
 function parseIpv4(ip: string): bigint | null {
@@ -228,6 +235,49 @@ export interface HostValidation {
   blocked: boolean;
   reason?: string;
   addresses: string[];
+}
+
+/** Node's `lookup` callback shape, narrowed to what the pinned lookup answers. */
+export type PinnedLookupCallback = (err: NodeJS.ErrnoException | null, address?: unknown, family?: number) => void;
+
+/**
+ * Build a `lookup` that answers only with addresses that already passed the guard.
+ *
+ * Passing this to the HTTP client's connector removes the second, unchecked DNS
+ * query between validation and connection, which is the window a rebinding
+ * attack needs.
+ *
+ * @param addresses - Addresses returned by {@link validateTargetHost}.
+ * @returns A `lookup`-compatible function that never returns another address.
+ */
+export function createPinnedLookup(
+  addresses: string[]
+): (hostname: string, options: { all?: boolean } | undefined, callback: PinnedLookupCallback) => void {
+  const approved = addresses.filter((address) => isIP(address) !== 0);
+
+  return (hostname, options, callback) => {
+    if (approved.length === 0) {
+      const err = new Error(`No approved address for ${hostname}`) as NodeJS.ErrnoException;
+
+      err.code = 'ENOTFOUND';
+      callback(err);
+
+      return;
+    }
+
+    if (options?.all) {
+      callback(
+        null,
+        approved.map((address) => ({ address, family: isIP(address) }))
+      );
+
+      return;
+    }
+
+    const first = approved[0] as string;
+
+    callback(null, first, isIP(first));
+  };
 }
 
 export async function validateTargetHost(hostname: string, allowRanges: string[]): Promise<HostValidation> {

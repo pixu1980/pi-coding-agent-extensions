@@ -29,6 +29,7 @@
     "index.ts",
     "lib/**",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "publishConfig": {

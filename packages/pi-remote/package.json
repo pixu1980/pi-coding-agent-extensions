@@ -36,6 +36,7 @@
     "web/**",
     "docs/**",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE",
     "DISCLOSURE"
   ],

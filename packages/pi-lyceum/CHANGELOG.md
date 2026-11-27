@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.1](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-lyceum@0.2.0...@pixu1980/pi-lyceum@0.2.1) (2026-11-27)
+
+### Features
+
+* **release:** create a GitHub release note for every published tag ([b61c818](https://github.com/pixu1980/pi-coding-agent-extensions/commit/b61c8180701b9c33a519c64fc5973cd1ef11c20d))
+* **scripts:** add a guarded npm unpublish for a single version ([fd2c161](https://github.com/pixu1980/pi-coding-agent-extensions/commit/fd2c1613c67572f9bb7324b03a0a5054a698505f))
+
 ## [0.2.0](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-lyceum@0.1.0...@pixu1980/pi-lyceum@0.2.0) (2026-11-27)
 
 ### ⚠ BREAKING CHANGES

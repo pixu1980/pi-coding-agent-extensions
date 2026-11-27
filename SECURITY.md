@@ -1,7 +1,8 @@
 # Security Policy
 
-This repository publishes ten `@pixu1980/pi-*` packages for the
-[pi coding agent](https://pi.dev). They load into the pi process, so they run
+This repository publishes nine `@pixu1980/pi-*` packages for the
+[pi coding agent](https://pi.dev); a tenth, `@pixu1980/pi-mcp`, is deprecated.
+They load into the pi process, so they run
 with the privileges you gave pi and they can reach whatever pi can reach.
 
 ## Supported versions
@@ -38,7 +39,7 @@ wrong does not.
 
 ## Trust boundary
 
-Three of the eight supported packages are declared `dual-use` in their
+Four of the nine supported packages are declared `dual-use` in their
 `package.json` because they are built to reach outside the process. Their
 `DISCLOSURE` files state what they can do and are the authoritative description.
 `@pixu1980/pi-mcp` is dual-use too but deprecated, and pi no longer installs it
@@ -62,6 +63,15 @@ by default.
   `fetch(`, an `http`/`https` request, a socket, a WebSocket, `EventSource`, a
   third-party networking package or a `child_process` call, or if a URL literal
   names a host outside the allowlist. It writes no credential anywhere.
+- **`@pixu1980/pi-lyceum`** carries your Lyceum API key and sends it to
+  `api.lyceum.technology` and nowhere else: `GET /models` for the catalog
+  refresh and, through pi's own `openai-completions` implementation, every chat
+  turn. Its discovery call refuses redirects, checks the final URL against the
+  host allowlist, caps the body and honors a timeout and pi's abort signal.
+  Source-level tests fail if a second host, a `fetch` outside the discovery
+  module, a process spawn, a filesystem write or an environment variable appears
+  in the source. It writes no credential anywhere and has no environment
+  fallback for the key.
 - **`@pixu1980/pi-web`** fetches URLs you give it and converts them to
   Markdown. Requests to private and reserved address ranges are blocked unless
   you allowlist them, pages are parsed with `linkedom` and never rendered, so
@@ -80,7 +90,7 @@ and write to pi's state. They do not open sockets.
 
 Know what you are trusting when you install:
 
-- **No package carries a provenance attestation.** All nine were published from
+- **No package carries a provenance attestation.** All ten were published from
   a developer machine with a personal npm credential, not from CI, so npm cannot
   show you a signed link between the published tarball and this repository. A
   consumer who requires provenance should not install these packages.
@@ -99,7 +109,10 @@ Know what you are trusting when you install:
 Credential handling is per package. `@pixu1980/pi-cursor` documents its
 guarantees field by field in its `DISCLOSURE`, including that it writes no
 credential anywhere and that every string reaching the transcript, an error
-message or stderr passes through `scrubSecrets` first. `@pixu1980/pi-mcp`, while
+message or stderr passes through `scrubSecrets` first. `@pixu1980/pi-lyceum`
+documents its guarantees the same way: the key is read from pi's credential
+store only, is never written, cached or logged by the extension, and the only
+key-shaped string it can print is a masked label. `@pixu1980/pi-mcp`, while
 it was supported, stored OAuth tokens in the operating system keyring rather than
 on disk; the deprecated package is unsupported and receives no fixes. If you find a
 package here logging, transmitting or persisting a secret it should not, that is

@@ -1,12 +1,12 @@
 # pi-coding-agent-extensions
 
-Eight extensions for the [pi coding agent](https://pi.dev), published
+Nine extensions for the [pi coding agent](https://pi.dev), published
 independently to npm under the `@pixu1980` scope. One further package,
 `pi-mcp`, is deprecated.
 
 ## Packages
 
-All eight extensions support the current pi, `0.99.x` and newer: they use the
+All nine extensions support the current pi, `0.99.x` and newer: they use the
 host APIs directly and are tested against the host the repository pins. The
 host supplies `@earendil-works/pi-*` and `typebox` to extensions, so those are
 declared as peers, never bundled.
@@ -15,6 +15,7 @@ declared as peers, never bundled.
 | ------- | ------------ |
 | [`@pixu1980/pi-ask`](./packages/pi-ask) | Interactive multiple-choice questions for the agent, with notes and custom answers |
 | [`@pixu1980/pi-cursor`](./packages/pi-cursor) | Run Cursor's own agents from pi using your Cursor API key |
+| [`@pixu1980/pi-lyceum`](./packages/pi-lyceum) | Run Lyceum's open models from pi through its OpenAI-compatible API |
 | ~~[`@pixu1980/pi-mcp`](./packages/pi-mcp)~~ | **Deprecated**: superseded by pi's built-in MCP support and `/mcp` command. Installing it replaces the built-in `mcp` extension. |
 | [`@pixu1980/pi-path-picker`](./packages/pi-path-picker) | Interactive file path autocomplete with fuzzy matching and Tab completion |
 | [`@pixu1980/pi-reasoning`](./packages/pi-reasoning) | Sets the thinking level from the selected model, with per-model overrides |

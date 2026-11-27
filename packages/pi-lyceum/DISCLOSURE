@@ -1,0 +1,65 @@
+# DISCLOSURE — pi-lyceum (@pixu1980/pi-lyceum)
+
+## Purpose
+
+pi-lyceum registers a `lyceum` model provider in the pi coding agent. It lets a
+user run Lyceum's serverless open models from pi using the user's own Lyceum API
+key, through Lyceum's OpenAI-compatible API.
+
+## Credential handling
+
+| Property | Guarantee |
+| --- | --- |
+| Where the key is read from | pi's credential store (`/login lyceum` → `~/.pi/agent/auth.json`, mode 0600). There is no environment-variable fallback. |
+| Where the key is written | **Nowhere by this extension.** pi owns the auth file; pi-lyceum contains no filesystem write. |
+| Where the key is sent | `api.lyceum.technology` only, as `Authorization: Bearer …` |
+| Where the key is logged | Nowhere. No message this extension prints contains a key, and the only key-shaped string it can render is `maskApiKey`, which shows four leading and four trailing characters plus the length. |
+| Cached key material | None. The key is read per call and never kept in module state. |
+| Environment variables | None are read. A stray `LYCEUM_API_KEY` export has no effect. |
+
+## Outbound surface
+
+The extension issues exactly one request of its own, and pi issues the chat
+traffic:
+
+| Host | Request | Payload |
+| --- | --- | --- |
+| `api.lyceum.technology` | `GET /openai/v1/models` | the bearer key. Issued by `fetchLiveModelIds` during pi's model refresh and on `/lyceum-models`. |
+| `api.lyceum.technology` | `POST /openai/v1/chat/completions` | the bearer key, your prompt, the system prompt and tool definitions. Issued by pi's own `openai-completions` implementation, not by this extension. |
+
+`GET /models` is bounded and guarded:
+
+- the URL is built from the constant base URL; the extension reads no override
+  and accepts no user-supplied endpoint;
+- redirects are refused (`redirect: "error"`);
+- the final response URL is checked against the `api.lyceum.technology`
+  allowlist;
+- the body is capped at 1,048,576 characters, declared or actual;
+- the call times out after 10 seconds and also honors pi's abort signal;
+- a failure is reported with the HTTP status and Lyceum's own `error.message`,
+  never with request headers or the key.
+
+A source-level test (`__tests__/source-egress.test.mjs`) fails the suite if:
+
+- any URL literal in `index.ts` or `lib/` names a host outside
+  `api.lyceum.technology`, `lyceum.technology` or `docs.lyceum.technology`;
+- any file other than `lib/_discovery.ts` mentions `fetch`;
+- `child_process`, `execFile`, `execSync`, `spawn` or `writeFile` appears in the
+  source at all;
+- `process.env` appears in the source at all.
+
+## Model metadata
+
+The bundled catalog is a snapshot of Lyceum's published model list (context
+windows and USD prices per million tokens). A live id that is not in the
+snapshot is registered with documented conservative defaults — 131,072 context,
+16,384 output, text-only, zero cost, no reasoning — and the cost shown for such
+a model is a placeholder, not a claim about what Lyceum charges.
+
+## What this extension does not do
+
+- It does not implement a transport: message conversion, streaming, tool calls,
+  usage accounting and cancellation are pi's `openai-completions` code.
+- It does not read, write or cache sessions, prompts or responses.
+- It adds no telemetry, analytics or crash reporting.
+- It does not call Lyceum's Anthropic-compatible endpoint, CLI or dashboard API.

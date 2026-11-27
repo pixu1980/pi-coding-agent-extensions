@@ -155,7 +155,8 @@ async function resolveSamplingModel(
 ): Promise<{
   model: Model<Api>;
   apiKey?: string;
-  headers?: Record<string, string>;
+  /** A null value suppresses the provider header of the same name. */
+  headers?: Record<string, string | null>;
 }> {
   const candidates: Model<Api>[] = [];
   const availableModels = options.modelRegistry.getAvailable();

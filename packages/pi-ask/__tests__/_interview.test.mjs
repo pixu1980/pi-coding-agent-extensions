@@ -170,7 +170,7 @@ test('guardrail: before_agent_start appends the interview directive when the pro
   assert.ok(handler, 'before_agent_start handler is registered');
 
   const result = handler(
-    { prompt: "vorrei un'intervista con 2 wave di domande", systemPrompt: 'BASE' },
+    { messageType: 'user', prompt: "vorrei un'intervista con 2 wave di domande", systemPrompt: 'BASE' },
     createMockCtx()
   );
 
@@ -186,7 +186,10 @@ test('guardrail: before_agent_start appends the ask directive for single-questio
   piAskExtension(pi);
 
   const [handler] = handlers.get('before_agent_start');
-  const result = handler({ prompt: 'fammi una domanda sul progetto', systemPrompt: 'BASE' }, createMockCtx());
+  const result = handler(
+    { messageType: 'user', prompt: 'fammi una domanda sul progetto', systemPrompt: 'BASE' },
+    createMockCtx()
+  );
 
   assert.ok(result);
   assert.match(result.systemPrompt, /MANDATORY INSTRUCTION/);
@@ -200,9 +203,23 @@ test('guardrail: plain prompts and slash commands are left untouched', () => {
 
   const [handler] = handlers.get('before_agent_start');
 
-  assert.equal(handler({ prompt: 'refactor the auth module', systemPrompt: 'BASE' }, createMockCtx()), undefined);
-  assert.equal(handler({ prompt: '/ask-interview topic', systemPrompt: 'BASE' }, createMockCtx()), undefined);
-  assert.equal(handler({ prompt: '', systemPrompt: 'BASE' }, createMockCtx()), undefined);
+  assert.equal(
+    handler({ messageType: 'user', prompt: 'refactor the auth module', systemPrompt: 'BASE' }, createMockCtx()),
+    undefined
+  );
+  assert.equal(
+    handler({ messageType: 'user', prompt: '/ask-interview topic', systemPrompt: 'BASE' }, createMockCtx()),
+    undefined
+  );
+  assert.equal(handler({ messageType: 'user', prompt: '', systemPrompt: 'BASE' }, createMockCtx()), undefined);
+  // A custom message starts a run without a user prompt, so it is left alone too.
+  assert.equal(
+    handler(
+      { messageType: 'custom', message: { role: 'user', content: 'fammi una domanda' }, systemPrompt: 'BASE' },
+      createMockCtx()
+    ),
+    undefined
+  );
 });
 
 test('package manifest exposes the extension and does not ship skills', () => {
@@ -311,7 +328,7 @@ test('guardrail: a sharp-interview prompt forces the ask tool via the merged gua
   piAskExtension(pi);
 
   const [handler] = handlers.get('before_agent_start');
-  const result = handler({ prompt: 'sfida il mio piano', systemPrompt: 'BASE' }, createMockCtx());
+  const result = handler({ messageType: 'user', prompt: 'sfida il mio piano', systemPrompt: 'BASE' }, createMockCtx());
 
   assert.ok(result);
   assert.match(result.systemPrompt, /\(recommended\)/);

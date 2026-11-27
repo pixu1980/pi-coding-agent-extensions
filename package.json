@@ -22,7 +22,8 @@
     "release": "node scripts/release.mjs",
     "release:dry": "node scripts/release.mjs --dry-run",
     "test:all": "node scripts/test-all.mjs",
-    "test:coverage": "node scripts/test-all.mjs --coverage"
+    "test:coverage": "node scripts/test-all.mjs --coverage",
+    "typecheck:all": "node scripts/typecheck-all.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",

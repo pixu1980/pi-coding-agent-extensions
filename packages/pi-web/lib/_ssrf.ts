@@ -237,8 +237,17 @@ export interface HostValidation {
   addresses: string[];
 }
 
-/** Node's `lookup` callback shape, narrowed to what the pinned lookup answers. */
-export type PinnedLookupCallback = (err: NodeJS.ErrnoException | null, address?: unknown, family?: number) => void;
+/**
+ * Node's `lookup` callback shape, narrowed to what the pinned lookup answers.
+ *
+ * Node's own `LookupFunction` type requires an address even on the error path,
+ * so this signature does too; the value is ignored once `err` is set.
+ */
+export type PinnedLookupCallback = (
+  err: NodeJS.ErrnoException | null,
+  address: string | Array<{ address: string; family: number }>,
+  family?: number
+) => void;
 
 /**
  * Build a `lookup` that answers only with addresses that already passed the guard.
@@ -260,7 +269,7 @@ export function createPinnedLookup(
       const err = new Error(`No approved address for ${hostname}`) as NodeJS.ErrnoException;
 
       err.code = 'ENOTFOUND';
-      callback(err);
+      callback(err, '');
 
       return;
     }

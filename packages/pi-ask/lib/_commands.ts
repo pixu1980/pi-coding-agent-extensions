@@ -324,6 +324,12 @@ function findMatch(text: string): { kind: 'interview' | 'ask'; docs: boolean; ke
  */
 export function registerAskGuardrails(pi: ExtensionAPI) {
   pi.on('before_agent_start', (event) => {
+    // A custom message that starts a run carries no user prompt; only a user
+    // message can ask for a question.
+    if (event.messageType !== 'user') {
+      return;
+    }
+
     const prompt = (event.prompt ?? '').trim();
 
     if (!prompt || prompt.startsWith('/')) {

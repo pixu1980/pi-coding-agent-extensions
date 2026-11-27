@@ -56,7 +56,7 @@ class CollapsibleText implements Component {
 
   render(width: number): string[] {
     if (this.expanded) {
-      return this.fullText.render(width);
+      return [...this.fullText.render(width)];
     }
 
     const safeWidth = Math.max(1, Math.floor(width));
@@ -75,7 +75,7 @@ class CollapsibleText implements Component {
     const lines = this.collapsedText.text.render(width);
 
     if (!this.preTruncated && this.collapsedText.fullyIncluded && lines.length <= this.maxCollapsedLines) {
-      return lines;
+      return [...lines];
     }
 
     return [...lines.slice(0, this.maxCollapsedLines), ...this.footerText.render(width)];

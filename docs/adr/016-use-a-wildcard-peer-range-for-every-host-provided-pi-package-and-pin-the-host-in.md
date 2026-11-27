@@ -1,7 +1,7 @@
 # 016: Use a wildcard peer range for every host-provided pi package and pin the host in devDependencies
 
 - **Date**: 2026-10-01
-- **Status**: accepted
+- **Status**: superseded by [021](021-pin-the-host-at-1-6-0-and-gate-type-checking-across-all-nine-packages.md)
 - **Tags**: dependencies, packaging, pi, peer-dependencies, typebox, testing
 - **Author**: Emiliano Pisu <pisuemiliano.1980@gmail.com>
 

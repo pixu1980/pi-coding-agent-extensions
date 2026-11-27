@@ -1,6 +1,6 @@
 # Contributing
 
-This repository publishes nine `@pixu1980/pi-*` packages for the
+This repository publishes eight `@pixu1980/pi-*` packages for the
 [pi coding agent](https://pi.dev), plus the deprecated `pi-mcp`. Each one is a
 standalone pnpm project; the root is a script runner, not a workspace.
 

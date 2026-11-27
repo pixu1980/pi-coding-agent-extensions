@@ -1,6 +1,6 @@
 # Security Policy
 
-This repository publishes nine `@pixu1980/pi-*` packages for the
+This repository publishes eight `@pixu1980/pi-*` packages for the
 [pi coding agent](https://pi.dev); a tenth, `@pixu1980/pi-mcp`, is deprecated.
 They load into the pi process, so they run
 with the privileges you gave pi and they can reach whatever pi can reach.
@@ -39,7 +39,7 @@ wrong does not.
 
 ## Trust boundary
 
-Four of the nine supported packages are declared `dual-use` in their
+Three of the eight supported packages are declared `dual-use` in their
 `package.json` because they are built to reach outside the process. Their
 `DISCLOSURE` files state what they can do and are the authoritative description.
 `@pixu1980/pi-mcp` is dual-use too but deprecated, and pi no longer installs it
@@ -56,7 +56,10 @@ by default.
   (`@napi-rs/keyring`), opens URLs in your browser, and relays tool calls from
   the model to every connected server. It is kept for the record only: it is
   skipped by the release loop and no new versions are published, so it receives
-  no further security fixes. Use the built-in support instead.
+  no further security fixes. `pnpm audit --prod` reports 1 critical and 12 high
+  advisories in its dependency tree, including an OAuth client that can send
+  credentials to the wrong host; no release can fix them. Run
+  `pi remove npm:@pixu1980/pi-mcp` if it is still installed.
 - **`@pixu1980/pi-cursor`** carries your Cursor API key and sends it to
   `api2.cursor.sh` and `api.cursor.com` and nowhere else. It ships no HTTP client
   of its own, and source-level tests fail if any file under `lib/` gains
@@ -73,24 +76,21 @@ by default.
   in the source. It writes no credential anywhere and has no environment
   fallback for the key.
 - **`@pixu1980/pi-web`** fetches URLs you give it and converts them to
-  Markdown. Requests to private and reserved address ranges are blocked unless
-  you allowlist them, pages are parsed with `linkedom` and never rendered, so
-  script in a fetched page cannot execute, and every request carries a byte cap
-  and a timeout.
-- **`@pixu1980/pi-remote`** opens a TLS WebSocket to a relay, pairs phone
-  browsers through single-use short-lived tokens, and stores machine identity
-  and an audit trail under `~/.pi/pi-remote/` (`0600`). Web Push payloads carry
-  a room hint and no content, so the push vendors never see a prompt or an
-  answer.
+  Markdown. Requests to private, reserved and IPv4-IPv6 transition address
+  ranges are blocked unless you allowlist them, the connection dials only the
+  address the guard approved, pages are parsed with `linkedom` and never
+  rendered, so script in a fetched page cannot execute, and every request
+  carries a byte cap and a timeout. Fetched content is data: the tool tells the
+  model to report an embedded instruction, not to follow it.
 
-The other five packages read pi's own session, settings and configuration files
+The other four packages read pi's own session, settings and configuration files
 and write to pi's state. They do not open sockets.
 
 ### Release integrity
 
 Know what you are trusting when you install:
 
-- **No package carries a provenance attestation.** All ten were published from
+- **No package carries a provenance attestation.** All eight were published from
   a developer machine with a personal npm credential, not from CI, so npm cannot
   show you a signed link between the published tarball and this repository. A
   consumer who requires provenance should not install these packages.
@@ -117,3 +117,13 @@ it was supported, stored OAuth tokens in the operating system keyring rather tha
 on disk; the deprecated package is unsupported and receives no fixes. If you find a
 package here logging, transmitting or persisting a secret it should not, that is
 in scope and worth reporting.
+
+What this repository writes to disk, and with which permissions:
+
+- **Agent credentials** stay in pi's own credential store, `~/.pi/agent/auth.json`
+  (`0600`), written by `/login`. The provider packages read it and never write it.
+- **Extension state** is created owner-only: `pi-cursor`'s catalog cache, the
+  guarded MCP output and, in `pi-mcp`, the trace files. MCP traces now live under
+  `~/.pi/agent/mcp-traces/` with mode `0600`, and they record message metadata
+  only: method, direction, status, byte count and a redacted id. A tool argument
+  never reaches a trace.

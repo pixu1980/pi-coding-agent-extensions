@@ -1,232 +1,159 @@
 # oss plan
 
 - **Role**: oss v1
-- **Date**: 2026-09-15
-- **Scope**: the whole pi-coding-agent-extensions monorepo: the 8 published packages under packages/ plus the repository root (governance, license, release, community, funding surface)
+- **Date**: 2026-11-27
+- **Scope**: `Audit, review and plan`. Steps for the open findings in [the review](../reviews/oss.md).
 
-Steps re-derived from the open findings in [the review](../reviews/oss.md) on every run, worst
-first. Mark an executed step or sub-step with `[x]` - the next sync keeps the mark while its
-finding stays open. This file is deleted by the run that finds nothing open.
+Status: `complete`.
 
-## Roadmap
+Steps re-derived from the open findings on every run, worst first. Mark an executed step with
+`[x]`. The next sync keeps the mark while its finding stays open. One workstream owns one file
+set, so no two workstreams edit the same file. This file is deleted by the run that finds nothing
+open.
 
-Five phases. Steps inside a phase are independent of each other unless the dependency table
-says otherwise; a phase does not start until its prerequisites are green. The ordering rule
-behind it: nothing that documents behavior may land before the behavior is true, because a
-CONTRIBUTING.md that names a broken command is worse than no CONTRIBUTING.md.
+## Dependency graph
 
-### Phase 0 - Unblock the baseline
+| From | To | Kind | Why |
+| ---- | -- | ---- | --- |
+| WS1-T1 | WS1-T2 | Depends on | The gate must run against the new pin. |
+| WS1-T2 | WS1-T3 | Depends on | The ADR records what the gate proved. |
+| WS3-T1 | WS5-T2 | Feeds | The backfill uses the new release-note command. |
+| WS1-T3 | WS4 | Feeds | The docs name the pin and the fifth gate. |
+| WS3-T1 | WS4 | Feeds | RELEASING.md documents the step that now exists. |
+| WS5-T1 | WS4-T5 | Feeds | FUNDING.md links the tier once it exists. |
+| WS5-T4 | WS4-T2 | Feeds | CONTRIBUTING.md describes the update path. |
+| WS2 | WS4-T2 | Feeds | CONTRIBUTING.md states the hook isolation. |
 
-The repository cannot be released and its documented commands cannot be trusted, so this phase
-comes first and gates everything else.
+Shared files: none. Each path below has one owner, so no edge is a CONFLICT edge.
 
-| Order | Step | Finding | Why it is here |
-| ----- | ---- | ------- | -------------- |
-| 0.1 | Step 7 | OSS-07 | Done. A dirty tree aborted the release path and made every package look release-worthy; it landed in its own commit, the tree is clean and the release path runs again. |
-| 0.2 | Step 9 | OSS-09 | Done. The gate exists, both commands exit 0, and a test proves the linter is not a placeholder. Step 2 still owes the contributor-facing documentation of it. |
-| 0.3 | Step 16 | OSS-16 | Done. The dry run reports what it would release, and every package declares the same node floor its host declares. This closes Phase 0. |
+```text
+WS1 pin + type gate  T1 -> T2 -> T3 ------------------+
+                                                      |
+WS3 release notes ------------------------------------+--> WS4 docs
+                                                      |
+WS5 settings  T1, T4 -------- T2 needs WS3 -----------+
+WS2 test isolation -----------------------------------+
+```
 
-### Phase 1 - Legal and trust floor
+File ownership:
 
-Independent of each other. This is what makes the published artifacts lawful and gives a
-reporter somewhere private to go.
+| Workstream | Owns |
+| ---------- | ---- |
+| WS1 | `packages/*/package.json`, `pnpm-lock.yaml`, `tsconfig.json`, root `package.json`, `scripts/typecheck-all.mjs`, `docs/adr/021-*.md`. |
+| WS2 | `packages/pi-statusline/__tests__/*`. |
+| WS3 | `scripts/release.mjs`, `scripts/release-helpers.mjs`, `test/release-helpers.test.mjs`. |
+| WS4 | `README.md`, `CONTRIBUTING.md`, `GOVERNANCE.md`, `FUNDING.md`, `RELEASING.md`. |
+| WS5 | `.github/dependabot.yml`. |
 
-| Order | Step | Finding | Why it is here |
-| ----- | ---- | ------- | -------------- |
-| 1.1 | Step 1 | OSS-01 | Six of eight published packages currently breach their own license terms. Highest legal exposure. |
-| 1.2 | Step 4 | OSS-04 | Half done. SECURITY.md and the README pointers are written, which is what Step 17 needs to state the exposure. The private reporting toggle is a repository setting only the maintainer can clear. |
-| 1.3 | Step 15 | OSS-15 | Done. The mailmap folds three historical identities into one, and the repository-local git identity was already canonical. |
-| 1.4 | Step 17 | OSS-17 | Done. ADR 013 records the decision and the exposure, and SECURITY.md publishes it. This closes Phase 1. |
+## WS1 - Host pin and type gate (OSS-23)
 
-### Phase 2 - Contributor entry
+The tested host is 0.99.1. The running host is 1.6.0. Nothing type-checks against it. This
+workstream closes both halves.
 
-This is the phase a newcomer walks through, so each document must describe commands that Phase 0
-already proved work.
+- [ ] **WS1-T1 - Pin the host to 1.6.0.**
+  - [ ] **WS1-T1.1** Set `devDependencies` host and TUI entries to `1.6.0` in all ten manifests. Keep the peer range `*` that [ADR 016](../adr/016-use-a-wildcard-peer-range-for-every-host-provided-pi-package-and-pin-the-host-in.md) set.
+  - [ ] **WS1-T1.2** Run `pnpm install` in each package so its lockfile matches. Gate:
+        `pnpm install --frozen-lockfile` exits 0 in all ten packages.
+- [ ] **WS1-T2 - Make type checking a gate.**
+  - [ ] **WS1-T2.1** Add `typescript` `7.0.2` to `pi-path-picker`, `pi-reasoning`,
+        `pi-sessions` and `pi-statusline`. Regenerate their lockfiles.
+  - [ ] **WS1-T2.2** Add a `typecheck` script to `pi-ask`, `pi-mcp`, `pi-path-picker`,
+        `pi-reasoning`, `pi-sessions` and `pi-statusline`. Use `tsc --noEmit` with a
+        `tsconfig.json` where the package has none. `pi-ask` ships a `tsconfig.json`, `pi-mcp`
+        does not.
+  - [ ] **WS1-T2.3** Add `scripts/typecheck-all.mjs` and a root `typecheck:all` script. Walk
+        `packages/` the way `scripts/test-all.mjs` does. Skip a package with no script.
+  - [ ] **WS1-T2.4** Run `pnpm typecheck:all` against the 1.6.0 types. Fix what it reports.
+        Gate: `pnpm typecheck:all` exits 0.
+- [ ] **WS1-T3 - Record the pin.**
+  - [ ] **WS1-T3.1** Write the ADR that supersedes
+        [ADR 016](../adr/016-use-a-wildcard-peer-range-for-every-host-provided-pi-package-and-pin-the-host-in.md)
+        with host 1.6.0. Use `rule_tool_process_adr` so `docs/adr/ADR.md` stays generated.
 
-| Order | Step | Finding | Why it is here |
-| ----- | ---- | ------- | -------------- |
-| 2.1 | Step 3 | OSS-03 | Done. Contributor Covenant 3.0 is in place with the reporting channel filled. The Conduct section CONTRIBUTING.md must link to it carries over to Step 2. |
-| 2.2 | Step 2 | OSS-02 | Done. CONTRIBUTING.md carries its own content plus the three obligations carried from steps 3.3, 9.4 and 15.3. The community-profile half of the gate needs a push. |
-| 2.3 | Step 5 | OSS-05 | Done. GOVERNANCE.md says who decides, and cross-references CONTRIBUTING.md for the path and SECURITY.md for the exposure rather than restating either. This closes Phase 2. |
+## WS2 - Test isolation (OSS-24)
 
-### Phase 3 - Sustainability and visibility
+Eight tests depend on the contributor's global git configuration.
 
-| Order | Step | Finding | Why it is here |
-| ----- | ---- | ------- | -------------- |
-| 3.1 | Step 6 | OSS-06 | Half done. The policy, the boundary and the FUNDING.yml are written. Enrollment in GitHub Sponsors and the repository Sponsorships setting are account-level actions only the maintainer can clear. |
-| 3.2 | Step 12 | OSS-12 | Half done. RELEASING.md and the cadence are written and verified against the script. The GitHub Releases need a write the run does not have, and the roadmap needs product direction from the maintainer. |
-| 3.3 | Step 14 | OSS-14 | Half decided. Topics, homepage, description and wiki toggle are repository settings only the maintainer can clear; wiki-off and Discussions-off are recorded. |
-| 3.4 | Step 18 | OSS-18 | Depends on Step 7 for the dependency decision and on Step 2 for the manual dependency-update paragraph. |
+- [ ] **WS2-T1 - Stop temp repositories from running contributor hooks.**
+  - [ ] **WS2-T1.1** Isolate the hook path in the three pi-statusline test helpers. Use
+        `git -c core.hooksPath= commit -qm "test: fixture"`.
+  - [ ] **WS2-T1.2** Add `packages/pi-statusline/__tests__/_git-hooks.test.mjs` and import it
+        from `__tests__/index.test.mjs`. It points `GIT_CONFIG_GLOBAL` at a config whose
+        `commit-msg` hook exits 1. It commits in a temp repository and asserts success.
+  - [ ] **WS2-T1.3** Gate: `pnpm test` in `packages/pi-statusline` exits 0 with that poisoned
+        `GIT_CONFIG_GLOBAL`, and exits 0 without it.
 
-### Phase 4 - Remaining hygiene
+## WS3 - Release notes and tag policy (OSS-12, OSS-25)
 
-| Order | Step | Finding | Why it is here |
-| ----- | ---- | ------- | -------------- |
-| 4.1 | Step 8 | OSS-08 | Done. The policy is documented in CONTRIBUTING.md and enforced by three guards, each verified by injecting the violation and watching it fire. |
-| 4.2 | Step 10 | OSS-10 | Done. Six of eight packages were affected rather than three, and the fix uncovered OSS-22 in pi-web's typecheck script. pnpm test and pnpm typecheck now exit 0 everywhere. |
-| 4.3 | Step 11 | OSS-11 | Done. The bundle has a script, a header naming its version, three guards and an ADR. |
-| 4.4 | Step 13 | OSS-13 | Done. Six code sites translated, not three, and the rule is enforced by a guard whose word list produces no false positives. |
-| 4.5 | Step 19 | OSS-21 | Done. Fourteen rules are back on with zero diagnostics; five stay off, each for a measured reason. The disabled list shrank from twenty to five. |
+Ten published versions, zero GitHub Releases. The note belongs beside the tag it documents.
 
-### Dependency table
+- [ ] **WS3-T1 - Turn every tag into a release note.**
+  - [ ] **WS3-T1.1** Add a helper to `scripts/release-helpers.mjs`. It builds
+        `gh release create "<name>@<version>" --title ... --notes-file ...`. Unit test it in
+        `test/release-helpers.test.mjs`.
+  - [ ] **WS3-T1.2** Call it from `scripts/release.mjs` after the tag push and before
+        `npm publish`. A failed publish then never leaves a note pointing at nothing. In
+        `--dry-run`, print the command.
+  - [ ] **WS3-T1.3** Gate: `pnpm release:dry` prints the `gh release create` line for each
+        package it would release. Root `pnpm test` stays green.
+- [ ] **WS3-T2 - State the tag policy in code.**
+  - [ ] **WS3-T2.1** Assert in `test/release-helpers.test.mjs` that `standardVersionCommand`
+        never emits `--sign`. An unsigned tag stays a decision, not an oversight.
 
-| Step | Finding | Depends on | Blocks |
-| ---- | ------- | ---------- | ------ |
-| 1 | OSS-01 | - | - |
-| 2 | OSS-02 | 3, 7, 9 | 5, 8 |
-| 3 | OSS-03 | - | 2 |
-| 4 | OSS-04 | - | 17 |
-| 5 | OSS-05 | 2, 3, 17 | 6, 12 |
-| 6 | OSS-06 | 5 | - |
-| 7 | OSS-07 | - | 2, 12, 16, 18 |
-| 8 | OSS-08 | 2 | - |
-| 9 | OSS-09 | - | 2, 11 |
-| 10 | OSS-10 | - | - |
-| 11 | OSS-11 | 9 | - |
-| 12 | OSS-12 | 5, 7 | - |
-| 13 | OSS-13 | - | - |
-| 14 | OSS-14 | - | - |
-| 15 | OSS-15 | - | - |
-| 16 | OSS-16 | 7 | - |
-| 17 | OSS-17 | 4 | 5 |
-| 18 | OSS-18 | 2, 7 | - |
-| 19 | OSS-21 | - | - |
+## WS4 - Documents aligned with what exists (OSS-06, OSS-12, OSS-14, OSS-23, OSS-24, OSS-25, OSS-26)
 
-Critical path: 7 -> 2 -> 5 -> 12. That is the longest chain and it ends with the release
-cadence a contributor can finally plan around.
+Depends on WS1, WS3 and WS5. A document must not name a command before the command exists.
 
-### Manual gates only the maintainer can clear
+- [ ] **WS4-T1 - README.md.**
+  - [ ] **WS4-T1.1** Replace the support sentence at line 9 with the host version the suite
+        runs against. Cite the new ADR.
+  - [ ] **WS4-T1.2** Point the Contributing section at open issues labeled `good first issue`.
+- [ ] **WS4-T2 - CONTRIBUTING.md.**
+  - [ ] **WS4-T2.1** Add `typecheck:all` to the gate list, in the shape of the other four.
+  - [ ] **WS4-T2.2** State that the suite must pass with a global hooks path configured.
+  - [ ] **WS4-T2.3** Describe how a dependency pull request is handled. Match WS5-T4.
+- [ ] **WS4-T3 - RELEASING.md.**
+  - [ ] **WS4-T3.1** Document the release-note step and the backfill command from WS3-T1.
+  - [ ] **WS4-T3.2** Add a tag and signature paragraph. Annotated tags, unsigned by decision,
+        older lightweight tags left as they are.
+  - [ ] **WS4-T3.3** Record why there is no root `CHANGELOG.md`. Record that there is no
+        product roadmap, next to the cadence paragraph.
+  - [ ] **WS4-T3.4** Name the tested host version in the preconditions.
+- [ ] **WS4-T4 - GOVERNANCE.md.**
+  - [ ] **WS4-T4.1** Record the Discussions decision. Off until demand, with the reason.
+- [ ] **WS4-T5 - FUNDING.md.**
+  - [ ] **WS4-T5.1** State what a visitor sees today. Link the tier once WS5-T1 exists.
 
-These are not code changes. They are the settings and accounts that a pull request cannot make,
-listed here because a step is not done until they are cleared.
+## WS5 - Settings and account actions (OSS-06, OSS-12, OSS-18)
+
+Only the maintainer can clear these. One changes a file. The rest are settings.
+
+- [ ] **WS5-T1 - Give the Sponsors listing something to buy** (maintainer only)
+  - [ ] **WS5-T1.1** Create one priced tier at `https://github.com/sponsors/pixu1980/dashboard`.
+        Gate: the GraphQL `sponsorsListing.tiers.totalCount` returns 1 or more.
+- [ ] **WS5-T2 - Backfill the release notes** (after WS3-T1)
+  - [ ] **WS5-T2.1** Create one GitHub Release per tag published on npm. Use that package's
+        changelog section. Gate: `gh api repos/.../releases --jq length` returns 10 or more.
+- [ ] **WS5-T3 - Clear the stale dependency pull request.**
+  - [ ] **WS5-T3.1** Comment on PR #3 that `pi-mcp` is deprecated and cannot be released. Close
+        it and delete branch `dependabot/npm_and_yarn/packages/pi-mcp/npm_and_yarn-8bbb79c431`.
+        Gate: open pull request count is 0.
+- [ ] **WS5-T4 - Commit the dependency-update configuration.**
+  - [ ] **WS5-T4.1** Add `.github/dependabot.yml` with one `npm` entry per supported package
+        directory. That is 9 entries, `pi-mcp` excluded. Weekly schedule, `npm_and_yarn` group.
+        Gate: the file returns 200 on the default branch.
+
+## Manual gates only the maintainer can clear
 
 | Step | Where | Action |
 | ---- | ----- | ------ |
-| Step 4.2 | GitHub | Enable private vulnerability reporting at `https://github.com/pixu1980/pi-coding-agent-extensions/settings/security_analysis` |
-| Step 6.1 | GitHub and npm | Enable GitHub Sponsors, then land `.github/FUNDING.yml` so the button resolves |
-| Step 12.1 | GitHub | Publish a GitHub Release per package version currently on npm |
-| Steps 14.1 to 14.3 | GitHub | Topics, homepage, and the wiki decision |
-| Steps 18.1 and 18.2 | GitHub | Resolve dependabot pull request #2 and delete its stale remote branch |
+| WS5-T1.1 | GitHub Sponsors dashboard | Create one priced tier. |
+| WS5-T2.1 | GitHub releases | Backfill one release per published tag. |
+| WS5-T3.1 | Pull request #3 | Close with the deprecation reason. Delete the branch. |
 
-### Deliberately not in this plan
+## Deliberately not in this plan
 
-By maintainer decision taken on this run, no CI is added: no `.github/workflows` file, no npm
-Trusted Publishing, no zizmor workflow, no provenance attestation. The consequence, that 0 of 8
-packages carry an attestation and every release is published from a developer machine with a
-personal npm credential, is recorded as an accepted risk in Step 17 and stated in SECURITY.md by
-Step 17.2. It is not a gap this plan closes.
-
-## Steps
-
-- [x] **Step 1 - OSS-01 (high)**: Six of the eight published packages shipped without the license text, so the published artifacts breached the project's own license terms.
-  - [x] **1.1**: Copied the root LICENSE into the 6 package directories that lacked one: packages/pi-ask/LICENSE, packages/pi-cursor/LICENSE, packages/pi-path-picker/LICENSE, packages/pi-reasoning/LICENSE, packages/pi-sessions/LICENSE, packages/pi-statusline/LICENSE. All six hash to 17cd14c4733dcc96687a7a741a360277636b5135556dacd3d44613b7eacc71e7, the same as the root file.
-  - [x] **1.2**: Added "LICENSE" to the files array of all 8 packages/*/package.json, placed after CHANGELOG.md and before DISCLOSURE where those entries exist.
-  - [x] **1.3**: Added test/license-integrity.test.mjs asserting that every package ships a LICENSE, that every manifest lists it in files, that each license carries the permission grant and the warranty disclaimer plus a copyright holder, and that originals are byte-identical to the root LICENSE. A fork is exempt from byte-identity and is pinned in the test as `forkCopyrights`, because pi-mcp must keep the `Copyright (c) 2026 Nico Bailon` notice it inherited from pi-mcp-adapter, and asserting byte-identity there would have deleted a notice the license requires us to retain. Recorded as ADR 011.
-  - [x] **1.4**: Gate met: pnpm test reports 18 pass 0 fail, pnpm test:all reports 8 ok 0 failed, and npm pack --dry-run lists LICENSE in every one of the 8 package tarballs.
-- [x] **Step 2 - OSS-02 (high)**: There was no contributor on-ramp at all: no CONTRIBUTING.md, no issue templates and no pull request template, so a newcomer could not tell how to propose, test or land a change.
-  - [x] **2.1**: Wrote CONTRIBUTING.md with the pnpm-only setup, the four gates, the commit convention, the pull-request checklist and where to report things. It also carries the three obligations other steps deferred here: the format and lint commands from 9.4, the identity expectation from 15.3, and the conduct link from 3.3.
-  - [x] **2.2**: Stated the inbound term explicitly: inbound=outbound under `MIT`, no CLA and no DCO, and said why rather than leaving it as an absence, including the assumption that would change it.
-  - [x] **2.3**: Added .github/PULL_REQUEST_TEMPLATE.md with a checklist the repository can actually verify by hand.
-  - [x] **2.4**: Added .github/ISSUE_TEMPLATE/bug_report.yml and feature_request.yml, both parsed as YAML to confirm they are well formed and both referencing labels the repository really defines. Worth recording that this recreates a .github directory the maintainer had removed: ADR 013 rules out workflow files, and these are metadata, not automation, but the distinction is easy to misread so it is stated here.
-  - [x] **2.5**: Rewrote the root README so it answers what the repository is and how to try it: all eight packages listed with their real descriptions and an install command, the Node floor stated, and a Contributing section linking CONTRIBUTING.md, the code of conduct and the security policy. The previous text advertised themes, skills and prompts that do not exist, listed six of eight packages and ended the list with a placeholder.
-  - [x] **2.6**: Gate blocked on a push, like 3.4. The profile reports contributing, issue_template, pull_request_template, code_of_conduct_file and security_policy as MISSING because none of those files is on the default branch yet; the health percentage cannot move until they are.
-- [x] **Step 3 - OSS-03 (high)**: The project had no code of conduct, so it defined no behavioral standard for contributors and no enforcement path.
-  - [x] **3.1**: Added CODE_OF_CONDUCT.md from the upstream markdown rather than retyping it, so the text is the official Contributor Covenant 3.0. Two things needed substitution and both are declared in the document's own Attribution section: the reporting channel, and two typographic apostrophes plus one British spelling that this repository's style rules forbid.
-  - [x] **3.2**: Set the reporting channel to the maintainer's address and replaced the template's second placeholder with this project's process: the ladder below is adopted unchanged, one person acts as Community Moderator at every rung, and the steps a larger community would split between two moderators are carried out by the same person. That limitation is stated rather than implied, because a single-maintainer project has no internal escalation.
-  - [ ] **3.3**: The Conduct section belongs in CONTRIBUTING.md, which Step 2 creates. Carried there rather than written twice.
-  - [x] **3.4**: Gate met where it can be checked locally: no placeholder survives, the file carries no typographic apostrophes or British spellings, and it passes 59 of 59 style guardrails. The community-profile half needs the file on the default branch, so it is observable only after a push.
-- [ ] **Step 4 - OSS-04 (high)**: There is no security policy and no private channel for reporting vulnerabilities, which matters more than usual here because the packages execute inside the user's agent process.
-  - [x] **4.1**: Wrote SECURITY.md with the supported-version rule (latest published version per package, no backports), the reporting channel, and a 3-working-day acknowledgment target the maintainer chose.
-  - [ ] **4.2**: MANUAL GATE, maintainer only. Enable private vulnerability reporting at `https://github.com/pixu1980/pi-coding-agent-extensions/settings/security_analysis`. Until this is done the channel named in SECURITY.md does not exist.
-  - [x] **4.3**: Documented the trust boundary with measured detail: what pi-mcp, pi-cursor and pi-web each reach, the guards pi-web and pi-cursor enforce, and the release-integrity exposure, which is 0 of 8 packages carrying a provenance attestation, lightweight unsigned tags, no CI, and no dependency cooldown since ADR 012.
-  - [x] **4.4**: Added a Security section to README.md and pointers in the three dual-use package READMEs. All four links resolve to the root SECURITY.md.
-  - [ ] **4.5**: Gate, blocked on 4.2 and on a push. GitHub reports the security policy only once SECURITY.md reaches the default branch, so the community profile still shows it missing.
-- [x] **Step 5 - OSS-05 (high)**: Who decides was undocumented: 0 merge commits and 1 contributor meant the real model was single-maintainer, but no GOVERNANCE.md said so, so a newcomer could not tell who reviews or who breaks a tie.
-  - [x] **5.1**: Wrote the model as it is. One maintainer with final say, no committee, no vote, no second reviewer, and explicitly the reason it is written down: issue templates and a pull request template can be misread as evidence of a committee. Added a section on what has actually happened, because 253 commits and exactly one pull request ever opened is the fact a prospective contributor needs most.
-  - [x] **5.2**: Documented the issue-to-merge gate as manual, with the maintainer running the same four commands a contributor runs, and deferred the step-by-step and the checklist to CONTRIBUTING.md by anchor rather than restating them.
-  - [x] **5.3**: Recorded four promotion criteria: contribution over time, review quality, security awareness with the dual-use boundary named, and having read the records. States that meeting them does not create a maintainer and that nobody is being recruited today, so the criteria are a written exit from the bus-factor-one risk rather than a hiring notice.
-  - [x] **5.4**: Pointed at `docs/adr/`, named the two records a newcomer needs first, and stated that a record is immutable once accepted and superseded rather than edited. Also noted that the index is generated, so hand-editing it is wasted work. The count is 13 records rather than the 10 the audit saw.
-  - [x] **5.5**: Stated what the model costs in four items, cross-referencing ADR 013 for the no-CI decision and SECURITY.md for the provenance gap instead of restating either.
-  - [x] **5.6**: Gate met: GOVERNANCE.md exists, README.md links it from the Contributing section, ADR 013 is indexed in docs/adr/ADR.md, and both landed in the same commit series.
-- [ ] **Step 6 - OSS-06 (high)**: The project had no funding surface of any kind and was 100% single-payer, so no donor could contribute and no donor expectation was defined.
-  - [ ] **6.1**: .github/FUNDING.yml is written, declaring `github: pixu1980`, and it parses as valid YAML. MANUAL GATE, maintainer only: GitHub Sponsors has to be enrolled on the account and the Sponsorships feature enabled on the repository. Checked from outside and the answer is ambiguous, not conclusive: the sponsors URL resolves and titles as a Sponsor page rather than redirecting to a profile, but carries no priced tier, so the button may lead to an empty page until a tier exists.
-  - [x] **6.2**: Wrote FUNDING.md. The honest substance is that money here pays for time and nothing else, because there is no hosting bill and no runner to pay for, so a sponsorship unlocks nothing and gates nothing.
-  - [x] **6.3**: Added the boundary to GOVERNANCE.md as one line plus its consequences: a donor request that conflicts with the maintainer's judgment loses, a sponsor asking for a feature gets an answer on the same merits as anyone else, and a request to jump the review queue is refused. Also states that declining sponsorship is allowed for reasons unrelated to the amount.
-  - [x] **6.4**: Added the funding pointer to README.md below the install instructions, so the first thing a reader meets is still how to install the package.
-  - [ ] **6.5**: Gate, blocked on 6.1's manual half. FUNDING.md is linked from both README.md and GOVERNANCE.md, verified by grep, but the Sponsor button cannot be confirmed until enrollment and the repository setting are done.
-- [x] **Step 7 - OSS-07 (high)**: The intentional dependency bump was uncommitted, so the tree was dirty: the release path refused to run and all 8 packages were detected as release-worthy.
-  - [x] **7.1**: Confirmed that the deletion of packages/pi-path-picker/package-lock.json and packages/pi-reasoning/package-lock.json is the intended npm-to-pnpm cleanup. Both stayed deleted and the deletion landed in the commit.
-  - [x] **7.2**: Verified that no manifest reintroduces the `packageManager` field or a `workspaces` field. The pnpm-only shape holds across all 9 manifests.
-  - [x] **7.3**: Reviewed the bump for behavior and not only for version numbers: typebox 1.3.9 -> 1.3.31, tsx 4.23.1 -> 4.23.13, @types/node to 26.6.0, commit-and-tag-version to 13.2.1, and the peer range @earendil-works/pi-coding-agent from >=0.83.0 to >=0.85.1. That review surfaced two defects the plan did not know about: every per-package lockfile had gone stale against the bumped manifests (OSS-19), and the 72-hour cooldown was being bypassed by exemptions pnpm wrote itself (OSS-20).
-  - [x] **7.4**: Committed as chore(deps): bump the pi toolchain, typebox and the release tooling, together with the regenerated lockfiles, the removed cooldown and ADR 012.
-  - [x] **7.5**: Gate met: git status --porcelain is empty, pnpm test reports 18 pass 0 fail, pnpm test:all reports 8 ok 0 failed, and pnpm install --frozen-lockfile succeeds in all eight packages.
-- [x] **Step 8 - OSS-08 (medium)**: The pnpm-only policy was undocumented and unenforced: two npm package-lock.json files had already crept into what are standalone pnpm packages, and nothing stopped the next contributor from adding one.
-  - [x] **8.1**: Extended test/workspace-config.test.mjs with three guards: no package-lock.json anywhere outside node_modules, no manifest declaring packageManager, and no manifest declaring workspaces. Each was verified by injecting the violation, confirming the guard fails with the right message, and removing the injection, since a guard that passes on a clean tree demonstrates nothing.
-  - [x] **8.2**: Documented the topology in CONTRIBUTING.md: each package is a standalone pnpm project with its own manifest, lockfile and workspace file, the root is a script runner whose pnpm-workspace.yaml keeps `packages: []` on purpose, nothing is hoisted, and pnpm test:all walks the directory rather than delegating to a workspace command.
-  - [x] **8.3**: Stated in the same section why the per-package overrides and allowBuilds blocks differ: each package declares the dependencies it actually resolves, so a package that does not pull in a transitive dependency carries no override for it, and the allowBuilds entries are the ones pnpm reported as ignored in that package's tree.
-  - [x] **8.4**: Added the note to scripts/test-all.mjs explaining that it iterates packages/ by design because the root is not a workspace, so a future contributor does not turn it into a workspace command.
-  - [x] **8.5**: Gate met, and verified both ways: the guards pass on the clean tree and fail on an injected violation for each of the three, pnpm test reports 30 pass 0 fail, pnpm test:all reports 8 ok 0 failed, and pnpm lint and pnpm format:check exit 0.
-- [x] **Step 9 - OSS-09 (high)**: The repository had no working style gate: pnpm format targeted a directory that does not exist and pnpm lint was a no-op, so nothing enforced the house style a contributor is asked to follow.
-  - [x] **9.1**: Wired the real source layout into format and format:check (packages/*/lib/**/*.ts, packages/*/index.ts, packages/*/__tests__/**/*.mjs, scripts/*.mjs, test/*.mjs) and pinned prettier 3.9.6 exactly as a root devDependency. Prettier owns formatting, which is why biome.json disables Biome's own formatter.
-  - [x] **9.2**: Pinned @biomejs/biome 2.5.13 as the linter instead of ESLint. This sub-step named the ESLint setup from the handoff, and that setup cannot run here: typescript-eslint 8.70.0 declares typescript >=4.8.4 <6.1.0 while the repository is on 7.0.2, so no release of it supports this toolchain. Biome parses TypeScript 7, ships as one binary and pulls no peer dependencies.
-  - [x] **9.3**: Replaced the placeholder with lint and lint:fix, and committed biome.json instead of leaving the rule set in /tmp. Two rules are off because the code does the flagged thing on purpose, with the measured reason in the commit body; the other twenty are the OSS-21 backlog.
-  - [x] **9.4**: The commands are documented in the commit and the review. CONTRIBUTING.md does not exist yet, so the contributor-facing half of this sub-step belongs to Step 2. No CI runs them, by the accepted-risk decision, so running them stays a manual gate.
-  - [x] **9.5**: Gate met: pnpm format:check and pnpm lint both exit 0, test/style-gate.test.mjs proves prettier accepts every hand-written file and that the linter reports noDebugger on a deliberately malformed one, pnpm test reports 20 pass 0 fail and pnpm test:all reports 8 ok 0 failed.
-- [x] **Step 10 - OSS-10 (high)**: Six of eight packages were affected, not three. pi-ask, pi-path-picker and pi-web carried pnpm's unfilled allowBuilds placeholder, and pi-mcp, pi-reasoning, pi-sessions and pi-statusline carried no allowBuilds block at all. Because a placeholder string is not a boolean decision, pnpm failed pnpm test in pi-mcp, pi-path-picker and pi-web and pnpm typecheck in pi-ask and pi-web with ERR_PNPM_IGNORED_BUILDS.
-  - [x] **10.1**: Declared allowBuilds explicitly in the seven packages that lacked a decided one, with @google/genai, esbuild and protobufjs set to false, matching the pi-cursor precedent. Declining rather than allowing preserves today's behavior, because the suites already pass with those build scripts ignored.
-  - [x] **10.2**: Kept every block in its own package file, which is where a standalone pnpm project declares it, and made the seven sets identical to each other and to pi-cursor's. Worth recording that pnpm writes the placeholder itself when it finds ignored builds nobody has decided about: that is where the original text came from, and why the fix had to be an explicit declaration rather than a deletion.
-  - [x] **10.3**: Added test/workspace-config.test.mjs, which fails when the placeholder appears in any yaml or json file and when any allowBuilds value is not an explicit boolean, so the state cannot go undecided again.
-  - [x] **10.4**: Proved the fix on the commands that actually fail rather than on a dry-run install. Before: pnpm test exited 1 in pi-mcp, pi-path-picker and pi-web, and pnpm typecheck exited 1 in pi-ask and pi-web. After: both exit 0 in all eight packages, and the placeholder is gone from every configuration file.
-  - [x] **10.5**: Gate met. Fixing this also revealed OSS-22, pi-web's broken typecheck script, which pnpm's failing dependency check had been hiding; it is fixed and recorded separately.
-- [x] **Step 11 - OSS-11 (medium)**: pi-mcp published a 295 KB minified bundle that no script in the repository built, so neither a contributor nor a security reviewer could review what shipped or reproduce it.
-  - [x] **11.1**: Identified what it is and what produces it. It is a browser bundle of `@modelcontextprotocol/ext-apps/app-bridge`, and it has to exist because the published entry carries five bare imports a browser cannot resolve. Wrote scripts/build-app-bridge.mjs, which bundles it with esbuild pinned exactly as a root devDependency and resolves the dependency from packages/pi-mcp so it builds the way the published package resolves it. Added `pnpm build:app-bridge`.
-  - [x] **11.2**: Recorded the provenance in the artifact itself: a two-line header naming the source entry point and the exact dependency version, generated by the same function that the freshness test compares against. There is no upstream source to check in, because the input is a pinned dependency rather than a file in this repository, and neither upstream bundle is a drop-in: app-with-deps.js exports App rather than AppBridge, and app-bridge.js is the un-bundled entry.
-  - [x] **11.3**: Added test/app-bridge-bundle.test.mjs with three checks: the committed bytes equal a fresh rebuild, the two export names the host HTML imports are present, and no bare import survives into the output. The freshness check was itself verified by editing one token of the committed file, confirming it fires, and restoring the original hash.
-  - [x] **11.4**: Decided and documented in ADR 014 that the bundle ships, because it cannot be served from the dependency as published and building it at install time would put a bundler in every consumer's tree.
-  - [x] **11.5**: Gate met: `pnpm build:app-bridge` regenerates the file byte-for-byte and is deterministic across runs, the freshness test passes and fails on a hand edit, pnpm test reports 33 pass 0 fail, pnpm test:all reports 8 ok 0 failed, and pnpm lint and pnpm format:check exit 0.
-- [ ] **Step 12 - OSS-12 (medium)**: There is no release cadence and no release notes surface, so a contributor or user cannot plan around releases or see what changed.
-  - [ ] **12.1**: MANUAL GATE, maintainer only. Publish a GitHub Release for each of the eight current package versions, created from its lightweight tag with the new entries from that package's CHANGELOG.md as the body. This run has no GitHub write access: no `gh` binary and no token in the environment.
-  - [x] **12.2**: Wrote RELEASING.md and verified every sentence that can be checked against scripts/release.mjs: the clean-tree refusal, the dry run, the tag comparison that skips CHANGELOG.md-only changes, the first-release case, the bump, tag push and publish order, and that the run stops on the first error while published packages stay published.
-  - [x] **12.3**: Stated the cadence as the tool already behaves: releases are cut on demand per package when its release-worthy files change, with no calendar and no joint batching, and the versions on npm are the only schedule that is promised.
-  - [ ] **12.4**: Deferred by maintainer decision. RELEASING.md and the stated cadence are enough for now; a product roadmap would invent direction that does not exist, because both roadmaps the previous session left were closed.
-  - [ ] **12.5**: Gate, blocked on 12.1 alone. RELEASING.md is linked from a new Releases section in CONTRIBUTING.md, which Step 2's text did not foresee and which also states that nothing in a pull request triggers or configures a release. No GitHub Release points at any package version.
-- [x] **Step 13 - OSS-13 (medium)**: Repository-owned files contained Italian prose, contradicting the project's own rule that every artifact except chat is written in English.
-  - [x] **13.1**: Already done. The three Italian comment lines in .npmrc disappeared with the cooldown they described, and the replacement text is English.
-  - [x] **13.2**: Translated pi-path-picker/lib/_provider.ts. The audit found two Italian comment lines; a broader scan found four separate blocks, including one at line 86 that no earlier check had touched and one at line 219 that was half Italian and half English in the same sentence.
-  - [x] **13.3**: Changed the test-all.mjs summary line and failure label to English, so the aggregator reads `result: 8 ok, 0 failed`. The audit had described those two as comments; they are output strings.
-  - [x] **13.4**: Added test/language-rule.test.mjs, which scans every source and config file against 56 unambiguous Italian words. Three deliberate exclusions: docs/ because the dossier quotes the Italian it reports on, the generated bundle because it is minified third-party code, and packages/pi-ask/lib/_lang.ts because its Italian is stopword data the language-detection feature matches on. That last one is the distinction the guard has to respect: a rule that cannot tell prose from data would force a working feature to be deleted.
-  - [x] **13.5**: Gate met, and the guard was verified rather than assumed. Its word list produces zero hits on the clean repository, which matters because a check that fires on correct code gets ignored; and it was then confirmed to fail when Italian is injected into a comment and again into an output string. pnpm test reports 34 pass 0 fail, pnpm test:all prints an English summary, and pnpm lint and pnpm format:check exit 0.
-- [ ] **Step 14 - OSS-14 (medium)**: The repository's public metadata was incomplete, so the project was hard to find and the one community venue it had enabled was unused.
-  - [ ] **14.1**: MANUAL GATE, maintainer only. Add nine topics: pi, pi-coding-agent, mcp, coding-agent, typescript, llm, monorepo, extensions, ai-agent. All were verified to exist, and pi was checked rather than assumed: its most-starred repositories are coding agents. Left out deliberately only claude-code, which is the wrong product.
-  - [ ] **14.2**: MANUAL GATE, maintainer only. Set the homepage to the pi.dev gallery and the description to the corrected root package.json text, which no longer claims themes, skills and prompts the repository does not contain.
-  - [x] **14.3**: Decided: the wiki goes off. The documentation already lives versioned in the repository, linked from every README that needs it, and the wiki is empty, so it reads as an abandoned channel rather than a possible one. Re-enabling it is one toggle if that ever changes.
-  - [x] **14.4**: Evaluated and declined for now: Discussions stays off until real demand surfaces. The repository has five stars, no forks and no support thread to move; the issue templates cover bugs and features, and a second empty venue would only spread the absence of activity across more pages.
-  - [ ] **14.5**: Gate, blocked on 14.1 and 14.2. Topics non-empty, homepage resolving to the gallery, and the wiki disabled.
-- [x] **Step 15 - OSS-15 (medium)**: Contributor attribution was inconsistent: one person committed under three email identities, so git shortlog -sne listed them three times and any future sign-off requirement would have had no single identity to check.
-  - [x] **15.1**: Added .mailmap folding emiliano.pisu@webidoo.com and 75838944+pixu1980@users.noreply.github.com into Emiliano Pisu <pisuemiliano.1980@gmail.com>. GitHub's committer-side <noreply@github.com> is deliberately left out, because the web interface performed that commit and folding it would misattribute the action.
-  - [x] **15.2**: Verified rather than set: the repository-local user.name and user.email were already the canonical pair, and `git var GIT_AUTHOR_IDENT` confirms it, so new commits add no fourth identity. The global identity points at the work address, which is why the historical one-off commits exist, but the local setting overrides it for this repository.
-  - [ ] **15.3**: Documenting the identity and sign-off expectation belongs in CONTRIBUTING.md, which Step 2 creates. Carried there rather than written twice.
-  - [x] **15.4**: Gate met: git shortlog -sne reports a single entry covering all 251 commits, where without .mailmap it listed three. No test was added for this one: a guard that shells out to git would fail on a source tarball with no history, and the cost of a fragile test outweighs guarding a file that either folds the aliases or visibly does not.
-- [x] **Step 16 - OSS-16 (low)**: The release script reported misleading dry-run totals and 5 of 8 packages omitted an engines field, so the release output and the metadata disagreed with reality.
-  - [x] **16.1**: Added a separate wouldRelease counter and extracted the summary into releaseSummaryLines in scripts/release-helpers.mjs, which prints the counter that matches the mode. test/release-helpers.test.mjs asserts both branches, so a dry run can no longer claim it released nothing.
-  - [x] **16.2**: Gave all eight packages engines.node >=22.19.0. The sub-step proposed copying pi-cursor's >=22.13.0, and measuring that value showed it is wrong: @earendil-works/pi-coding-agent 0.85.1 declares `node: >=22.19.0` for itself and every package here peers on it, so >=22.13.0 admits a runtime pi cannot load into. pi-cursor was corrected along with the five that had no engines at all.
-  - [x] **16.3**: Added test/package-metadata.test.mjs, covering engines, license, repository.directory, the files array, and the LICENSE plus README that the files array must actually ship.
-  - [x] **16.4**: Gate met: pnpm release:dry prints 'would release: 8' instead of 'released: 0', pnpm test reports 27 pass 0 fail, and pnpm lint and pnpm format:check both exit 0.
-- [x] **Step 17 - OSS-17 (info)**: Accepted risk, recorded by maintainer decision: the repository has no CI, so 0 of 8 packages carry provenance attestations and releases are published from a developer machine with a personal npm credential.
-  - [x] **17.1**: Wrote ADR 013, which records the decision, the exposure it accepts, the four alternatives that were considered and rejected, and the three observations that would reopen it: a second maintainer, a consumer who requires provenance, and any reported compromise traceable to a released tarball.
-  - [x] **17.2**: Done as part of step 4.3. SECURITY.md states the provenance gap, that tags are lightweight and unsigned, that no CI runs the gates, and that no release-age cooldown is configured. Verified by grep for each statement rather than by reading the file.
-  - [x] **17.3**: Recorded the credible bounds in the ADR. Measured the 2FA claim instead of asserting it: npm profile get reports `two-factor auth: auth-and-writes`, so a publish needs a second factor. The other bounds are exact pinned versions, a lockfile and a test suite per package. The dependency cooldown is explicitly not among them, because ADR 012 removed it for the opposite reason.
-  - [x] **17.4**: Gate met: ADR 013 is indexed in docs/adr/ADR.md, SECURITY.md states the exposure in three verifiable sentences, and no .github directory exists at all, so no workflow file was added.
-- [ ] **Step 18 - OSS-18 (info)**: Accepted risk, recorded by maintainer decision on this run: dependency updates have no automation because .github/dependabot.yml was removed, and dependabot pull request #2 has been open since 2026-09-11.
-  - [ ] **18.1**: Close or land dependabot pull request #2 deliberately and record the reason on the pull request, so it stops being an unexplained open item on a repository whose only open issue is that pull request.
-  - [ ] **18.2**: Delete the stale remote branch dependabot/npm_and_yarn/packages/pi-mcp/npm_and_yarn-8bd3e5320a once the pull request is resolved.
-  - [ ] **18.3**: Document in CONTRIBUTING.md how dependency updates are handled without automation, so the manual process is discoverable rather than absent.
-  - [ ] **18.4**: Gate: the repository has zero open pull requests and the stale dependabot remote branch is gone.
-
-- [x] **Step 19 - OSS-21 (medium)**: Twenty Biome rules were disabled because 167 diagnostics said the code did not satisfy them, so the gate passed by ratchet and the backlog was only recorded, not closed.
-  - [x] **19.1**: Fixed the correctness subset. Two dead shorthand properties left test/harness.mjs; a module-local hasOwnProperty wrapper became Object.hasOwn, which typechecks under this repository's flags; an implicit-any let gained the only type its body ever reads; a ??= moved out of a ternary into a statement; and a coercing isNaN became Number.isNaN on an already-numeric value. The two throws inside the OAuth cleanup finally and the two stateful exec loops stayed, because both are deliberate: the first composes two failures so neither is lost, the second is the canonical iteration idiom. Each carries a one-line suppression that only exists because the rule is back on.
-  - [x] **19.2**: Removed the dead code the linter named, after checking each against the suites: nine unused imports, seven unused variables including an unused parameter and an unused local, seven unused mock parameters that keep their signatures under underscore prefixes, three unused private constructor inputs that lost their member modifier, one write-only AbortSignal field with its three writes, and a bare catch where the binding was never read. The one place removal would have changed behavior, a getRuntime call that throws on an aborted signal and registers the runtime, kept the call and dropped only the unused binding.
-  - [x] **19.3**: Took useTemplate (49), useOptionalChain (22), useConst, useImportType, useLiteralKeys and noUselessSwitchCase mechanically, reviewing every hunk and letting the suites prove the behavior. Two conversions were reverted on the spot because they changed semantics rather than style: `!.push` to `?.push` and `!.close` to `?.close` turn a loud failure into a silent skip. The same measurement killed the plan's assumption for noNonNullAssertion: its 36 hits are load-bearing invariants, and the tool's own fix for them is unsafe, so the rule stays off with that reason written down instead of being forced.
-  - [x] **19.4**: Decided the type rules deliberately. The four noBannedTypes hits are presence-only permission flags that nothing reads, so constraining their type buys nothing. The four noExplicitAny hits are Record<string, any> over JSON the code parses and checks at runtime, where unknown would demand a narrowing refactor for no behavior change. Both stay off with this reason, not silently.
-  - [x] **19.5**: Turned fourteen rules back on as each reached zero. The disabled list went from twenty rules to five: two intentional from the start, and three evaluated in this step.
-  - [x] **19.6**: Gate met: biome.json disables only the five rules with a written reason, pnpm lint exits 0, pnpm format:check exits 0, pnpm test reports 27 pass 0 fail, pnpm test:all reports 8 ok 0 failed, and both typechecks exit 0.
+No CI and no provenance attestation, by decision in
+[ADR 013](../adr/013-publish-locally-without-ci-and-accept-the-provenance-gap.md). No tag
+signing, no CLA and no DCO. OSS-25 asks for the policy to be written, not for the process to
+change. No product roadmap. The maintainer states direction, and a plan would invent it.

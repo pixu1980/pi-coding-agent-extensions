@@ -1,819 +1,528 @@
 # oss audit
 
 - **Role**: oss v1
-- **Date**: 2026-09-15
-- **Scope**: the whole pi-coding-agent-extensions monorepo: the 8 published packages under packages/ plus the repository root (governance, license, release, community, funding surface)
+- **Date**: 2026-11-27
+- **Scope**: `Audit, review and plan`. The topic named no narrower surface. The run audited the ten package directories, the root, the registry state and the GitHub settings.
 
-Evidence only: the commands this run executed with their measured values, the files it read,
-the sources it consulted. No opinions - those belong in the review.
+Status: `complete`.
 
-## 1. How the scope was resolved
+Evidence only: the commands this run executed with their values, the files it read and the
+sources it consulted. Opinions belong in [the review](../reviews/oss.md).
 
-The scope string handed to the run was `fai`. It matched nothing in the repository, so it was
-resolved with the maintainer before any audit work, who confirmed the whole monorepo.
+## 1. Environment
 
 ```console
-$ grep -riw fai --include="*.md" --exclude-dir=node_modules .
-(no output)
-$ git branch -a ; git log --all --format="%s" | grep -i fai
-(no output)
-$ find /Users/emilianopisu/Projects -maxdepth 4 -iname "*fai*" -not -path "*/node_modules/*"
-(no output)
+$ date -u
+ven 27 nov 2026 11:50:27 UTC
 ```
 
-`tokensave_tokensave_search` with query `fai` returned only substring false positives on
-`failure` (`clearFailure`, `recordFailure`, `ReconnectFailureCallback`). The string is the value
-of the `${scope}` placeholder in `pix-galaxy-mcp/src/core/review/template/_lines.js` line 17.
-
-## 2. Environment
-
 ```console
-$ date
-mar 15 set 2026 20:58:51 CEST
 $ node --version ; npm --version ; pnpm --version
-v26.8.2
-11.19.1
-11.25.0
-$ git remote -v
-origin  git@github.com:pixu1980/pi-coding-agent-extensions.git (fetch)
-origin  git@github.com:pixu1980/pi-coding-agent-extensions.git (push)
-$ git rev-list --count HEAD
-236
-$ git branch -a
-  backup/pre-rewrite
-* main
-  remotes/origin/HEAD -> origin/main
-  remotes/origin/dependabot/npm_and_yarn/packages/pi-mcp/npm_and_yarn-8bd3e5320a
-  remotes/origin/main
+v26.13.1
+11.20.0
+12.23.0
 ```
-
-## 3. Working tree state at audit time
-
-The tree was not clean and changed during the run. Package manifests carry mtimes of 20:46-20:49,
-inside the run window.
 
 ```console
-$ git status --short
- M package.json
- M packages/pi-ask/package.json
- M packages/pi-cursor/package.json
- M packages/pi-mcp/package.json
- D packages/pi-path-picker/package-lock.json
- M packages/pi-path-picker/package.json
- D packages/pi-reasoning/package-lock.json
- M packages/pi-reasoning/package.json
- M packages/pi-sessions/package.json
- M packages/pi-statusline/package.json
- M packages/pi-web/package.json
-
-$ git diff --stat
- package.json                              |    3 +-
- packages/pi-ask/package.json              |   12 +-
- packages/pi-cursor/package.json           |   16 +-
- packages/pi-mcp/package.json              |   34 +-
- packages/pi-path-picker/package-lock.json | 2336 ----------------------------
- packages/pi-path-picker/package.json      |    8 +-
- packages/pi-reasoning/package-lock.json   | 2324 ----------------------------
- packages/pi-reasoning/package.json        |    8 +-
- packages/pi-sessions/package.json         |   10 +-
- packages/pi-statusline/package.json       |   12 +-
- packages/pi-web/package.json              |   14 +-
- 11 files changed, 58 insertions(+), 4719 deletions(-)
-
-$ stat -f "%Sm %N" -t "%Y-%m-%d %H:%M" package.json packages/*/package.json
-2026-09-15 20:46 package.json
-2026-09-15 20:48 packages/pi-mcp/package.json
-2026-09-15 20:48 packages/pi-path-picker/package.json
-2026-09-15 20:48 packages/pi-reasoning/package.json
-2026-09-15 20:48 packages/pi-sessions/package.json
-2026-09-15 20:48 packages/pi-statusline/package.json
-2026-09-15 20:48 packages/pi-web/package.json
-2026-09-15 20:49 packages/pi-ask/package.json
-2026-09-15 20:49 packages/pi-cursor/package.json
+$ pi --version
+1.6.0
+$ git rev-list --count HEAD ; git tag --list | wc -l
+323
+140
 ```
 
-Diff content, representative sample:
+The host that runs these extensions is `pi` 1.6.0. Every manifest pins
+`@earendil-works/pi-coding-agent` 0.99.1 in `devDependencies` (§9).
 
-```diff
---- a/package.json
-+++ b/package.json
-@@
--  "packageManager": "pnpm@11.18.0",
-@@
--    "commit-and-tag-version": "^13.1.2"
-+    "commit-and-tag-version": "13.2.1"
-
---- a/packages/pi-ask/package.json
-+++ b/packages/pi-ask/package.json
-@@
--    "@earendil-works/pi-coding-agent": ">=0.83.0",
--    "@earendil-works/pi-tui": ">=0.83.0",
-+    "@earendil-works/pi-coding-agent": ">=0.85.1",
-+    "@earendil-works/pi-tui": ">=0.85.1",
-@@
--    "@types/node": "^26.1.2",
--    "commit-and-tag-version": "13.1.2",
--    "tsx": "4.23.1",
--    "typescript": "^7.0.2"
-+    "@types/node": "26.6.0",
-+    "commit-and-tag-version": "13.2.1",
-+    "tsx": "4.23.13",
-+    "typescript": "7.0.2"
-
---- a/packages/pi-web/package.json
-+++ b/packages/pi-web/package.json
-@@
--    "typebox": "1.3.9"
-+    "typebox": "1.3.31"
-@@
--    "@earendil-works/pi-coding-agent": "0.83.0",
-+    "@earendil-works/pi-coding-agent": "0.85.1",
-```
-
-The maintainer confirmed on this run that the bump is intentional and uncommitted.
-
-## 4. Test and release baseline (measured)
+## 2. Working tree
 
 ```console
-$ pnpm test
-✔ every extension ships a structured, accessible SVG banner (7.767625ms)
-✔ runs the repository-installed commit-and-tag-version binary (0.628542ms)
-✔ adds dry-run when requested (0.0825ms)
-✔ keeps the configured version for an untagged first release (0.061584ms)
-✔ checks npm authentication without logging in when already authenticated (0.450084ms)
-✔ asks the user to log in when npm authentication is missing (0.11825ms)
-✔ fails when npm login does not authenticate the user (0.226625ms)
-✔ publishes packages locally from the release process (0.649917ms)
-✔ isReleaseTriggerFile ignores auto-generated CHANGELOG.md (0.174792ms)
-✔ CHANGELOG.md-only changes do not trigger a release (the last-run bug) (866.4425ms)
-✔ source changes since the last tag do trigger a release (1574.067958ms)
-✔ changes in other packages do not trigger a release (663.670833ms)
-✔ unknown tag returns null (caller errs on the side of releasing) (421.813375ms)
-ℹ tests 13
-ℹ pass 13
-ℹ fail 0
-
-$ pnpm test:all
-═══ test-all  ═══
-── pi-ask: node --import tsx --test __tests__/index.test.mjs ✅
-    ℹ tests 101 | ℹ pass 101 | ℹ fail 0
-── pi-cursor ✅          ℹ tests 166 | ℹ pass 166 | ℹ fail 0
-── pi-mcp ✅             ℹ tests 42 | ℹ pass 42 | ℹ fail 0
-── pi-path-picker ✅     ℹ tests 42 | ℹ pass 42 | ℹ fail 0
-── pi-reasoning ✅       ℹ tests 59 | ℹ pass 59 | ℹ fail 0
-── pi-sessions ✅        ℹ tests 34 | ℹ pass 34 | ℹ fail 0
-── pi-statusline ✅      ℹ tests 65 | ℹ pass 65 | ℹ fail 0
-── pi-web ✅             ℹ tests 28 | ℹ pass 28 | ℹ fail 0
-═══ risultato: 8 ok, 0 falliti ═══
-```
-
-Measured total: 101+166+42+42+59+34+65+28 = 537 package tests, all passing, plus 13 root tests.
-
-```console
-$ pnpm release:dry   (tail; package order is alphabetical, so pi-web is last)
-── @pixu1980/pi-web ────────────────────────────────
-   current version: 0.1.7
-   tag found: @pixu1980/pi-web@0.1.7
-   ↻ release-worthy changes detected (1):
-       packages/pi-web/package.json
-   [dry-run] commit-and-tag-version --tag-prefix "@pixu1980/pi-web@"
-✔ bumping version in package.json from 0.1.7 to 0.1.8
-✔ outputting changes to CHANGELOG.md
-✔ committing package.json and CHANGELOG.md
-✔ tagging release @pixu1980/pi-web@0.1.8
-═══════════════════════════════════════════
-  Summary:
-  • released:     0
-  • skipped:      0
-  • total pkgs:   8
-```
-
-All 8 packages are detected as release-worthy, because the uncommitted manifest bump touches every
-`packages/*/package.json`. The non-dry path refuses to run on a dirty tree:
-
-```console
-$ grep -n "Working tree is not clean" scripts/release.mjs
-117:    console.error('✗ Working tree is not clean. Commit or stash before releasing.');
-```
-
-## 5. License compliance
-
-```console
-$ for d in packages/*/; do printf "  %-18s LICENSE:%s\n" "$(basename $d)" \
-    "$([ -f $d/LICENSE ] && echo yes || echo MISSING)"; done
-  pi-ask             LICENSE:MISSING
-  pi-cursor          LICENSE:MISSING
-  pi-mcp             LICENSE:yes
-  pi-path-picker     LICENSE:MISSING
-  pi-reasoning       LICENSE:MISSING
-  pi-sessions        LICENSE:MISSING
-  pi-statusline      LICENSE:MISSING
-  pi-web             LICENSE:yes
-```
-
-The root `LICENSE` is the `MIT` license, `Copyright (c) 2026 Emiliano "pixu1980" Pisu`.
-
-Published tarball contents, read from the registry:
-
-```console
-$ tar tzf pi-ask.tgz
-     package/package.json
-     package/README.md
-     package/lib/banner.svg
-     package/lib/_ask.ts
-     package/lib/_commands.ts
-     package/lib/_interview-tool.ts
-     package/lib/_lang.ts
-     package/lib/_logic.ts
-     package/lib/_path-provider.ts
-     package/lib/_types.ts
-     package/index.ts
-     package/lib/index.ts
-     (no LICENSE)
-
-$ tar tzf pi-statusline.tgz
-     package/package.json
-     package/CHANGELOG.md
-     package/README.md
-     ...
-     (no LICENSE)
-
-$ tar tzf pi-mcp.tgz
-     package/DISCLOSURE
-     package/LICENSE
-     package/lib/_app-bridge.bundle.js
-     package/lib/_cli.js
-     package/package.json
-     ...
-```
-
-Measured `files` arrays: `pi-ask`, `pi-path-picker`, `pi-reasoning` and `pi-sessions` declare
-`["index.ts","lib/**","README.md"]` with no `LICENSE` entry; `pi-statusline` adds `CHANGELOG.md`
-but still no `LICENSE`; `pi-cursor` adds `DISCLOSURE` but no `LICENSE`. Only `pi-mcp` and `pi-web`
-list `LICENSE`.
-
-## 6. Community health profile (GitHub API)
-
-```console
-$ curl -s https://api.github.com/repos/pixu1980/pi-coding-agent-extensions/community/profile
-  health_percentage: 42
-  code_of_conduct: MISSING
-  code_of_conduct_file: MISSING
-  contributing: MISSING
-  issue_template: MISSING
-  pull_request_template: MISSING
-  license: https://api.github.com/licenses/mit
-  readme: https://api.github.com/repos/pixu1980/pi-coding-agent-extensions/contents/README.md
-
-$ curl -s https://api.github.com/repos/pixu1980/pi-coding-agent-extensions
-  private: False
-  description: Monorepo for Pi.dev extensions
-  homepage: None
-  license: MIT
-  has_issues: True
-  has_projects: False
-  has_discussions: False
-  has_wiki: True
-  has_pages: False
-  open_issues_count: 1
-  forks_count: 0
-  stargazers_count: 5
-  watchers_count: 5
-  default_branch: main
-  created_at: 2026-06-28T09:11:54Z
-  pushed_at: 2026-09-15T18:35:27Z
-  topics: []
-  allow_forking: True
-  web_commit_signoff_required: False
-
-$ curl -s -o /dev/null -w "%{http_code}" .../contents/.github/ISSUE_TEMPLATE
-404
-$ curl -s .../releases                                 -> count: 0
-$ curl -s -o /dev/null -w "%{http_code}" .../branches/main/protection
-401   (cannot be read unauthenticated)
-```
-
-Governance-relevant file presence at the repository root:
-
-```console
-$ for f in CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md GOVERNANCE.md \
-           MAINTAINERS.md AUTHORS CONTRIBUTORS NOTICE CHANGELOG.md \
-           FUNDING.yml .github .gitattributes .editorconfig LICENSE; do
-    [ -e "$f" ] && echo "  PRESENT  $f" || echo "  MISSING  $f"; done
-  MISSING  CONTRIBUTING.md
-  MISSING  CODE_OF_CONDUCT.md
-  MISSING  SECURITY.md
-  MISSING  GOVERNANCE.md
-  MISSING  MAINTAINERS.md
-  MISSING  AUTHORS
-  MISSING  CONTRIBUTORS
-  MISSING  NOTICE
-  MISSING  CHANGELOG.md
-  MISSING  FUNDING.yml
-  MISSING  .github
-  MISSING  .gitattributes
-  MISSING  .editorconfig
-  PRESENT  LICENSE
-```
-
-Issue and pull-request history, plus authorship:
-
-```console
-$ curl -s ".../issues?state=all&per_page=20"
-  #2 [open] chore(deps): bump @vitest/mocker from 4.1.10 to 5.0.0 in
-     /packages/pi-mcp in the npm_and_yarn group across 0 directory  (2026-09-11) PR
-  #1 [closed] Change master branch to main  (2026-06-28) ISSUE
-
-$ git log --merges --oneline | wc -l
-       0
-$ git log --format="%aE" | sort | uniq -c | sort -rn
- 234 pisuemiliano.1980@gmail.com
-   1 emiliano.pisu@webidoo.com
-   1 75838944+pixu1980@users.noreply.github.com
-```
-
-## 7. Documentation and decision record
-
-```console
-$ ls docs/
-adr  handoff
-
-$ ls docs/adr/
-001-stale-while-revalidate-for-statusline-render-path-caches.md
-002-async-secret-command-resolution-in-pi-mcp.md
-003-read-through-metadata-cache-for-pi-mcp.md
-004-bounded-session-discovery-in-pi-sessions.md
-005-cache-counters-and-explicit-invalidation-contracts.md
-006-bounded-concurrent-reconnect-and-coalesced-panel-renders.md
-007-lazy-startup-graph-verified-by-bench-in-pi-mcp.md
-008-make-the-pi-sessions-listing-cache-filesystem-free-with-explicit-invalidation.md
-009-publish-the-local-cursor-model-catalog-to-the-sdk-instead-of-relying-on-the-clou.md
-010-keep-a-free-plan-model-discovery-failure-off-the-startup-banner.md
-ADR.md
-
-$ ls docs/handoff/
-01-performance-optimization-execution.md
-02-pi-cursor-extension.md
-03-performance-run-and-roadmap-close.md
-04-house-style-pass-and-cursor-free-plan.md
-
-$ for d in plans reviews audits; do
-    [ -d docs/$d ] && echo "docs/$d present" || echo "docs/$d MISSING"; done
-docs/plans MISSING
-docs/reviews MISSING
-docs/audits MISSING
-
-$ wc -l README.md packages/*/README.md
-      46 packages/pi-statusline/README.md
-      47 README.md
-     572 packages/pi-mcp/README.md
-    1665 total
-
-$ grep -nE "^#{1,4} " README.md
-1:# pi-coding-agent-extensions
-5:## Structure
-18:## Publishing
-37:## Development
-45:## License
-```
-
-README heading coverage per package, showing which carry a security section:
-
-```console
-$ for d in packages/*/; do printf "%-18s" "$(basename $d)"; \
-    grep -iE "^#{1,3} .*(contribut|securit|support|license|funding)" "$d/README.md" | tr '\n' ' '; echo; done
-pi-ask              ## License
-pi-cursor           ## License
-pi-mcp
-pi-path-picker      ## License
-pi-reasoning        ## License
-pi-sessions         ## License
-pi-statusline       ## License
-pi-web              ## Security ## License
-```
-
-## 8. Repository structure, tooling and lockfiles
-
-```console
-$ cat pnpm-workspace.yaml
-packages: []
-
-overrides:
-  'brace-expansion@<5': ^1.1.17
-  'brace-expansion@>=5': ^5.0.9
-
-$ grep -A6 "^importers:" pnpm-lock.yaml
-importers:
-
-  .:
-    devDependencies:
-      commit-and-tag-version:
-        specifier: 13.2.1
-        version: 13.2.1(...)
-
-$ find . -maxdepth 3 \( -name "*-lock.*" -o -name "pnpm-workspace.yaml" \) -not -path "*/node_modules/*" | sort
-./packages/pi-ask/pnpm-lock.yaml
-./packages/pi-ask/pnpm-workspace.yaml
-./packages/pi-cursor/pnpm-lock.yaml
-./packages/pi-cursor/pnpm-workspace.yaml
-./packages/pi-mcp/pnpm-lock.yaml
-./packages/pi-mcp/pnpm-workspace.yaml
-./packages/pi-path-picker/pnpm-lock.yaml
-./packages/pi-path-picker/pnpm-workspace.yaml
-./packages/pi-reasoning/pnpm-lock.yaml
-./packages/pi-reasoning/pnpm-workspace.yaml
-./packages/pi-sessions/pnpm-lock.yaml
-./packages/pi-sessions/pnpm-workspace.yaml
-./packages/pi-statusline/pnpm-lock.yaml
-./packages/pi-statusline/pnpm-workspace.yaml
-./packages/pi-web/pnpm-lock.yaml
-./packages/pi-web/pnpm-workspace.yaml
-./pnpm-lock.yaml
-./pnpm-workspace.yaml
-```
-
-Each of the 8 packages carries its own `pnpm-workspace.yaml`. Their contents diverge: 4 carry
-`overrides`, 4 carry `allowBuilds`, and none matches the root.
-
-```console
-$ pnpm format
-$ prettier --write 'packages/*/src/**/*.ts'
-[error] No files matching the pattern were found: "packages/*/src/**/*.ts".
-[ELIFECYCLE] Command failed with exit code 2.
-$ ls -d packages/*/src
+$ git status --porcelain
 (no output)
-$ python3 -c "import json;print(json.load(open('package.json'))['devDependencies'])"
-{'commit-and-tag-version': '13.2.1'}
-$ grep -n '"lint"' package.json
-    "lint": "echo 'No linter configured yet'",
+$ git status -sb | head -1
+## main...origin/main
 ```
 
-`prettier` is not installed and `packages/*/src` does not exist. The `lint` script is a no-op.
-No package defines a `build` script:
-
 ```console
-$ python3 -c "import json,glob
-for f in sorted(glob.glob('packages/*/package.json')):
-    print(f, list(json.load(open(f)).get('scripts',{}).keys()))"
-packages/pi-ask/package.json         ['test','test:coverage','release','release:dry']
-packages/pi-cursor/package.json      ['test','test:coverage','typecheck','release','release:dry']
-packages/pi-mcp/package.json         ['test','bench','test:watch','test:coverage']
-packages/pi-path-picker/package.json ['test','release','release:dry','test:coverage']
-packages/pi-reasoning/package.json   ['test','release','release:dry','test:coverage']
-packages/pi-sessions/package.json    ['release','release:dry','test','test:coverage']
-packages/pi-statusline/package.json  ['release','release:dry','test','bench','test:coverage']
-packages/pi-web/package.json         ['test','typecheck','release','release:dry','test:coverage']
-```
-
-## 9. Unfilled configuration placeholders
-
-```console
-$ grep -rn "set this to true or false" --exclude-dir=node_modules .
-  ./docs/handoff/04-house-style-pass-and-cursor-free-plan.md:81:  pi-web (`set this to true or false`); pi-cursor declares `false`.
-  ./packages/pi-path-picker/pnpm-workspace.yaml:2:  '@google/genai': set this to true or false
-  ./packages/pi-path-picker/pnpm-workspace.yaml:3:  esbuild: set this to true or false
-  ./packages/pi-path-picker/pnpm-workspace.yaml:4:  protobufjs: set this to true or false
-  ./packages/pi-web/pnpm-workspace.yaml:2:  '@google/genai': set this to true or false
-  ./packages/pi-web/pnpm-workspace.yaml:3:  esbuild: set this to true or false
-  ./packages/pi-web/pnpm-workspace.yaml:4:  protobufjs: set this to true or false
-  ./packages/pi-ask/pnpm-workspace.yaml:2:  '@google/genai': set this to true or false
-  ./packages/pi-ask/pnpm-workspace.yaml:3:  esbuild: set this to true or false
-  ./packages/pi-ask/pnpm-workspace.yaml:4:  protobufjs: set this to true or false
-
-$ cat packages/pi-ask/pnpm-workspace.yaml
-allowBuilds:
-  '@google/genai': set this to true or false
-  esbuild: set this to true or false
-  protobufjs: set this to true or false
-
-$ cat packages/pi-cursor/pnpm-workspace.yaml
-# Build scripts explicitly declined: pi-cursor needs none of them at install
-# time. Declaring them (instead of leaving pnpm to guess) keeps `pnpm test`
-# from failing on the ignored-builds check.
-allowBuilds:
-  '@google/genai': false
-  esbuild: false
-  protobufjs: false
-```
-
-12 placeholder lines across `pi-ask`, `pi-path-picker` and `pi-web`.
-`pnpm install --lockfile-only --dry-run` in `pi-ask` exits 0, so the misconfigured values are not
-rejected by the resolver.
-
-**Correction, measured during the OSS-01 run.** The dry-run above exits 0, and that measurement led
-this audit to conclude the values pass silently. The conclusion was wrong: a dry-run exercises the
-resolver, not the ignored-builds gate. The command that fails is the one the packages document.
-
-```console
-$ cd packages/pi-web && pnpm typecheck ; echo "EXIT=$?"
-[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: @google/genai@1.52.0, esbuild@0.28.1, protobufjs@7.6.5
-Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
-EXIT=1
-```
-
-A placeholder string is not a boolean decision, so pnpm does not read the build scripts as declined
-and fails the command instead. `packages/pi-cursor`, which declares `false` for the same three
-packages, passes.
-
-## 10. Supply chain and release surface
-
-```console
-$ curl -s "https://registry.npmjs.org/@pixu1980/$p" | python3 ...   # per package
-@pixu1980/pi-ask         latest 0.1.14  attestations: NO
-@pixu1980/pi-cursor      latest 0.1.1   attestations: NO
-@pixu1980/pi-mcp         latest 0.1.15  attestations: NO
-@pixu1980/pi-path-picker latest 0.1.25  attestations: NO
-@pixu1980/pi-reasoning   latest 0.2.14  attestations: NO
-@pixu1980/pi-sessions    latest 0.1.15  attestations: NO
-@pixu1980/pi-statusline  latest 0.1.14  attestations: NO
-@pixu1980/pi-web         latest 0.1.7   attestations: NO
-```
-
-0 of 8 packages carry a provenance attestation. The publish path is local:
-
-```console
-$ grep -n "npm publish" scripts/release.mjs
-     execIn(pkgPath, `npm publish --access public`, { stdio: 'inherit' });
-$ grep -n "git push" scripts/release.mjs
-     execIn(pkgPath, `git push --follow-tags origin main`, { stdio: 'inherit' });
-```
-
-Tag format and signing:
-
-```console
-$ git for-each-ref refs/tags --format='%(refname:short) %(objecttype)' | head -3
-@pixu1980/pi-ask@0.1.0 commit
-@pixu1980/pi-ask@0.1.1 commit
-@pixu1980/pi-ask@0.1.10 commit
-```
-
-All tags are lightweight (`commit`), none is annotated and signed.
-
-Cooldown and local supply-chain settings as they stood during this run. The cooldown below was
-removed later in the same session, and the reason is recorded in ADR 012:
-
-```console
-$ cat .npmrc
-# Registry e permessi di pubblicazione sono espliciti e pubblici.
-registry=https://registry.npmjs.org/
-access=public
-
-# Supply-chain security: 3-day cooldown before using newly published dependency versions.
-# Blocca ~94% dei pacchetti malevoli (median takedown time: 14 ore).
-# Richiede pnpm >= 11.
-minimumReleaseAge=4320
-
-$ (cd packages/pi-ask && pnpm install --lockfile-only --dry-run) | head -1
-✓ Lockfile passes supply-chain policies (verified 3h ago)
-```
-
-Vulnerability scanning reachable from the repository:
-
-```console
-$ (cd packages/pi-ask && npm audit)
-npm error code ENOLOCK
-npm error audit This command requires an existing lockfile.
-npm error audit Try creating one first with: npm i --package-lock-only
-
-$ pnpm audit
-{ "advisories": {}, "metadata": { "vulnerabilities": { "info": 0, ...
-```
-
-The committed, published generated artifact:
-
-```console
-$ git ls-files packages/pi-mcp/lib/_app-bridge.bundle.js
-packages/pi-mcp/lib/_app-bridge.bundle.js
-$ ls -la packages/pi-mcp/lib/_app-bridge.bundle.js
--rw-r--r--  1 emilianopisu  staff  295508  7 ago 13:02 packages/pi-mcp/lib/_app-bridge.bundle.js
-$ wc -l packages/pi-mcp/lib/_app-bridge.bundle.js
-       1 packages/pi-mcp/lib/_app-bridge.bundle.js
-$ grep -c "app-bridge.bundle" packages/pi-mcp/lib/_host-html-template.ts packages/pi-mcp/lib/_ui-server.ts
-packages/pi-mcp/lib/_host-html-template.ts:1
-packages/pi-mcp/lib/_ui-server.ts:1
-```
-
-The file is one single 295508-byte line, so it is minified with no formatting at all. It is
-referenced by `DEFAULT_APP_BRIDGE_MODULE_URL` at `_host-html-template.ts` line 4 and served from
-`_ui-server.ts` line 362, and it ships inside the npm tarball as `package/lib/_app-bridge.bundle.js`
-through the `lib/**` glob.
-
-No script in the repository produces it: no package defines a `build` script and no bundler config
-is present.
-
-## 11. Package metadata
-
-```console
-$ python3 - < scan of packages/*/package.json
-name                      ver      priv  lic   engines                dual     files#
-@pixu1980/pi-ask          0.1.14   False MIT   None                   None     3
-@pixu1980/pi-cursor       0.1.1    False MIT   {'node': '>=22.13.0'}  dual-use 4
-@pixu1980/pi-mcp          0.1.15   False MIT   {'node': '>=20'}       dual-use 6
-@pixu1980/pi-path-picker  0.1.25   False MIT   None                   None     3
-@pixu1980/pi-reasoning    0.2.14   False MIT   None                   None     3
-@pixu1980/pi-sessions     0.1.15   False MIT   None                   None     3
-@pixu1980/pi-statusline   0.1.14   False MIT   None                   None     4
-@pixu1980/pi-web          0.1.7    False MIT   {'node': '>=20'}       dual-use 5
-```
-
-5 of 8 packages declare no `engines` field. All 8 declare `license: MIT`, a `repository` with a
-`directory` pointer, `homepage`, `bugs` and `keywords`. No `package.json` anywhere declares
-`funding`. `DISCLOSURE` presence:
-
-```console
-$ for d in packages/*/; do printf "  %-18s DISCLOSURE:%s\n" "$(basename $d)" \
-    "$([ -f $d/DISCLOSURE ] && echo yes || echo no)"; done
-  pi-ask             DISCLOSURE:no
-  pi-cursor          DISCLOSURE:yes
-  pi-mcp             DISCLOSURE:yes
-  pi-path-picker     DISCLOSURE:no
-  pi-reasoning       DISCLOSURE:no
-  pi-sessions        DISCLOSURE:no
-  pi-statusline      DISCLOSURE:no
-  pi-web             DISCLOSURE:yes
-```
-
-The three packages declaring `contentPolicy: dual-use` are `pi-cursor`, `pi-mcp` and `pi-web`, and
-each has a `DISCLOSURE` file.
-
-## 12. Language rule compliance
-
-The project's own rule is that every artifact except chat is written in English. Matching
-non-English prose in repository-owned files:
-
-```console
-$ grep -rniE "\b(risultato|falliti|errore|senza|attenzione)\b" \
-    --include="*.mjs" --include="*.ts" --include="*.md" --include=".npmrc" \
-    scripts/ packages/*/lib packages/*/README.md README.md .npmrc
-.npmrc:1:# Registry e permessi di pubblicazione sono espliciti e pubblici.
-packages/pi-path-picker/lib/_provider.ts:121:      // Nessun token di percorso (o "~" senza slash) chiude eventuali menu
-packages/pi-path-picker/lib/_provider.ts:122:      // aperti, senza passare dal provider nativo.
-
-$ grep -n "risultato\|falliti" scripts/test-all.mjs
-86:console.log(`\n═══ risultato: ${pass} ok, ${fail} falliti ═══`);
-88:  console.log("falliti:", failures.join(", "));
-```
-
-## 13. Files read
-
-Repository-owned: `README.md`, `LICENSE`, `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`,
-`.npmrc`, `.gitignore`, `.prettierrc`, `scripts/release.mjs`, `scripts/release-helpers.mjs`,
-`scripts/test-all.mjs`, `test/release-helpers.test.mjs`, `docs/adr/ADR.md`,
-`docs/handoff/04-house-style-pass-and-cursor-free-plan.md`, all 8 `packages/*/package.json`, all 8
-`packages/*/pnpm-workspace.yaml`, and a per-package `README.md` heading scan.
-
-Out of scope, read solely to resolve the scope string:
-`pix-galaxy-mcp/src/core/review/template/_lines.js`, `_fill.js`, `_operation.js`.
-
-## 14. Web sources consulted
-
-- OpenSSF Scorecard checks, `https://raw.githubusercontent.com/ossf/scorecard/main/docs/checks.md`
-  - 20 checks, used as the external yardstick for CI-Tests, Security-Policy, License, Packaging,
-  Signed-Releases, Dependency-Update-Tool and Contributors.
-- npm Trusted Publishing, `https://docs.npmjs.com/trusted-publishers` - the stage-then-approve flow
-  and provenance attestations.
-- GitHub community profiles,
-  `https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions/about-community-profiles-for-public-repositories`
-  - the file set behind the measured `health_percentage`.
-- GitHub private vulnerability reporting,
-  `https://docs.github.com/en/code-security/security-advisories/working-with-repository-security-advisories/configuring-private-vulnerability-reporting-for-a-repository`
-- GitHub sponsor button and `FUNDING.yml`,
-  `https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository`
-- Contributor Covenant, `https://www.contributor-covenant.org/version/3/0/code_of_conduct/` -
-  HTTP 200, current major version 3.
-- Developer Certificate of Origin, `https://developercertificate.org/` - version 1.1 text.
-- Open Source Guides, `https://opensource.guide/leadership-and-governance/` - decision-making
-  models and role ladders.
-
-## 15. Style gate measurements (OSS-09 remediation)
-
-Taken while wiring the style gate. The commands below were run in the repository
-root against the pinned tooling.
-
-The toolchain the previous session used cannot run on this repository:
-
-```console
-$ curl -s https://registry.npmjs.org/typescript-eslint | ... dist-tags latest
-typescript-eslint@8.70.0
-  peer eslint:      ^8.57.0 || ^9.0.0 || ^10.0.0
-  peer typescript:  >=4.8.4 <6.1.0
-
-$ grep typescript packages/*/package.json
-packages/pi-ask/package.json:      "typescript": "7.0.2"
-packages/pi-cursor/package.json:   "typescript": "7.0.2"
-packages/pi-mcp/package.json:      "typescript": "7.0.2"
-packages/pi-web/package.json:      "typescript": "7.0.2"
-```
-
-No published release of typescript-eslint declares support for TypeScript 7, so the
-ESLint rule set lives on only as a description in a handoff document.
-
-Prettier against the repository's own `.prettierrc`, before the reformat:
-
-```console
-$ pnpm dlx prettier@3.9.6 --check "packages/*/lib/**/*.ts" "packages/*/index.ts" \
-    "packages/*/__tests__/**/*.mjs" "scripts/*.mjs" "test/*.mjs"
-[warn] Code style issues found in 162 files. Run Prettier with --write to fix.
-
-$ pnpm dlx prettier@3.9.6 --config <singleQuote: false> --check <same globs>
-[warn] Code style issues found in 121 files. Run Prettier with --write to fix.
-```
-
-Aligning the quote style recovers 41 files because the committed code uses double
-quotes while `.prettierrc` asks for single, and the remaining 121 differences are
-normalizations no option controls, such as splitting `let r = 0, g = 0, b = 0;`.
-No configuration reconciles the two, so the reformat was the only way to make the
-declared style and the committed style agree.
-
-Biome, on the same 170 files, first run with the recommended set and no scope:
-
-```console
-$ biome lint .
-Found 32 errors. Found 109 warnings. Found 57 infos.
-by rule: useTemplate 49, noNonNullAssertion 36, noControlCharactersInRegex 23,
-         useOptionalChain 22, noUnusedVariables 10, noUnusedImports 9,
-         noUnusedFunctionParameters 8, noTemplateCurlyInString 7,
-         useLiteralKeys 4, noBannedTypes 4, noExplicitAny 4, ...
-```
-
-Two of those rules flag deliberate behavior, verified against the source rather than
-assumed: `noControlCharactersInRegex` fires on `/(?:\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-Z\\-_])/g`
-in `packages/pi-mcp/lib/_utils.ts`, an ANSI escape stripper, and `noTemplateCurlyInString`
-fires on `packages/pi-mcp/lib/_utils.ts:451`, `template.replaceAll("${server}", serverName)`,
-where the placeholder is the value being matched rather than an interpolation.
-
-Two defects of the tooling were measured while building the configuration:
-
-```console
-$ biome lint .          # biome.json without an explicit exclusion
-Checked 196 files. Found 490 errors. Found 1237 warnings.
-$ ... | per-file breakdown
-   1475  packages/pi-mcp/lib/_app-bridge.bundle.js
-```
-
-Excluding that one minified artifact (which OSS-11 covers) takes the run from 1,818
-diagnostics to 170 files and 1 informational notice.
-
-```console
-$ biome lint .          # biome.json containing // comments
-Checked 196 files. Found 508 errors. Found 1237 warnings.
-```
-
-Biome 2.5.13 silently ignores the entire `rules` block when `biome.json` contains
-comments and falls back to its defaults, so the file is kept comment-free. The same
-version also prints a deprecation notice for `recommended` and asks for `preset`, but
-`preset` is not accepted yet: using it fails to parse the rules block and produces the
-same fallback. Both are recorded here rather than worked around silently.
-
-After the reformat and with the ratchet configuration in place:
-
-```console
-$ biome lint .
-Checked 170 files in 306ms. No fixes applied.
-Found 1 info.          # the recommended-to-preset deprecation notice
-exit 0
-
-$ pnpm format:check ; echo $?
+$ git log --format='%B' | grep -c "Signed-off-by"
+1
+$ git log --merges --oneline | wc -l
 0
-$ pnpm test    -> tests 20 | pass 20 | fail 0
-$ pnpm test:all -> 8 ok, 0 falliti
 ```
 
-The size of the deferred backlog, measured with the disabled rules re-enabled through
-a temporary configuration in the repository root:
+323 commits: 35 `feat`, 8 `perf`. `CONTRIBUTING.md` line 87 and `RELEASING.md`
+line 81 both say "Eight `perf` commits", which still matches.
+
+## 3. Package inventory
 
 ```console
-$ biome lint --config-path biome.backlog.json .
-  49  lint/style/useTemplate
-  36  lint/style/noNonNullAssertion
-  22  lint/complexity/useOptionalChain
-  10  lint/correctness/noUnusedVariables
-   9  lint/correctness/noUnusedImports
-   8  lint/correctness/noUnusedFunctionParameters
-   4  lint/complexity/useLiteralKeys
-   4  lint/complexity/noBannedTypes
-   4  lint/suspicious/noExplicitAny
-   3  lint/style/useConst
-   3  lint/complexity/noUselessSwitchCase
-   3  lint/correctness/noUnusedPrivateClassMembers
-   3  lint/suspicious/noAssignInExpressions
-   2  lint/correctness/noUnsafeFinally
-   2  lint/suspicious/noDuplicateObjectKeys
-   1  lint/suspicious/noImplicitAnyLet
-   1  lint/style/useImportType
-   1  lint/suspicious/noShadowRestrictedNames
-   1  lint/suspicious/noPrototypeBuiltins
-   1  lint/suspicious/noGlobalIsNan
-  ---- total: 167
+$ ls -d packages/*/ | wc -l
+10
 ```
 
-Both `noDuplicateObjectKeys` hits are in `test/harness.mjs` and report a property
-overwritten by a later member with the same name.
+Fields read from each `package.json`.
 
-## Out of scope observations
+- `pi-ask` 0.1.18, published, MIT, engines `>=22.19.0`, 9 keywords.
+- `pi-cursor` 0.1.5, published, `dual-use`, ships `DISCLOSURE`, 8 keywords.
+- `pi-lyceum` 0.1.0, published, `dual-use`, ships `DISCLOSURE`, 9 keywords.
+- `pi-mcp` 0.1.17, `private: true`, `deprecated: true`, `dual-use`, ships `DISCLOSURE`.
+- `pi-path-picker` 0.1.29, published, 8 keywords.
+- `pi-reasoning` 0.2.18, published, 8 keywords.
+- `pi-remote` 0.1.1, published, `dual-use`, ships `web/**` and `docs/**`, 12 keywords.
+- `pi-sessions` 0.1.19, published, 6 keywords.
+- `pi-statusline` 0.1.17, published, 7 keywords.
+- `pi-web` 0.1.11, published, `dual-use`, ships `DISCLOSURE`, 10 keywords.
 
-- Scope resolution required reading `pix-galaxy-mcp` template sources; no finding is reported
-  against them.
-- The environment changed outside this scope: `~/.pi/agent/settings.json` was edited earlier in the
-  same session to install the 8 packages globally, and `.pi/settings.json` was emptied. Recorded
-  once, not investigated.
+All ten declare `license: MIT`, `homepage`, `bugs.url`, `repository.directory`,
+`engines.node >=22.19.0` and `pi.extensions: ["./index.ts"]`. The base `files`
+array is `index.ts`, `lib/**`, `README.md`, `CHANGELOG.md`, `LICENSE`.
+
+Declared scripts.
+
+```console
+pi-ask: test,test:coverage,release,release:dry
+pi-cursor: test,test:coverage,typecheck,release,release:dry
+pi-lyceum: test,test:coverage,typecheck,release,release:dry
+pi-mcp: test,bench,test:watch,test:coverage
+```
+
+```console
+pi-path-picker: test,release,release:dry,test:coverage
+pi-reasoning: test,release,release:dry,test:coverage
+pi-remote: test,test:coverage,typecheck,release,release:dry
+pi-sessions: release,release:dry,test,test:coverage
+```
+
+```console
+pi-statusline: release,release:dry,test,bench,test:coverage
+pi-web: test,typecheck,release,release:dry,test:coverage
+```
+
+Four of ten packages declare `typecheck`. The root gates are `test`, `test:all`,
+`lint` and `format:check`. None of them runs a `typecheck` script.
+
+## 4. Registry state
+
+```console
+$ npm view @pixu1980/pi-statusline version
+0.1.17
+$ npm view @pixu1980/pi-mcp deprecated
+Superseded by pi's built-in MCP support and the /mcp command.
+```
+
+```console
+$ for p in ...; do npm view @pixu1980/$p version ; done
+pi-ask 0.1.18   pi-cursor 0.1.5   pi-lyceum 0.1.0   pi-mcp 0.1.17
+pi-path-picker 0.1.29   pi-reasoning 0.2.18   pi-remote 0.1.1
+pi-sessions 0.1.19   pi-statusline 0.1.17   pi-web 0.1.11
+```
+
+Every published version equals the version in the working tree. No package
+carries an unpublished change.
+
+```console
+$ npm view @pixu1980/<pkg> dist.attestations
+false (all ten)
+```
+
+Publish dates, from `npm view <pkg> time.modified`.
+
+```console
+pi-remote 2026-11-27T11:07:46Z      pi-path-picker 2026-11-27T11:07:53Z
+pi-web 2026-11-27T11:07:58Z         pi-cursor 2026-11-27T11:08:10Z
+pi-lyceum 2026-11-27T11:08:18Z      pi-ask 2026-11-27T11:09:05Z
+```
+
+```console
+pi-sessions 2026-11-27T11:09:14Z    pi-reasoning 2026-11-27T11:10:33Z
+pi-mcp 2026-10-01T13:09:32Z         pi-statusline 2026-10-01T13:13:19Z
+```
+
+Nine packages published between 11:07 and 11:10 UTC today. The GitHub
+`pushed_at` for the same range is `2026-11-27T11:06:39Z`. Each packument carries
+license, homepage, bugs URL, repository directory and keywords. It does not
+carry the `files` array.
+
+Tarball contents, measured with `npm pack --dry-run`.
+
+```console
+$ cd packages/pi-remote && npm pack --dry-run
+CHANGELOG.md 13.1kB   DISCLOSURE 3.0kB   LICENSE 1.1kB
+README.md 5.3kB   docs/self-hosting-relay.md 4.3kB
+index.ts   lib/*.ts (18 files)   lib/banner.svg
+```
+
+```console
+$ cd packages/pi-lyceum && npm pack --dry-run
+CHANGELOG.md 13.1kB   DISCLOSURE 3.4kB   LICENSE 1.1kB
+README.md 7.0kB   index.ts 402B   lib/*.ts (5 files)
+package size 19.2kB, total files 12
+```
+
+Clean-machine install, with an empty agent directory.
+
+```console
+$ PI_CODING_AGENT_DIR=/tmp/pi-clean-room/agent pi install npm:@pixu1980/pi-ask
+added 1 package in 303ms
+Installed npm:@pixu1980/pi-ask
+```
+
+```console
+$ pi list
+User packages:
+  npm:@pixu1980/pi-ask
+    /tmp/pi-clean-room/agent/npm/node_modules/@pixu1980/pi-ask
+```
+
+```console
+$ node -p "require('.../pi-ask/package.json').version"
+0.1.18
+```
+
+## 5. GitHub repository and community profile
+
+State before this run changed it.
+
+```console
+$ gh api repos/... --jq '{description, homepage, topics, has_wiki}'
+{"description":"Monorepo for Pi.dev extensions","homepage":null,
+ "topics":[],"has_wiki":true}
+```
+
+State after the change, by decision recorded in the review:
+
+```console
+$ gh api repos/... --jq '{description, homepage, has_wiki, topics}'
+{"description":"Nine pi coding agent extensions, published independently ...",
+ "homepage":"https://pi.dev/packages","has_wiki":false,
+ "topics":["ai-agent","coding-agent","extensions","llm","mcp","monorepo",
+           "pi","pi-coding-agent","typescript"]}
+```
+
+`PATCH /repos/{owner}/{repo}` applied description, homepage and `has_wiki`. It
+left `topics` empty. The dedicated `PUT /repos/{owner}/{repo}/topics` endpoint,
+with body `{"names":[...]}`, applied the nine topics.
+
+Settings this run did not change.
+
+```console
+$ gh api repos/... --jq '{allow_merge_commit, allow_squash_merge, allow_rebase_merge}'
+{"allow_merge_commit":false,"allow_squash_merge":false,"allow_rebase_merge":true}
+```
+
+```console
+$ gh api repos/... --jq '.security_and_analysis | keys'
+["dependabot_security_updates","secret_scanning","secret_scanning_non_provider_patterns",
+ "secret_scanning_push_protection","secret_scanning_validity_checks"]
+```
+
+`dependabot_security_updates`, `secret_scanning` and
+`secret_scanning_push_protection` are `enabled`. `web_commit_signoff_required`
+is `false`.
+
+```console
+$ gh api repos/.../branches --jq '.[].name'
+dependabot/npm_and_yarn/packages/pi-mcp/npm_and_yarn-8bbb79c431
+main
+```
+
+```console
+$ gh api repos/.../contents/.github/workflows
+404 Not Found
+$ curl -s -o /dev/null -w "%{http_code}" https://raw.githubusercontent.com/.../main/.github/dependabot.yml
+404
+```
+
+```console
+$ gh api repos/.../community/profile --jq '{health_percentage, files}'
+health 100; issue_template: None; contributing, code_of_conduct, license,
+readme, pull_request_template: present
+```
+
+```console
+$ gh api repos/.../contents/.github/ISSUE_TEMPLATE --jq '.[].name'
+bug_report.yml
+feature_request.yml
+```
+
+The profile reports health 100 and `issue_template: None` at once. The contents
+endpoint lists both form templates. The `None` is the profile field disagreeing
+with the tree, not a missing file. Both templates reference the `bug` and
+`enhancement` labels, and both labels exist.
+
+```console
+$ gh api repos/.../labels --jq '.[].name'
+bug dependencies documentation duplicate enhancement good first issue
+help wanted invalid javascript question
+```
+
+```console
+$ gh api repos/.../private-vulnerability-reporting
+{"enabled":true}
+$ curl -s -o /dev/null -w "%{http_code}" https://raw.githubusercontent.com/.../main/SECURITY.md
+200
+```
+
+Funding surface.
+
+```console
+$ cat .github/FUNDING.yml
+github: pixu1980
+$ curl -s -o /dev/null -w "%{http_code}" https://github.com/sponsors/pixu1980
+200
+```
+
+```console
+$ gh api graphql -f query='{user(login:"pixu1980"){hasSponsorsListing}}'
+{"data":{"user":{"hasSponsorsListing":true}}}
+$ gh api graphql -f query='{user(login:"pixu1980"){sponsorsListing{name isPublic tiers{totalCount}}}}'
+{"name":"sponsors-pixu1980","isPublic":true,"tiers":{"totalCount":0}}
+```
+
+The listing is public and carries zero tiers. Counters: 7 stars, 1 fork, 1 open
+issue-or-pull-request, `archived: false`, default branch `main`.
+
+## 6. Contribution history
+
+```console
+$ gh api "repos/.../pulls?state=all&per_page=100" --jq length
+2
+$ gh api "repos/.../issues?state=all&per_page=100" --jq '[.[] | select(has("pull_request")|not)] | length'
+1
+```
+
+| Item | State | Author | Created | Closed |
+| ---- | ----- | ------ | ------- | ------ |
+| Issue #1, branch rename | closed | fabian57fabian | 2026-06-28 | 2026-07-02. |
+| PR #2, bump @vitest/mocker in pi-mcp | closed, unmerged | dependabot[bot] | - | 2026-09-16. |
+| PR #3, npm_and_yarn group, pi-mcp | open | dependabot[bot] | 2026-09-17 | -. |
+
+```console
+$ gh api repos/.../pulls/3 --jq '{state, created_at, updated_at, mergeable_state}'
+{"state":"open","created_at":"2026-09-17T13:26:51Z",
+ "updated_at":"2026-11-27T11:06:10Z","mergeable_state":"clean"}
+```
+
+```console
+$ gh api repos/.../pulls/3 --jq '{commits, changed_files, additions, deletions}'
+{"commits":1,"changed_files":1,"additions":19,"deletions":29}
+```
+
+71 days open, mergeable and clean. The one file it touches is in
+`packages/pi-mcp`, which `release.mjs` refuses to release. The history holds
+zero merged pull requests.
+
+## 7. Release path and tags
+
+```console
+$ git for-each-ref refs/tags --format='%(objecttype)' | sort | uniq -c
+  75 commit
+  65 tag
+```
+
+```console
+$ git for-each-ref "refs/tags/@pixu1980/pi-statusline@*" --sort=-creatordate --format='%(objecttype) %(refname:short) %(creatordate:short)' | head -3
+tag @pixu1980/pi-statusline@0.1.17 2026-10-01
+tag @pixu1980/pi-statusline@0.1.16 2026-09-16
+tag @pixu1980/pi-statusline@0.1.15 2026-09-16
+```
+
+The newest tag of every sampled package is an annotated tag object. 75 tags are
+lightweight commit objects, dated 2026-08-07 and earlier in the sampled range.
+`scripts/release.mjs` calls `commit-and-tag-version` without `--sign`. The
+current path produces annotated, unsigned tags.
+
+```console
+$ gh api "repos/.../releases?per_page=100" --jq length
+0
+$ ls ROADMAP.md CHANGELOG.md
+ls: CHANGELOG.md: No such file or directory
+ls: ROADMAP.md: No such file or directory
+```
+
+`RELEASING.md` documents the procedure and the on-demand cadence. Each package
+ships its own `CHANGELOG.md` in the tarball.
+
+## 8. Gates and the suite
+
+```console
+$ GIT_CONFIG_GLOBAL=/dev/null pnpm test
+# tests 42 | # pass 42 | # fail 0
+```
+
+```console
+$ GIT_CONFIG_GLOBAL=/dev/null pnpm test:all
+pi-ask 101 | pi-cursor 166 | pi-lyceum 47 | pi-mcp 42 | pi-path-picker 42
+pi-reasoning 59 | pi-remote 63 | pi-sessions 34 | pi-statusline 80 | pi-web 28
+result: 10 ok, 0 failed        (662 package tests, 42 root tests)
+```
+
+```console
+$ pnpm lint
+Checked 210 files. Found 1 info. ("biome.json schema 2.5.15 against the pinned 2.5.13")
+$ pnpm format:check
+All matched files use Prettier code style!
+```
+
+Without the `GIT_CONFIG_GLOBAL` override the same suite fails:
+
+```console
+$ pnpm test:all
+✖ getGitStatus: clean repo reports branch + zero dirty
+✖ git dirty repo counts modified files
+✖ git cold cache serves fallback synchronously and backfills async
+# tests 80 | # pass 72 | # fail 8
+```
+
+```console
+commit-lint: rejected - "init" is not an accepted type
+  at makeTempRepo (.../packages/pi-statusline/__tests__/_cache-stats.test.mjs:36:3)
+```
+
+```console
+$ git config --get core.hooksPath
+/Users/emilianopisu/.config/git/hooks
+$ grep -rln "git commit" packages/*/__tests__ test/*.mjs
+packages/pi-statusline/__tests__/_swr.test.mjs
+packages/pi-statusline/__tests__/_unit.test.mjs
+packages/pi-statusline/__tests__/_cache-stats.test.mjs
+test/release-helpers.test.mjs
+```
+
+The eight failures are temp repositories passing `git commit` through the
+machine's global `commit-msg` hook. That hook rejects the message `init`.
+
+## 9. Tested host and typing
+
+```console
+$ pi --version
+1.6.0
+$ node -e '<print host devDependencies per manifest>'
+pi-ask host=0.99.1 tui=0.99.1 peerHost=*
+... identical for all ten manifests, except pi-lyceum with tui=none ...
+$ grep -n "0.99" README.md
+9:All nine extensions support the current pi, `0.99.x` and newer
+```
+
+`docs/adr/016-use-a-wildcard-peer-range-for-every-host-provided-pi-package-and-pin-the-host-in.md`
+records 0.99.1 as the tested host. The installed host is 1.6.0.
+
+The API surface the newest change uses exists in both pins:
+
+```console
+$ grep -c "session_info_changed" packages/pi-statusline/node_modules/.../types.d.ts
+2
+$ grep -c "session_info_changed" /opt/homebrew/Cellar/pi-coding-agent/1.6.0/.../types.d.ts
+2
+```
+
+No gate compares the pinned host with the running host. No gate runs `tsc`.
+
+## 10. Documents and governance inventory
+
+Present at the root.
+
+- `README.md` 3.9 kB.
+- `CONTRIBUTING.md` 6.5 kB.
+- `GOVERNANCE.md` 7.2 kB.
+- `SECURITY.md` 6.5 kB.
+- `CODE_OF_CONDUCT.md` 9.3 kB.
+- `FUNDING.md` 2.8 kB.
+- `RELEASING.md` 6.2 kB.
+- `.mailmap` 675 B.
+
+Present under `docs/` and `.github/`.
+
+- `docs/adr`: 20 numbered files and a generated `ADR.md` index.
+- `docs/audits`, `docs/reviews`, `docs/plans`: `oss.md` in each.
+- `docs/handoff`: 6 files.
+- `.github/FUNDING.yml`, `PULL_REQUEST_TEMPLATE.md`, `ISSUE_TEMPLATE/*.yml`.
+
+Absent.
+
+- `ROADMAP.md` and a root `CHANGELOG.md`.
+- `.github/workflows` and `.github/dependabot.yml`.
+
+`.gitignore` covers `.tokensave`, `node_modules/`, `*.log`, `.DS_Store`, `dist/`
+and `.pi/`. `git ls-files | grep -c DS_Store` returns 0.
+
+Governance statements read in full.
+
+- One maintainer holds the final say.
+- ADRs are immutable once accepted. A later ADR supersedes them.
+- The merge gate is manual.
+- Promotion criteria for a second maintainer are listed.
+- The donor boundary is: a donor request that conflicts with the maintainer's
+  judgment loses.
+- No provenance and no CI are stated as accepted exposure, citing ADR 013.
+
+`LICENSE` is MIT, copyright `Emiliano "pixu1980" Pisu`. `packages/pi-mcp/LICENSE`
+keeps the upstream copyright `Nico Bailon`, as ADR 011 requires.
+
+## 11. Code graph health (tokensave)
+
+```console
+$ tokensave_status
+5892 nodes, 5736 edges, 313 files, db 147 MB, last_sync 2026-11-27
+```
+
+```console
+$ tokensave_health
+quality_signal 6281
+acyclicity 0.9721 (15 edges in cycles) | depth 0.45 (max chain 20, ideal 9)
+equality 0.3109 (gini 0.6891) | redundancy 0.7248 (dead 779 / 2831 fns)
+modularity 0.9918 (122 components) | coverage_discipline 1.0
+```
+
+```console
+$ tokensave_dsm
+313 files, 538 edges, density 0.0055, 42 clusters, largest 51
+$ tokensave_gini (complexity, files)
+0.7831 over 276 files; top outlier packages/pi-mcp/lib/_app-bridge.bundle.js
+```
+
+```console
+$ tokensave_coupling (fan_in)
+packages/pi-mcp/lib/_types.ts 27 | test/harness.mjs 20
+packages/pi-mcp/lib/_utils.ts 20
+```
+
+```console
+$ tokensave_circular
+6 cycles: pi-remote (_ask/_chat), pi-remote web (app/relay)
+pi-mcp (_mcp-output-guard/_mcp-trace/_types/_ui-stream-types)
+pi-mcp (_server-manager/_unix-socket-transport), pi-mcp (_mcp-status/_state)
+scripts (release-helpers/release.mjs)
+```
+
+```console
+$ tokensave_dependency_depth
+max 20, ideal 9; longest chain starts in packages/pi-mcp/__tests__
+and ends in packages/pi-remote/lib/_pairing.ts
+```
+
+Caveat measured from the same output. `packages/pi-mcp/lib/_app-bridge.bundle.js`
+is generated and tracked (676 kB, ADR 014). It holds the top gini outlier, two
+of the top test-risk entries and part of the depth chain. The quality signal
+covers built code as well as hand-written code.
+
+## 12. Sources consulted
+
+- OpenSSF Scorecard checks, `docs/checks.md` at `main`, 46550 bytes read.
+- Checks read: Binary-Artifacts, Branch-Protection, CI-Tests, Code-Review,
+  Contributors, Dangerous-Workflow, Dependency-Update-Tool, Fuzzing, License,
+  Maintained, Packaging, Pinned-Dependencies, SAST, SBOM, Security-Policy,
+  Signed-Releases, Token-Permissions, Vulnerabilities, Webhooks.
+- Open Source Guides, "Best Practices for Maintainers", 18578 bytes read.
+- Headings read: "Documenting your processes", "Communicate your expectations",
+  "Keep communication public", "Leverage your community".
+- Headings read: "Require tests and other checks", "Use tools to automate basic
+  maintenance tasks".
+- GitHub REST and GraphQL endpoints cited in §5, §6 and §7.
+
+## 13. Out of scope observations
+
+- On the audit machine the npm `@pixu1980/pi-statusline` was removed and the
+  local `packages/pi-statusline` installed into `.pi/settings.json`. That tested
+  an unreleased change. It is a machine setting, not repository state, and
+  `.pi/` is git-ignored.

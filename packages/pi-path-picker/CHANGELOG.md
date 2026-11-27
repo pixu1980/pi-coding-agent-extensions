@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.29](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.28...@pixu1980/pi-path-picker@0.1.29) (2026-11-27)
+
+### Features
+
+* **pi-lyceum:** add OpenAI-compatible Lyceum provider ([7dc1377](https://github.com/pixu1980/pi-coding-agent-extensions/commit/7dc13770fc89d8b189e33c4703a774fd628f7989))
+
+### Bug Fixes
+
+* **packaging:** ship package changelogs in published tarballs ([7bde31c](https://github.com/pixu1980/pi-coding-agent-extensions/commit/7bde31cd0611384e1a890534128728edefa99c24))
+* **pi-remote:** ship the PWA icons referenced by the manifest ([f94c2b7](https://github.com/pixu1980/pi-coding-agent-extensions/commit/f94c2b749048901a72f6cbb441dcd1e9652139e0))
+
 ## [0.1.28](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-path-picker@0.1.27...@pixu1980/pi-path-picker@0.1.28) (2026-10-01)
 
 ### Features

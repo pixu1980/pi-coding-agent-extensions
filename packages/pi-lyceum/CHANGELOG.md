@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.0](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-lyceum@0.1.0...@pixu1980/pi-lyceum@0.2.0) (2026-11-27)
+
+### ⚠ BREAKING CHANGES
+
+* **pi-remote:** remove the package and its release path
+
+### Features
+
+* **pi-remote:** remove the package and its release path ([cfdb8d8](https://github.com/pixu1980/pi-coding-agent-extensions/commit/cfdb8d8ee5ca1b4fa50799ac00265e325591d60a))
+* **pi-statusline:** show the session name on the editor border ([c7ef9fb](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c7ef9fb26b378a9e4c52c0a2c53cf5638ef4f2bc))
+
+### Bug Fixes
+
+* **pi-cursor:** clear the production dependency advisories ([f2feb9d](https://github.com/pixu1980/pi-coding-agent-extensions/commit/f2feb9d3f80b23ffa2d14cfaae852d4f1766cb79))
+* **pi-lyceum:** resolve the completions API the loader can map ([47d98d2](https://github.com/pixu1980/pi-coding-agent-extensions/commit/47d98d2f042364e6f9a3bbc834ec872089767d90))
+* **pi-mcp:** keep traces owner-only in the agent directory ([df8636d](https://github.com/pixu1980/pi-coding-agent-extensions/commit/df8636dc28509317fde6d44f2db6af7769427496))
+* **pi-statusline:** keep border and footer colour on narrow widths ([69a19ab](https://github.com/pixu1980/pi-coding-agent-extensions/commit/69a19ab8c0acb64050f6e6bff339cbee9f48fb82))
+* **pi-statusline:** use a template literal in the footer clip path ([571665d](https://github.com/pixu1980/pi-coding-agent-extensions/commit/571665dad3722846d4021c9c3a7c0ec55ac6f437))
+* **pi-web:** block IPv6 transition ranges and pin the validated address ([a211823](https://github.com/pixu1980/pi-coding-agent-extensions/commit/a2118233a7cb912e38198ad1a0f22fcfaa067e27))
+
 ## 0.1.0 (2026-11-27)
 
 ### Features

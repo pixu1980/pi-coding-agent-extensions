@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-lyceum",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Lyceum provider for pi.dev - run Lyceum's open models from pi through its OpenAI-compatible API, with your own API key stored only on your machine",
   "type": "module",

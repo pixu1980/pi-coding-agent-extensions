@@ -261,7 +261,7 @@ function createFooter(ctx: ExtensionContext) {
           };
 
           if (leftW + 1 < maxWidth) {
-            return [left + ' ' + clipRight(maxWidth - leftW - 1)];
+            return [`${left} ${clipRight(maxWidth - leftW - 1)}`];
           }
 
           return [clipRight(maxWidth)];

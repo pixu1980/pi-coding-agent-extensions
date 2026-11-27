@@ -297,6 +297,9 @@ createMockPi 125 in | createMockCtx 110 in | executeCall 94 out | initializeMcp
 - On the audit machine the local `packages/pi-statusline` sits in `.pi/settings.json`. That is
   machine state, not repository state.
 - `docs/audits/oss.md` already records repository-level findings. This run does not repeat them.
+- Reinstalling from npm exposed the host-drift defect behind `OSS-23`: `pi-lyceum` 0.1.0 imported
+  a host subpath statically and aborted pi startup on 1.6.1. That is a compatibility defect, not a
+  security one. `fix(pi-lyceum)` records the fix and the guard.
 
 ## 14. Changes executed by this run
 

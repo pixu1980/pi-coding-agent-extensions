@@ -21,6 +21,16 @@
 > The source is kept here only as a historical record of the fork. It is skipped by the release
 > process and no new versions are published.
 
+> [!CAUTION]
+> **Unpatched production dependencies.** `pnpm audit --prod` reports 1 critical and 12 high
+> advisories in the dependency tree, and this package cannot be republished to fix them. Notable
+> entries: `proxy-addr <2.0.8` (IP spoofing via IPv4-mapped IPv6), `@modelcontextprotocol/sdk`
+> 1.30.0 and `@modelcontextprotocol/client` 2.0.0 (OAuth client can send credentials to the wrong
+> host), `fast-uri <3.1.7` (SSRF), `body-parser <2.4.0` (denial of service).
+>
+> The built-in MCP support in pi is the supported path and the only one that receives fixes.
+> See [SECURITY.md](../../SECURITY.md) for the full posture.
+
 Use MCP servers with [Pi](https://github.com/badlogic/pi-mono/) without burning your context window.
 
 > **Inspired by [pi-mcp-adapter](https://github.com/nicobailon/pi-mcp-adapter) by Nico Bailon.**

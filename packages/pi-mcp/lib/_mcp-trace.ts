@@ -1,7 +1,8 @@
-import { appendFile, mkdir, writeFile } from 'node:fs/promises';
+import { appendFile, chmod, mkdir, writeFile } from 'node:fs/promises';
 import { Buffer } from 'node:buffer';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { getAgentPath } from './_agent-dir.ts';
 import type { JSONRPCMessage, MessageExtraInfo } from '@modelcontextprotocol/sdk/types.js';
 
 export const MCP_TRACE_SCHEMA_VERSION = 1;
@@ -39,13 +40,22 @@ export interface McpTraceEvent {
   durationMs?: number;
 }
 
+/** Owner-only permissions for a trace file that can name servers and methods. */
+export const MCP_TRACE_FILE_MODE = 0o600;
+
+export interface TraceWriteOptions {
+  encoding: 'utf8';
+  mode?: number;
+}
+
 export interface McpTraceWriterOptions {
   filePath: string;
   maxBytes?: number;
   maxEvents?: number;
-  appendFile?: (path: string, data: string, options: { encoding: 'utf8' }) => Promise<void>;
-  writeFile?: (path: string, data: string, options: { encoding: 'utf8' }) => Promise<void>;
+  appendFile?: (path: string, data: string, options: TraceWriteOptions) => Promise<void>;
+  writeFile?: (path: string, data: string, options: TraceWriteOptions) => Promise<void>;
   mkdir?: (path: string, options: { recursive: true }) => Promise<string | undefined>;
+  chmod?: (path: string, mode: number) => Promise<void>;
 }
 
 function boundedPositiveInteger(value: number | undefined, fallback: number): number {
@@ -160,6 +170,7 @@ export class McpTraceWriter {
   private readonly append: NonNullable<McpTraceWriterOptions['appendFile']>;
   private readonly resetFile: NonNullable<McpTraceWriterOptions['writeFile']>;
   private readonly makeDirectory: NonNullable<McpTraceWriterOptions['mkdir']>;
+  private readonly restrictPermissions: NonNullable<McpTraceWriterOptions['chmod']>;
   private bytesWritten = 0;
   private eventsWritten = 0;
   private queue = Promise.resolve();
@@ -187,8 +198,15 @@ export class McpTraceWriter {
 
         return undefined;
       });
+    this.restrictPermissions =
+      options.chmod ??
+      (async (path, mode) => {
+        await chmod(path, mode);
+      });
     this.fileReady = this.makeDirectory(dirname(this.options.filePath), { recursive: true })
-      .then(() => this.resetFile(this.options.filePath, '', { encoding: 'utf8' }))
+      .then(() => this.resetFile(this.options.filePath, '', { encoding: 'utf8', mode: MCP_TRACE_FILE_MODE }))
+      // A file left behind by an older version keeps its old mode, so set it again.
+      .then(() => this.restrictPermissions(this.options.filePath, MCP_TRACE_FILE_MODE))
       .catch(() => {
         // Tracing must never change MCP request/response behavior.
         this.initializationFailed = true;
@@ -241,7 +259,7 @@ export class McpTraceWriter {
           return;
         }
 
-        await this.append(this.options.filePath, line, { encoding: 'utf8' });
+        await this.append(this.options.filePath, line, { encoding: 'utf8', mode: MCP_TRACE_FILE_MODE });
       })
       .catch(() => {
         // Tracing must never change MCP request/response behavior.
@@ -266,7 +284,7 @@ export function createMcpTraceWriter(
     ? isAbsolute(configuredPath)
       ? configuredPath
       : resolve(sessionCwd ?? process.cwd(), configuredPath)
-    : resolve(sessionCwd ?? process.cwd(), '.pi', 'mcp-traces', `mcp-${timestamp}-${randomSuffix}.jsonl`);
+    : getAgentPath('mcp-traces', `mcp-${timestamp}-${randomSuffix}.jsonl`);
 
   return new McpTraceWriter({
     filePath,

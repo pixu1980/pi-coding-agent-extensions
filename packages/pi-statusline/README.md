@@ -16,6 +16,7 @@ pi install npm:@pixu1980/pi-statusline
 
 A dual-line status display for `pi-coding-agent`:
 
+- **Session name on the editor border:** the current session name (set with `/name`, the session picker, or an auto-naming extension) is mirrored on the right edge of the border above the prompt, opposite the reasoning spinner. It is painted with the editor's border colour, the same one pi uses for the reasoning spinner and for the border dashes, so it follows the thinking level and the bash-mode border. It stays out of the way when the session has no name, and a name that does not fit is truncated with `…`.
 - **Line 1 (widget, below editor):** project name, git branch/status, model info, thinking level, and context usage with a gradient color scale.
 - **Line 2 (footer, replaces native):** MCP server status on the left, provider/model info on the right.
 - **Responsive auto format (default):** the widget re-measures the available width on every render and picks the most verbose layout that fits, degrading through four levels while preserving colors:
@@ -40,6 +41,8 @@ A dual-line status display for `pi-coding-agent`:
 ## Customization
 
 Templates support placeholders for project, git branch, git status (ahead/behind/modified/untracked), model name, provider, thinking level, context usage, and MCP server counts. See the settings panel (`/statusline settings`) for the full list and live preview.
+
+The session name label installs a custom editor component (a `CustomEditor` subclass that decorates only the top border). If another extension also calls `setEditorComponent`, only one editor can be active: the last one installed wins.
 
 ## License
 

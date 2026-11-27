@@ -61,6 +61,10 @@ export function createMockCtx(overrides = {}) {
     setFooter(factory) {
       uiCalls.push(['setFooter', factory]);
     },
+    setEditorComponent(factory) {
+      uiCalls.push(['setEditorComponent', factory]);
+    },
+    theme: makeTheme(),
     /** Records the component factory so tests can drive it: ui.customCalls[0].factory(fakeTui, theme, keybindings, done) */
     custom(factory, opts) {
       uiCalls.push(['custom', factory, opts]);

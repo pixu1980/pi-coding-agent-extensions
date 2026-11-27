@@ -10,3 +10,4 @@ import './_e2e.test.mjs';
 import './_swr.test.mjs';
 import './_cache-stats.test.mjs';
 import './_bench-quiet.test.mjs';
+import './_session-name.test.mjs';

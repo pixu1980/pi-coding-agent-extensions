@@ -21,7 +21,7 @@ declared as peers, never bundled.
 | [`@pixu1980/pi-reasoning`](./packages/pi-reasoning) | Sets the thinking level from the selected model, with per-model overrides |
 | [`@pixu1980/pi-remote`](./packages/pi-remote) | Drive pi from a phone browser through an install-free PWA with push notifications |
 | [`@pixu1980/pi-sessions`](./packages/pi-sessions) | Browse, search and restore past sessions, with auto-naming |
-| [`@pixu1980/pi-statusline`](./packages/pi-statusline) | A customizable status line with git state, model info and context usage |
+| [`@pixu1980/pi-statusline`](./packages/pi-statusline) | A customizable status line with git state, model info, context usage and the session name on the editor border |
 | [`@pixu1980/pi-web`](./packages/pi-web) | Fetches a URL and turns it into clean Markdown for the context |
 
 Install one with pi:

@@ -3,7 +3,8 @@
  *
  * Dual-line status display: a template-based widget below the editor
  * (project, git, model, effort, context) and a footer with MCP server
- * status on the left and provider/model info on the right.
+ * status on the left and provider/model info on the right. The current
+ * session name is mirrored on the right edge of the editor's top border.
  *
  * Commands:
  *   /statusline           – Print current statusline in output
@@ -34,6 +35,7 @@ import {
   getProjectPathStats,
 } from './_helpers.ts';
 import { getMcpInfo, getMcpStats } from './_mcp.ts';
+import { createSessionNameEditor } from './_session-name.ts';
 
 // ── Module-level state ─────────────────────────────────────────
 
@@ -47,6 +49,9 @@ let compileError: string | null = null;
 // never changes unless the branch grows, so cache by branch length.
 let cachedInitialPrompt = '';
 let cachedBranchLen = -1;
+
+// TUI the session-name editor was built for, kept so a rename can repaint.
+let editorTui: TUI | undefined;
 
 // ── Context usage ─────────────────────────────────────────────
 
@@ -270,6 +275,27 @@ export default function (pi: ExtensionAPI): void {
 
     // Footer: MCP info (left) + provider/model (right)
     ctx.ui.setFooter(createFooter(ctx));
+
+    // Editor top border: the session name, opposite pi's status block. It is
+    // painted with the editor's border colour, the one pi already uses for the
+    // spinner embedded in that border.
+    const SessionNameEditor = createSessionNameEditor({
+      getSessionName: () => pi.getSessionName(),
+      onTui: (tui) => {
+        editorTui = tui;
+      },
+    });
+
+    ctx.ui.setEditorComponent((tui, theme, keybindings) => new SessionNameEditor(tui, theme, keybindings));
+  });
+
+  // Rename (`/name`, session picker, auto-naming): repaint the border label.
+  pi.on('session_info_changed', () => {
+    editorTui?.requestRender();
+  });
+
+  pi.on('session_shutdown', () => {
+    editorTui = undefined;
   });
 
   // Refresh on model/thinking changes

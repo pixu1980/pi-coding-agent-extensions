@@ -19,10 +19,11 @@ model is more useful than describing an aspiration.
 
 The honest starting point for anyone deciding whether to invest time here:
 
-- 253 commits, all from one person across one canonical identity.
-- **One pull request has ever been opened** in this repository, by a bot, and it
-  is still open. No outside contribution has ever been merged, and there are no
-  merge commits in the history at all.
+- Every commit but two comes from one person across one canonical identity. The
+  two exceptions are Dependabot commits.
+- **Two pull requests have ever been opened** in this repository, both by bots:
+  #2 was closed, #3 is still open. No outside contribution has ever been merged,
+  and there are no merge commits in the history at all.
 
 So the path described below is written, not proven. It is what will happen
 rather than a description of a working track record, and reading it as the
@@ -49,7 +50,9 @@ record that says so and links back. That is the whole point: the reason a
 decision was made stays visible even after the decision has changed, which is
 the information a reader usually needs most.
 
-There are 13 records. The ones a newcomer will care about are
+The numbered files in [`docs/adr/`](./docs/adr) are the record, and
+[`docs/adr/ADR.md`](./docs/adr/ADR.md) indexes them. The ones a newcomer will
+care about are
 [013](./docs/adr/013-publish-locally-without-ci-and-accept-the-provenance-gap.md),
 which explains why there is no CI, and
 [012](./docs/adr/012-remove-the-dependency-cooldown-and-consume-the-newest-dependency-versions.md),
@@ -74,15 +77,31 @@ is the gate, and it is manual:
 
 1. You open an issue or a pull request. There is no triage bot and no automatic
    labeling, so nothing happens until a person reads it.
-2. You run the four gates (`pnpm test`, `pnpm test:all`, `pnpm lint`,
-   `pnpm format:check`) and report that they pass.
-3. The maintainer reads the change, runs the same four gates, and decides.
+2. You run the five gates (`pnpm test`, `pnpm test:all`, `pnpm typecheck:all`,
+   `pnpm lint`, `pnpm format:check`) and report that they pass.
+3. The maintainer reads the change, runs the same five gates, and decides.
    There is no CI, by decision recorded in ADR 013, so the only evidence a
    change is sound is the test suite plus a human running it.
 4. The maintainer merges, or explains what would need to change.
 
 Nothing merges without a human doing that. That is slower than a green check and
 it is the tradeoff this project chose.
+
+## Where the conversation happens
+
+GitHub Discussions is **off**. Issues are the only place a conversation happens,
+and this section records that as a decision rather than an unset switch.
+
+The reason is the model above. One maintainer is one moderator: a second channel
+would need the same attention as the issue tracker, and it would split a record
+that lives in one place today. A question asked in an issue can be answered,
+linked from a commit and closed. There is no demand yet for a place where
+conversations outlive their issue.
+
+Turn Discussions on when that changes: when questions arrive that are not change
+requests, or when people start answering each other often enough that an issue is
+the wrong container. Opening it is a decision like any other, so it lands with an
+ADR that says why, the same as a change to this document.
 
 ## Becoming a maintainer
 

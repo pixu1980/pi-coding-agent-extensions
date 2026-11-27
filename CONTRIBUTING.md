@@ -55,14 +55,37 @@ Nothing runs the gates for you, so run them yourself before opening a pull
 request:
 
 ```bash
-pnpm test          # the repository's own tests, including the structural guards
-pnpm test:all      # every package's suite, in one run
-pnpm lint          # Biome, over the paths biome.json allows
-pnpm format:check  # prettier, over every hand-written source file
+pnpm test           # the repository's own tests, including the structural guards
+pnpm test:all       # every package's suite, in one run
+pnpm typecheck:all  # tsc --noEmit in every package that has a typecheck script
+pnpm lint           # Biome, over the paths biome.json allows
+pnpm format:check   # prettier, over every hand-written source file
 ```
 
 `pnpm format` rewrites the files in place. Both tools are pinned exactly as root
 devDependencies, so a local run and the maintainer's run agree.
+
+`pnpm typecheck:all` walks `packages/` the way `pnpm test:all` does and skips a
+package with no `typecheck` script. The host packages are pinned at `^1.6.0` in
+each manifest, so the check runs against pi 1.6.x; the reason is in
+[ADR 021](./docs/adr/021-pin-the-host-at-1-6-0-and-gate-type-checking-across-all-nine-packages.md).
+
+### The suite must also pass with your git hooks configured
+
+`packages/pi-statusline` commits inside throwaway git repositories. Your global
+`core.hooksPath` puts your own `commit-msg` or `pre-commit` hook in front of
+those commits, and a hook that rejects the fixture message would fail tests that
+have nothing to do with hooks.
+
+Every fixture therefore commits with `git -c core.hooksPath=`, which runs no
+hook at all, and
+[`_git-hooks.test.mjs`](./packages/pi-statusline/__tests__/_git-hooks.test.mjs)
+proves it. Check it when you touch those fixtures:
+
+```bash
+cd packages/pi-statusline
+GIT_CONFIG_GLOBAL=/path/to/a/gitconfig-with-a-failing-commit-msg pnpm test
+```
 
 ## Commits
 
@@ -99,7 +122,7 @@ simply be wrong.
 ## Pull requests
 
 1. Branch from `main` and keep the change to one concern where you can.
-2. Run the four gates above and make them pass. There is no CI to do it for you,
+2. Run the gates above and make them pass. There is no CI to do it for you,
    and the maintainer will run them again.
 3. Update the affected package's `README.md` if you changed what it documents.
 4. Leave `CHANGELOG.md` alone. It is generated at release time from the commits,
@@ -110,6 +133,29 @@ simply be wrong.
 
 Because there is no CI, expect the review to be a conversation rather than a
 green check. The maintainer reviews, runs the gates, and merges.
+
+## Dependency updates
+
+Dependabot opens the dependency pull requests. `.github/dependabot.yml` carries
+one `npm` entry per supported package directory, on a weekly schedule, and every
+entry uses the `npm_and_yarn` group. `pi-mcp` is not listed: it is deprecated and
+cannot be released again.
+
+Each package resolves its own lockfile, so a group update arrives as one pull
+request per package and is reviewed like any other change:
+
+1. Keep the group in one pull request. Splitting it means running the same
+gates several times over the same tree.
+2. Run that package's gates, `pnpm test` and `pnpm typecheck` inside it, plus the
+   root `pnpm test:all`. A dependency that changes a host type shows up there.
+3. Read the changelog of the package that moved. Versions are pinned exactly, so
+   the pull request is the whole review: there is no range to float later.
+4. If a build script appears in the update, declare it in that package's
+   `pnpm-workspace.yaml` with an explicit boolean, as the section above says.
+
+Close an update with a comment rather than silence when the package is
+deprecated or the upstream release is not wanted. The next weekly run opens it
+again otherwise.
 
 ## Releases
 

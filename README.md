@@ -6,10 +6,12 @@ independently to npm under the `@pixu1980` scope. One further package,
 
 ## Packages
 
-All eight extensions support the current pi, `0.99.x` and newer: they use the
-host APIs directly and are tested against the host the repository pins. The
-host supplies `@earendil-works/pi-*` and `typebox` to extensions, so those are
-declared as peers, never bundled.
+All eight extensions use the host APIs directly. The manifests pin the host
+packages at `^1.6.0` in `devDependencies`, so every suite and the typecheck run
+against pi 1.6.x, and the lockfiles resolve 1.6.1.
+[ADR 021](./docs/adr/021-pin-the-host-at-1-6-0-and-gate-type-checking-across-all-nine-packages.md)
+records the pin and the gate behind it. The host supplies `@earendil-works/pi-*`
+and `typebox` to extensions, so those are declared as peers, never bundled.
 
 | Package | What it does |
 | ------- | ------------ |
@@ -71,10 +73,14 @@ pnpm release:dry
 ## Contributing
 
 Contributions are welcome. Start with [CONTRIBUTING.md](./CONTRIBUTING.md),
-which covers the local setup, the four gates you are expected to run, the commit
+which covers the local setup, the gates you are expected to run, the commit
 convention the changelogs are generated from, and the contribution terms.
 [GOVERNANCE.md](./GOVERNANCE.md) says who decides what, how a decision becomes a
 record in `docs/adr/`, and what this model costs.
+
+Looking for a place to start? Take an open issue labeled
+[`good first issue`](https://github.com/pixu1980/pi-coding-agent-extensions/labels/good%20first%20issue)
+and comment on it before you write code, so two people do not take the same one.
 
 Everyone taking part is expected to follow the
 [Code of Conduct](./CODE_OF_CONDUCT.md).

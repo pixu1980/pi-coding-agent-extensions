@@ -53,10 +53,17 @@ Nothing in the governance of this project.
 ## Where to sponsor
 
 GitHub Sponsors, offered through the Sponsor button on this repository:
-[the Sponsors page](https://github.com/sponsors/pixu1980).
+[the Sponsors page](https://github.com/sponsors/pixu1980). The button comes from
+[`.github/FUNDING.yml`](./.github/FUNDING.yml), which lists one account and no
+other channel. The project asks nowhere else and accepts nothing by other means.
 
-There is no other channel. The project asks nowhere else and accepts nothing by
-other means.
+What a visitor finds there today: **a listing with no tier to buy.** The page
+renders and the tier count is zero, so the button leads to a page where nothing
+is priced. That is expected rather than broken. One priced tier is the next step,
+and a maintainer action rather than a change to this file.
+
+When that tier exists, this section names it, its price and what it pays for.
+Until then, this document describes the intent, and the page describes nothing.
 
 ## If the funding model changes
 

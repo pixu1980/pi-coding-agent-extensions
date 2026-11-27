@@ -1,6 +1,6 @@
 {
   "name": "@pixu1980/pi-remote",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "description": "Web-based remote control for the pi coding agent - drive pi from your phone browser via an install-free PWA with notifications, no App Store required",
   "type": "module",

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.0](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-cursor@0.1.5...@pixu1980/pi-cursor@0.2.0) (2026-11-27)
+
+### ⚠ BREAKING CHANGES
+
+* **pi-remote:** remove the package and its release path
+
+### Features
+
+* **pi-remote:** remove the package and its release path ([cfdb8d8](https://github.com/pixu1980/pi-coding-agent-extensions/commit/cfdb8d8ee5ca1b4fa50799ac00265e325591d60a))
+* **pi-statusline:** show the session name on the editor border ([c7ef9fb](https://github.com/pixu1980/pi-coding-agent-extensions/commit/c7ef9fb26b378a9e4c52c0a2c53cf5638ef4f2bc))
+
+### Bug Fixes
+
+* **pi-cursor:** clear the production dependency advisories ([f2feb9d](https://github.com/pixu1980/pi-coding-agent-extensions/commit/f2feb9d3f80b23ffa2d14cfaae852d4f1766cb79))
+* **pi-mcp:** keep traces owner-only in the agent directory ([df8636d](https://github.com/pixu1980/pi-coding-agent-extensions/commit/df8636dc28509317fde6d44f2db6af7769427496))
+* **pi-web:** block IPv6 transition ranges and pin the validated address ([a211823](https://github.com/pixu1980/pi-coding-agent-extensions/commit/a2118233a7cb912e38198ad1a0f22fcfaa067e27))
+
 ## [0.1.5](https://github.com/pixu1980/pi-coding-agent-extensions/compare/@pixu1980/pi-cursor@0.1.4...@pixu1980/pi-cursor@0.1.5) (2026-11-27)
 
 ### Features

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   changedFilesSinceTag,
   ensureNpmAuthentication,
+  ghReleaseCommand,
   isReleaseTriggerFile,
   releaseSummaryLines,
   standardVersionCommand,
@@ -35,6 +36,47 @@ test('keeps the configured version for an untagged first release', () => {
     standardVersionCommand('/repo', 'package', false, true),
     '"/repo/node_modules/.bin/commit-and-tag-version" --first-release --no-verify --tag-prefix "package@"'
   );
+});
+
+test('never asks commit-and-tag-version to sign the tag', () => {
+  // An unsigned tag is a decision, not an oversight: commit-and-tag-version
+  // uses `git tag -a` unless --sign is passed, and a signed tag would require
+  // every maintainer to hold a signing key. The flag must never appear.
+  const commands = [
+    standardVersionCommand('/repo', '@scope/package', false),
+    standardVersionCommand('/repo', '@scope/package', true),
+    standardVersionCommand('/repo', '@scope/package', false, true),
+    standardVersionCommand('/repo', '@scope/package', true, true),
+  ];
+
+  for (const command of commands) {
+    assert.doesNotMatch(command, /--sign/, command);
+    assert.doesNotMatch(command, / -s( |$)/, command);
+  }
+});
+
+test('builds a GitHub release note for the tag it documents', () => {
+  assert.equal(
+    ghReleaseCommand('@pixu1980/pi-ask', '0.3.0', 'CHANGELOG.md'),
+    'gh release create "@pixu1980/pi-ask@0.3.0" --title "@pixu1980/pi-ask@0.3.0" --notes-file "CHANGELOG.md"'
+  );
+});
+
+test('creates the release note after the tag push and before the publish', () => {
+  const source = readFileSync(`${ROOT}/scripts/release.mjs`, 'utf8');
+  const tagPush = source.indexOf('git push --follow-tags origin main');
+  const releaseNote = source.indexOf('execIn(pkgPath, ghReleaseCommand(');
+  const publish = source.indexOf('execIn(pkgPath, `npm publish --access public`');
+
+  assert.ok(tagPush > -1, 'release.mjs must push the tag');
+  assert.ok(releaseNote > tagPush, 'the note must follow the tag it points at');
+  assert.ok(publish > releaseNote, 'a failed publish must not leave a note pointing at nothing');
+});
+
+test('prints the release note command in a dry run', () => {
+  const source = readFileSync(`${ROOT}/scripts/release.mjs`, 'utf8');
+
+  assert.match(source, /\[dry-run\] \$\{ghReleaseCommand\(/);
 });
 
 test('checks npm authentication without logging in when already authenticated', () => {

@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 import {
   changedFilesSinceTag,
   ensureNpmAuthentication,
+  ghReleaseCommand,
   releaseSummaryLines,
   standardVersionCommand,
 } from './release-helpers.mjs';
@@ -191,6 +192,7 @@ for (const pkg of packages) {
   if (isDryRun) {
     console.log(`   [dry-run] commit-and-tag-version --tag-prefix "${name}@"`);
     execIn(pkgPath, standardVersionCommand(ROOT, name, true, isFirstRelease), { stdio: 'inherit' });
+    console.log(`   [dry-run] ${ghReleaseCommand(name, version, 'CHANGELOG.md')}`);
     console.log(`   [dry-run] npm publish --access public (skipped)`);
     wouldRelease++;
   } else {
@@ -201,6 +203,14 @@ for (const pkg of packages) {
       // Push tag
       console.log(`   → pushing tag...`);
       execIn(pkgPath, `git push --follow-tags origin main`, { stdio: 'inherit' });
+
+      // The note is created before the publish, so a failed publish never
+      // leaves a note pointing at a version npm does not have. The version is
+      // re-read because commit-and-tag-version just bumped it.
+      const publishedVersion = JSON.parse(readFileSync(pkgJsonPath, 'utf-8')).version;
+
+      console.log(`   → gh release create...`);
+      execIn(pkgPath, ghReleaseCommand(name, publishedVersion, 'CHANGELOG.md'), { stdio: 'inherit' });
 
       // Publish locally using the user's npm credentials.
       console.log(`   → npm publish...`);

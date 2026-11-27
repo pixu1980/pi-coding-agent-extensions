@@ -83,6 +83,25 @@ export function standardVersionCommand(root, packageName, dryRun, firstRelease =
 }
 
 /**
+ * Builds the GitHub release that documents one published tag.
+ *
+ * The notes come from the package CHANGELOG.md, which
+ * commit-and-tag-version just rewrote for this version, so the note and the
+ * tag it describes cannot drift apart. The caller runs this from the package
+ * directory, so `notesFile` is a bare filename.
+ *
+ * @param {string} packageName package name, used as the tag prefix
+ * @param {string} version version that was just published
+ * @param {string} notesFile file holding the release notes, relative to the package directory
+ * @returns {string} the command to run from the package directory
+ */
+export function ghReleaseCommand(packageName, version, notesFile) {
+  const tag = `${packageName}@${version}`;
+
+  return `gh release create "${tag}" --title "${tag}" --notes-file "${notesFile}"`;
+}
+
+/**
  * The closing summary of a release run.
  *
  * A dry run never reaches the publish step, so it cannot report the `released`

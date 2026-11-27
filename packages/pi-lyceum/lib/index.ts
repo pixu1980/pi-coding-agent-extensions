@@ -18,8 +18,14 @@
  *     prints can contain it.
  */
 
-import { createProvider, type Api, type ApiKeyAuth, type Model, type Provider } from '@earendil-works/pi-ai';
-import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy';
+import {
+  createProvider,
+  type Api,
+  type ApiKeyAuth,
+  type Model,
+  type Provider,
+  type ProviderStreams,
+} from '@earendil-works/pi-ai';
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { normalizeApiKey, readStoredLyceumApiKey } from './_api-key.ts';
 import { bundledModels, mergeLiveCatalog } from './_catalog.ts';
@@ -60,19 +66,57 @@ const LYCEUM_API_KEY_AUTH: ApiKeyAuth = {
 };
 
 /**
+ * The host's implementation of the `openai-completions` API, as a factory.
+ *
+ * `createProvider` takes the stream implementation, so the extension needs the
+ * value, not the API id.
+ */
+export type CompletionsApiFactory = () => ProviderStreams;
+
+/**
+ * Resolve the host's `openai-completions` implementation.
+ *
+ * The extension loader maps a fixed set of specifiers, and only the package
+ * root is among them. A newer host exports the implementation there. An older
+ * host exposes it only through the package subpath, which resolves in a
+ * checkout that installs pi-ai itself, so it stays as a fallback.
+ *
+ * @returns The implementation factory the host provides.
+ */
+export async function resolveCompletionsApi(): Promise<CompletionsApiFactory> {
+  try {
+    const root = (await import('@earendil-works/pi-ai')) as unknown as Record<string, unknown>;
+    const fromRoot = root.openAICompletionsApi;
+
+    if (typeof fromRoot === 'function') {
+      return fromRoot as CompletionsApiFactory;
+    }
+  } catch {
+    // The root import failed; try the subpath below.
+  }
+
+  const subpath = (await import('@earendil-works/pi-ai/api/openai-completions.lazy')) as {
+    openAICompletionsApi: CompletionsApiFactory;
+  };
+
+  return subpath.openAICompletionsApi;
+}
+
+/**
  * Build the pi provider around a model list.
  *
  * @param models - Models to register as the provider baseline.
+ * @param apiFactory - The host's `openai-completions` implementation.
  * @returns The `lyceum` provider, ready for registration.
  */
-export function buildLyceumProvider(models: readonly Model<Api>[]): Provider<Api> {
+export function buildLyceumProvider(models: readonly Model<Api>[], apiFactory: CompletionsApiFactory): Provider<Api> {
   return createProvider({
     id: LYCEUM_PROVIDER_ID,
     name: LYCEUM_PROVIDER_NAME,
     baseUrl: LYCEUM_BASE_URL,
     auth: { apiKey: LYCEUM_API_KEY_AUTH },
     models,
-    api: openAICompletionsApi(),
+    api: apiFactory(),
     fetchModels: async (context) => {
       const key = normalizeApiKey(context.credential?.type === 'api_key' ? context.credential.key : undefined);
 
@@ -109,8 +153,10 @@ function errorText(error: unknown): string {
  *
  * @param pi - The extension API.
  */
-export default function (pi: ExtensionAPI): void {
-  pi.registerProvider(buildLyceumProvider(bundledModels()));
+export default async function (pi: ExtensionAPI): Promise<void> {
+  const apiFactory = await resolveCompletionsApi();
+
+  pi.registerProvider(buildLyceumProvider(bundledModels(), apiFactory));
 
   pi.registerCommand(LYCEUM_REFRESH_COMMAND, {
     description: 'Refresh the live Lyceum model catalog without restarting pi',
@@ -128,7 +174,7 @@ export default function (pi: ExtensionAPI): void {
       try {
         const models = mergeLiveCatalog(await fetchLiveModelIds({ apiKey: key }));
 
-        pi.registerProvider(buildLyceumProvider(models));
+        pi.registerProvider(buildLyceumProvider(models, apiFactory));
 
         if (ctx.hasUI) {
           ctx.ui.notify(

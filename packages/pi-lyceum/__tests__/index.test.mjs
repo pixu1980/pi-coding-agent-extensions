@@ -10,3 +10,4 @@ import './_catalog.test.mjs';
 import './_discovery.test.mjs';
 import './_extension.test.mjs';
 import './source-egress.test.mjs';
+import './_host-imports.test.mjs';

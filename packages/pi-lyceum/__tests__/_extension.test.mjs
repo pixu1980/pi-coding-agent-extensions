@@ -10,7 +10,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, beforeEach, describe, it } from 'node:test';
+import { openAICompletionsApi } from '@earendil-works/pi-ai/api/openai-completions.lazy';
 import extension, { buildLyceumProvider } from '../lib/index.ts';
+
+/** The host implementation the provider needs, in the shape the builder expects. */
+const apiFactory = () => openAICompletionsApi();
 import { bundledModels } from '../lib/_catalog.ts';
 import { LYCEUM_BASE_URL, LYCEUM_PROVIDER_ID, LYCEUM_PROVIDER_NAME, LYCEUM_REFRESH_COMMAND } from '../lib/_types.ts';
 
@@ -99,10 +103,10 @@ after(() => {
 });
 
 describe('provider registration', () => {
-  it('registers the lyceum provider with the bundled catalog', () => {
+  it('registers the lyceum provider with the bundled catalog', async () => {
     const { pi, providers, commands } = fakePi();
 
-    extension(pi);
+    await extension(pi);
 
     assert.equal(providers.length, 1);
     const provider = providers[0];
@@ -115,7 +119,7 @@ describe('provider registration', () => {
   });
 
   it('registers a provider whose models all use pi own openai-completions API', () => {
-    const provider = buildLyceumProvider([]);
+    const provider = buildLyceumProvider([], apiFactory);
 
     assert.equal(provider.getModels().length, 0);
     assert.equal(typeof provider.stream, 'function');
@@ -125,7 +129,7 @@ describe('provider registration', () => {
 
 describe('authentication', () => {
   it('prompts for a secret and trims what the user pastes', async () => {
-    const provider = buildLyceumProvider([]);
+    const provider = buildLyceumProvider([], apiFactory);
     const prompts = [];
 
     const credential = await provider.auth.apiKey.login({
@@ -143,7 +147,7 @@ describe('authentication', () => {
   });
 
   it('rejects an empty key at login', async () => {
-    const provider = buildLyceumProvider([]);
+    const provider = buildLyceumProvider([], apiFactory);
 
     await assert.rejects(
       provider.auth.apiKey.login({
@@ -156,7 +160,7 @@ describe('authentication', () => {
   });
 
   it('resolves the stored credential and reports nothing when there is none', async () => {
-    const provider = buildLyceumProvider([]);
+    const provider = buildLyceumProvider([], apiFactory);
     const signal = new AbortController().signal;
     const ctx = { env: async () => undefined, fileExists: async () => false };
 
@@ -191,7 +195,7 @@ describe('live refresh', () => {
     const restore = stubFetch(() => {});
 
     try {
-      const provider = buildLyceumProvider(bundledModels());
+      const provider = buildLyceumProvider(bundledModels(), apiFactory);
       await provider.refreshModels(refreshContext());
 
       const ids = provider.getModels().map((model) => model.id);
@@ -210,7 +214,7 @@ describe('live refresh', () => {
     });
 
     try {
-      const provider = buildLyceumProvider(bundledModels());
+      const provider = buildLyceumProvider(bundledModels(), apiFactory);
       await provider.refreshModels(refreshContext());
 
       assert.equal(provider.getModels().length, 16);
@@ -227,7 +231,7 @@ describe('live refresh', () => {
     });
 
     try {
-      const provider = buildLyceumProvider(bundledModels());
+      const provider = buildLyceumProvider(bundledModels(), apiFactory);
       await provider.refreshModels({ ...refreshContext(), credential: undefined });
 
       assert.equal(called, false);
@@ -242,7 +246,7 @@ describe('the /lyceum-models command', () => {
   it('asks for /login when no key is stored', async () => {
     const { pi, commands, providers } = fakePi();
 
-    extension(pi);
+    await extension(pi);
 
     const notifications = [];
     const command = commands.find((candidate) => candidate.name === LYCEUM_REFRESH_COMMAND);
@@ -269,7 +273,7 @@ describe('the /lyceum-models command', () => {
     try {
       const { pi, commands, providers } = fakePi();
 
-      extension(pi);
+      await extension(pi);
 
       const notifications = [];
       const command = commands.find((candidate) => candidate.name === LYCEUM_REFRESH_COMMAND);
@@ -302,7 +306,7 @@ describe('the /lyceum-models command', () => {
     try {
       const { pi, commands, providers } = fakePi();
 
-      extension(pi);
+      await extension(pi);
 
       const notifications = [];
       const command = commands.find((candidate) => candidate.name === LYCEUM_REFRESH_COMMAND);
